@@ -13,6 +13,7 @@ export interface PlanSession {
   subject: string;
   topic: string;
   taskId?: string;
+  learningItemId?: string;
   startTime: string; // "HH:MM"
   endTime: string; // "HH:MM"
   durationMinutes: number;
@@ -25,6 +26,7 @@ export interface PlannedTask {
   label: string;
   subject: string;
   sessionId?: string;
+  learningItemId?: string;
 }
 
 export interface PlanConflict {

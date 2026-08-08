@@ -66,7 +66,12 @@ export const NAV_ITEMS: NavItemConfig[] = [
     iconName: "ListTodo",
     href: "/plan-tomorrow",
   },
-  { id: "subjects", label: "Subjects", iconName: "BookOpen" },
+  {
+    id: "subjects",
+    label: "Subjects",
+    iconName: "BookOpen",
+    href: "/subjects",
+  },
   { id: "tasks", label: "Tasks", iconName: "CheckSquare" },
   { id: "timer", label: "Study Timer", iconName: "Timer" },
   { id: "calendar", label: "Calendar", iconName: "Calendar" },

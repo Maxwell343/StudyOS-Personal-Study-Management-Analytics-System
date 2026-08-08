@@ -87,7 +87,11 @@ export function Sidebar() {
           Workspace
         </div>
         {NAV_ITEMS.map((item) => {
-          const active = item.href ? pathname === item.href : false;
+          const active = item.href
+            ? item.href === "/"
+              ? pathname === "/"
+              : pathname.startsWith(item.href)
+            : false;
           const Icon = ICON_MAP[item.iconName];
           const hasRoute = !!item.href;
 
