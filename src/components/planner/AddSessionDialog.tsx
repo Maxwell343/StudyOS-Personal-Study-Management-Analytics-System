@@ -1,0 +1,441 @@
+"use client";
+
+import { useRef, useEffect, useState, useId } from "react";
+import { X } from "lucide-react";
+import type { PlanSession, PlannedTask } from "@/types/planner";
+import {
+  AVAILABLE_SUBJECTS,
+  SUBJECT_COLORS,
+  calculateDuration,
+  formatMinutes,
+} from "@/data/mock-planner";
+
+interface AddSessionDialogProps {
+  open: boolean;
+  editingSession: PlanSession | null;
+  availableTasks: PlannedTask[];
+  onClose: () => void;
+  onSave: (session: PlanSession) => void;
+}
+
+let sessionCounter = 0;
+function generateSessionId(): string {
+  sessionCounter += 1;
+  return `plan-session-new-${sessionCounter}`;
+}
+
+function AddSessionDialogInner({
+  open,
+  editingSession,
+  availableTasks,
+  onClose,
+  onSave,
+}: AddSessionDialogProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const formId = useId();
+
+  // Form state — initialized from editingSession on mount
+  const [subject, setSubject] = useState(
+    editingSession?.subject || AVAILABLE_SUBJECTS[0]
+  );
+  const [topic, setTopic] = useState(editingSession?.topic || "");
+  const [startTime, setStartTime] = useState(
+    editingSession?.startTime || "09:00"
+  );
+  const [endTime, setEndTime] = useState(editingSession?.endTime || "10:00");
+  const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(
+    editingSession?.taskId
+  );
+  const [priority, setPriority] = useState<"high" | "medium" | "low" | "">(
+    editingSession?.priority || ""
+  );
+
+  // Manage native dialog open/close (DOM side effect only)
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (open && !dialog.open) {
+      dialog.showModal();
+    } else if (!open && dialog.open) {
+      dialog.close();
+    }
+  }, [open]);
+
+  // Handle native dialog close (Escape key)
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const handleClose = () => {
+      onClose();
+    };
+    dialog.addEventListener("close", handleClose);
+    return () => dialog.removeEventListener("close", handleClose);
+  }, [onClose]);
+
+  // Computed duration
+  const duration = calculateDuration(startTime, endTime);
+  const isValidDuration = duration > 0;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subject || !topic || !isValidDuration) return;
+
+    const session: PlanSession = {
+      id: editingSession?.id || generateSessionId(),
+      subject,
+      topic,
+      taskId: selectedTaskId,
+      startTime,
+      endTime,
+      durationMinutes: duration,
+      color: SUBJECT_COLORS[subject] || "#22d3ee",
+      ...(priority ? { priority: priority as "high" | "medium" | "low" } : {}),
+    };
+
+    onSave(session);
+    onClose();
+  };
+
+  const filteredTasks = availableTasks.filter(
+    (t) => t.subject === subject || !subject
+  );
+
+  return (
+    <dialog
+      ref={dialogRef}
+      className="m-auto max-h-[90vh] w-full max-w-[480px] overflow-y-auto rounded-[10px] p-0 backdrop:bg-black/60"
+      style={{
+        background: "#13131a",
+        border: "1px solid rgba(255,255,255,0.08)",
+        color: "#f0f0f4",
+      }}
+      aria-label={editingSession ? "Edit study session" : "Add study session"}
+    >
+      <form onSubmit={handleSubmit}>
+        {/* Dialog header */}
+        <div
+          className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <h3 className="m-0 text-[14px] font-semibold text-[#f0f0f4]">
+            {editingSession ? "Edit Study Session" : "Add Study Session"}
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-[28px] w-[28px] cursor-pointer items-center justify-center rounded-md"
+            style={{
+              border: "1px solid rgba(255,255,255,0.06)",
+              background: "transparent",
+              color: "#6b6b80",
+            }}
+            aria-label="Close dialog"
+          >
+            <X size={14} />
+          </button>
+        </div>
+
+        {/* Form body */}
+        <div className="flex flex-col gap-4 px-5 py-4">
+          {/* Subject */}
+          <div>
+            <label
+              htmlFor={`${formId}-subject`}
+              className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px]"
+              style={{ color: "#6b6b80" }}
+            >
+              Subject
+            </label>
+            <select
+              id={`${formId}-subject`}
+              value={subject}
+              onChange={(e) => {
+                setSubject(e.target.value);
+                setSelectedTaskId(undefined);
+              }}
+              className="w-full rounded-md px-3 py-2 text-[13px]"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "#f0f0f4",
+                outline: "none",
+              }}
+              required
+            >
+              {AVAILABLE_SUBJECTS.map((s) => (
+                <option key={s} value={s} style={{ background: "#1a1a24" }}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Topic */}
+          <div>
+            <label
+              htmlFor={`${formId}-topic`}
+              className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px]"
+              style={{ color: "#6b6b80" }}
+            >
+              Topic
+            </label>
+            <input
+              id={`${formId}-topic`}
+              type="text"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder="e.g. Binary Trees, Spring Boot..."
+              className="w-full rounded-md px-3 py-2 text-[13px]"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "#f0f0f4",
+                outline: "none",
+              }}
+              required
+            />
+          </div>
+
+          {/* Time row */}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label
+                htmlFor={`${formId}-start`}
+                className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px]"
+                style={{ color: "#6b6b80" }}
+              >
+                Start Time
+              </label>
+              <input
+                id={`${formId}-start`}
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full rounded-md px-3 py-2 text-[13px]"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "#f0f0f4",
+                  outline: "none",
+                  colorScheme: "dark",
+                }}
+                required
+              />
+            </div>
+            <div>
+              <label
+                htmlFor={`${formId}-end`}
+                className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px]"
+                style={{ color: "#6b6b80" }}
+              >
+                End Time
+              </label>
+              <input
+                id={`${formId}-end`}
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="w-full rounded-md px-3 py-2 text-[13px]"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: "#f0f0f4",
+                  outline: "none",
+                  colorScheme: "dark",
+                }}
+                required
+              />
+            </div>
+            <div>
+              <div
+                className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px]"
+                style={{ color: "#6b6b80" }}
+              >
+                Duration
+              </div>
+              <div
+                className="flex items-center rounded-md px-3 py-2 font-mono text-[13px] font-semibold"
+                style={{
+                  background: "rgba(255,255,255,0.02)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  color: isValidDuration ? "#22d3ee" : "#ef4444",
+                  height: "38px",
+                }}
+              >
+                {isValidDuration ? formatMinutes(duration) : "Invalid"}
+              </div>
+            </div>
+          </div>
+
+          {/* Task selection */}
+          {filteredTasks.length > 0 && (
+            <div>
+              <div
+                className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.5px]"
+                style={{ color: "#6b6b80" }}
+              >
+                Add from existing tasks
+              </div>
+              <div className="flex flex-col gap-1">
+                {filteredTasks.map((task) => (
+                  <button
+                    key={task.id}
+                    type="button"
+                    onClick={() =>
+                      setSelectedTaskId(
+                        selectedTaskId === task.id ? undefined : task.id
+                      )
+                    }
+                    className="flex w-full cursor-pointer items-center gap-2.5 rounded-md border border-transparent px-2.5 py-2 text-left"
+                    style={{
+                      background:
+                        selectedTaskId === task.id
+                          ? "rgba(34,211,238,0.06)"
+                          : "transparent",
+                      transition: "all 0.12s",
+                    }}
+                  >
+                    {/* Checkbox */}
+                    <div
+                      className="flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded"
+                      style={{
+                        border: `1.5px solid ${
+                          selectedTaskId === task.id
+                            ? "#22d3ee"
+                            : "rgba(255,255,255,0.12)"
+                        }`,
+                        background:
+                          selectedTaskId === task.id
+                            ? "#22d3ee"
+                            : "transparent",
+                        transition: "all 0.12s",
+                      }}
+                    >
+                      {selectedTaskId === task.id && (
+                        <svg
+                          width="8"
+                          height="8"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#000"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      )}
+                    </div>
+                    <span
+                      className="text-[12.5px]"
+                      style={{ color: "#c0c0d0" }}
+                    >
+                      {task.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Priority (optional) */}
+          <div>
+            <label
+              htmlFor={`${formId}-priority`}
+              className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px]"
+              style={{ color: "#6b6b80" }}
+            >
+              Priority{" "}
+              <span style={{ color: "#3a3a4a" }}>(optional)</span>
+            </label>
+            <select
+              id={`${formId}-priority`}
+              value={priority}
+              onChange={(e) =>
+                setPriority(
+                  e.target.value as "high" | "medium" | "low" | ""
+                )
+              }
+              className="w-full rounded-md px-3 py-2 text-[13px]"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "#f0f0f4",
+                outline: "none",
+              }}
+            >
+              <option value="" style={{ background: "#1a1a24" }}>
+                No priority
+              </option>
+              <option value="high" style={{ background: "#1a1a24" }}>
+                High
+              </option>
+              <option value="medium" style={{ background: "#1a1a24" }}>
+                Medium
+              </option>
+              <option value="low" style={{ background: "#1a1a24" }}>
+                Low
+              </option>
+            </select>
+          </div>
+        </div>
+
+        {/* Dialog footer */}
+        <div
+          className="flex items-center justify-end gap-2 px-5 py-4"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            className="cursor-pointer rounded-[7px] px-4 py-2 text-[12px] font-medium"
+            style={{
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "transparent",
+              color: "#a0a0b8",
+              transition: "all 0.15s ease",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!subject || !topic || !isValidDuration}
+            className="cursor-pointer rounded-[7px] px-4 py-2 text-[12px] font-semibold disabled:cursor-not-allowed disabled:opacity-40"
+            style={{
+              border: "1px solid rgba(34,211,238,0.35)",
+              background: "rgba(34,211,238,0.1)",
+              color: "#22d3ee",
+              transition: "all 0.15s ease",
+            }}
+          >
+            {editingSession ? "Update Session" : "Add Session"}
+          </button>
+        </div>
+      </form>
+    </dialog>
+  );
+}
+
+/**
+ * Wrapper that remounts the inner dialog on each open, so the form
+ * state is always fresh without needing to reset via effects or refs.
+ */
+export function AddSessionDialog(props: AddSessionDialogProps) {
+  const [mountKey, setMountKey] = useState(0);
+
+  // Increment key when dialog opens to remount with fresh state
+  const prevOpenRef = useRef(false);
+  useEffect(() => {
+    if (props.open && !prevOpenRef.current) {
+      setMountKey((k) => k + 1);
+    }
+    prevOpenRef.current = props.open;
+  }, [props.open]);
+
+  if (!props.open) return null;
+
+  return <AddSessionDialogInner key={mountKey} {...props} />;
+}

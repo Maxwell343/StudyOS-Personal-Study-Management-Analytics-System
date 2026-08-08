@@ -51,13 +51,25 @@ export const STATUS_CONFIG: Record<SessionStatus, StatusConfig> = {
 
 // ── Navigation Items ───────────────────────────────────────────────────────
 
-export const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", iconName: "LayoutGrid" },
-  { id: "plan", label: "Plan Tomorrow", iconName: "ListTodo" },
+export interface NavItemConfig {
+  id: string;
+  label: string;
+  iconName: string;
+  href?: string; // Only set for implemented routes
+}
+
+export const NAV_ITEMS: NavItemConfig[] = [
+  { id: "dashboard", label: "Dashboard", iconName: "LayoutGrid", href: "/" },
+  {
+    id: "plan",
+    label: "Plan Tomorrow",
+    iconName: "ListTodo",
+    href: "/plan-tomorrow",
+  },
   { id: "subjects", label: "Subjects", iconName: "BookOpen" },
   { id: "tasks", label: "Tasks", iconName: "CheckSquare" },
   { id: "timer", label: "Study Timer", iconName: "Timer" },
   { id: "calendar", label: "Calendar", iconName: "Calendar" },
   { id: "analytics", label: "Analytics", iconName: "BarChart3" },
   { id: "goals", label: "Goals", iconName: "Target" },
-] as const;
+];

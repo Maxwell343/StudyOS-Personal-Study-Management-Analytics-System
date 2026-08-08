@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutGrid,
   ListTodo,
@@ -28,11 +29,11 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number }>> = {
 };
 
 export function Sidebar() {
-  const [activeNav, setActiveNav] = useState("dashboard");
+  const pathname = usePathname();
 
   return (
     <aside
-      className="flex h-screen w-[216px] shrink-0 flex-col border-r"
+      className="flex h-screen w-[216px] shrink-0 flex-col border-r max-md:hidden"
       style={{
         background: "var(--sidebar)",
         borderColor: "var(--sidebar-border)",
@@ -86,34 +87,54 @@ export function Sidebar() {
           Workspace
         </div>
         {NAV_ITEMS.map((item) => {
-          const active = activeNav === item.id;
+          const active = item.href ? pathname === item.href : false;
           const Icon = ICON_MAP[item.iconName];
+          const hasRoute = !!item.href;
+
+          const itemClasses = cn(
+            "nav-item flex w-full items-center gap-2.5 rounded-md border-none px-2.5 py-[7.5px] text-left text-[12.5px] mb-px",
+            active ? "active font-medium" : "font-normal",
+            hasRoute ? "cursor-pointer" : "cursor-default"
+          );
+
+          const itemStyle = {
+            background: active ? "rgba(34,211,238,0.08)" : "transparent",
+            color: active ? "#22d3ee" : hasRoute ? "#6a6a7e" : "#3a3a4a",
+          };
+
+          if (hasRoute) {
+            return (
+              <Link
+                key={item.id}
+                href={item.href!}
+                className={cn(itemClasses, "no-underline")}
+                style={itemStyle}
+              >
+                <span style={{ opacity: active ? 1 : 0.65 }}>
+                  {Icon && <Icon size={14} />}
+                </span>
+                {item.label}
+                {active && (
+                  <span
+                    className="ml-auto h-1 w-1 rounded-full"
+                    style={{ background: "#22d3ee" }}
+                  />
+                )}
+              </Link>
+            );
+          }
+
           return (
-            <button
+            <div
               key={item.id}
-              onClick={() => setActiveNav(item.id)}
-              className={cn(
-                "nav-item flex w-full items-center gap-2.5 rounded-md border-none px-2.5 py-[7.5px] text-left text-[12.5px] mb-px cursor-pointer",
-                active ? "active font-medium" : "font-normal"
-              )}
-              style={{
-                background: active
-                  ? "rgba(34,211,238,0.08)"
-                  : "transparent",
-                color: active ? "#22d3ee" : "#6a6a7e",
-              }}
+              className={itemClasses}
+              style={itemStyle}
             >
-              <span style={{ opacity: active ? 1 : 0.65 }}>
+              <span style={{ opacity: 0.4 }}>
                 {Icon && <Icon size={14} />}
               </span>
               {item.label}
-              {active && (
-                <span
-                  className="ml-auto h-1 w-1 rounded-full"
-                  style={{ background: "#22d3ee" }}
-                />
-              )}
-            </button>
+            </div>
           );
         })}
       </nav>
