@@ -198,9 +198,9 @@ export interface Database {
           id: string;
           study_plan_id: string;
           user_id: string;
-          subject_id: string;
-          topic_id: string;
-          learning_item_id: string;
+          subject_id: string | null;
+          topic_id: string | null;
+          learning_item_id: string | null;
           title: string;
           start_time: string;
           end_time: string;
@@ -213,9 +213,9 @@ export interface Database {
           id?: string;
           study_plan_id: string;
           user_id: string;
-          subject_id: string;
-          topic_id: string;
-          learning_item_id: string;
+          subject_id?: string | null;
+          topic_id?: string | null;
+          learning_item_id?: string | null;
           title: string;
           start_time: string;
           end_time: string;
@@ -228,9 +228,9 @@ export interface Database {
           id?: string;
           study_plan_id?: string;
           user_id?: string;
-          subject_id?: string;
-          topic_id?: string;
-          learning_item_id?: string;
+          subject_id?: string | null;
+          topic_id?: string | null;
+          learning_item_id?: string | null;
           title?: string;
           start_time?: string;
           end_time?: string;
@@ -285,7 +285,7 @@ export interface Database {
           id: string;
           user_id: string;
           planned_session_id: string | null;
-          learning_item_id: string;
+          learning_item_id: string | null;
           started_at: string;
           paused_at: string | null;
           ended_at: string | null;
@@ -300,7 +300,7 @@ export interface Database {
           id?: string;
           user_id: string;
           planned_session_id?: string | null;
-          learning_item_id: string;
+          learning_item_id?: string | null;
           started_at?: string;
           paused_at?: string | null;
           ended_at?: string | null;

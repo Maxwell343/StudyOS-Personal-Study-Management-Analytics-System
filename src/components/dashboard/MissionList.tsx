@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { StudySession, SessionStatus } from "@/types/dashboard";
-import { formatMinutes } from "@/data/mock-planner";
+import { formatMinutes } from "@/lib/planner-utils";
 import { MissionCard } from "./MissionCard";
 
 interface MissionListProps {

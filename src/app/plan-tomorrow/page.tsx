@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PlanHeader } from "@/components/planner/PlanHeader";
 import { PlanSummaryStats } from "@/components/planner/PlanSummaryStats";
@@ -16,7 +16,7 @@ import {
   computePlanHealth,
   computePlanSummary,
   generateInsight,
-} from "@/data/mock-planner";
+} from "@/lib/planner-utils";
 import {
   getTomorrowDateString,
   fetchPlanForDate,
@@ -103,6 +103,32 @@ export default function PlanTomorrowPage() {
     [sessions, health]
   );
 
+  // ── Auto-save ────────────────────────────────────────────────────────────────
+  const hasLoadedRef = useRef(false);
+
+  useEffect(() => {
+    if (loading || !user || !hasLoadedRef.current) return;
+
+    const timeout = setTimeout(async () => {
+      try {
+        await savePlanInDb(user.id, tomorrowDate, sessions, isLocked, subjects);
+      } catch (err) {
+        console.error("Auto-save error:", err);
+      }
+    }, 500); // debounce 500ms
+
+    return () => clearTimeout(timeout);
+  }, [sessions, isLocked, user, tomorrowDate, subjects, loading]);
+
+  // Mark initial load as complete once loading finishes
+  useEffect(() => {
+    if (!loading) {
+      // Small delay so the auto-save effect doesn't fire for the initial data
+      const t = setTimeout(() => { hasLoadedRef.current = true; }, 100);
+      return () => clearTimeout(t);
+    }
+  }, [loading]);
+
   // ── Actions ────────────────────────────────────────────────────────────────
 
   const saveDraft = useCallback(async () => {
@@ -111,8 +137,10 @@ export default function PlanTomorrowPage() {
       await savePlanInDb(user.id, tomorrowDate, sessions, isLocked, subjects);
       setSaveMessage("Draft saved to cloud.");
       setTimeout(() => setSaveMessage(null), 3000);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error saving draft:", err);
+      const e = err as Error;
+      alert(`Failed to save plan: ${e.message || "Unknown error"}`);
     }
   }, [user, tomorrowDate, sessions, isLocked, subjects]);
 

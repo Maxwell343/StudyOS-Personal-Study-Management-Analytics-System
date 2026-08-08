@@ -170,9 +170,9 @@ export async function savePlanInDb(
       return {
         study_plan_id: planId,
         user_id: userId,
-        subject_id: matchingSubject?.id || "",
-        topic_id: foundTopicId || "",
-        learning_item_id: foundLearningItemId || "",
+        subject_id: matchingSubject?.id || null,
+        topic_id: foundTopicId || null,
+        learning_item_id: foundLearningItemId || null,
         title: `${s.subject}: ${s.topic}`,
         start_time: `${s.startTime}:00`,
         end_time: `${s.endTime}:00`,

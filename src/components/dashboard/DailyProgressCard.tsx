@@ -1,4 +1,4 @@
-import { formatMinutes } from "@/data/mock-planner";
+import { formatMinutes } from "@/lib/planner-utils";
 
 interface DailyProgressCardProps {
   targetMinutes?: number;

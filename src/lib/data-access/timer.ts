@@ -149,7 +149,7 @@ export async function startStudySession(
   const insertPayload: Database["public"]["Tables"]["study_sessions"]["Insert"] = {
     user_id: userId,
     planned_session_id: input.plannedSessionId || null,
-    learning_item_id: input.learningItemId || "",
+    learning_item_id: input.learningItemId || null,
     planned_minutes: input.plannedMinutes || 60,
     started_at: startedAt,
     paused_at: null,

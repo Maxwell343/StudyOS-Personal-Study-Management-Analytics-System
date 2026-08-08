@@ -156,17 +156,16 @@ export async function createSubjectInDb(
   const { data, error } = await supabase
     .from("subjects")
     .insert(insertPayload)
-    .select(`
-      *,
-      topics (
-        *,
-        learning_items (*)
-      )
-    `)
+    .select()
     .single();
 
   if (error) throw error;
-  return mapDbSubjectToAppSubject(data as unknown as DbSubjectWithHierarchy);
+  
+  // Return the newly created subject with an empty topics array
+  return mapDbSubjectToAppSubject({
+    ...data,
+    topics: [],
+  } as unknown as DbSubjectWithHierarchy);
 }
 
 export async function updateSubjectInDb(
@@ -207,11 +206,15 @@ export async function createTopicInDb(
   const { data, error } = await supabase
     .from("topics")
     .insert(insertPayload)
-    .select(`*, learning_items (*)`)
+    .select()
     .single();
 
   if (error) throw error;
-  return mapDbTopicToAppTopic(data as unknown as DbTopicWithItems);
+  
+  return mapDbTopicToAppTopic({
+    ...data,
+    learning_items: [],
+  } as unknown as DbTopicWithItems);
 }
 
 export async function updateTopicInDb(

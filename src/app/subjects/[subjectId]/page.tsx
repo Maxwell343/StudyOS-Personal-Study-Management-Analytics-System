@@ -209,8 +209,10 @@ export default function SubjectDetailPage({
         await loadSubject();
         setTopicDialogOpen(false);
         setEditingTopic(null);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Error saving topic:", err);
+        const e = err as Error;
+        alert(`Failed to save topic: ${e.message || "Unknown error"}`);
       }
     },
     [subject, editingTopic, loadSubject]
@@ -266,8 +268,10 @@ export default function SubjectDetailPage({
         await loadSubject();
         setItemDialogOpen(false);
         setEditingItem(null);
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Error saving learning item:", err);
+        const e = err as Error;
+        alert(`Failed to save learning item: ${e.message || "Unknown error"}`);
       }
     },
     [editingItem, activeTopicIdForItem, loadSubject]

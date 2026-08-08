@@ -1,6 +1,6 @@
 import { Lock, Unlock } from "lucide-react";
 import type { PlanSummary } from "@/types/planner";
-import { formatMinutes } from "@/data/mock-planner";
+import { formatMinutes } from "@/lib/planner-utils";
 
 interface PlanLockStateProps {
   summary: PlanSummary;

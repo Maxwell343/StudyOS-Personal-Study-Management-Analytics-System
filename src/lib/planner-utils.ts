@@ -1,3 +1,7 @@
+/**
+ * Pure utility functions for plan/schedule computation.
+ * These contain ZERO mock data — only logic.
+ */
 import type {
   PlanSession,
   PlannedTask,
@@ -8,81 +12,6 @@ import type {
   PlanSummary,
   JarvisPlanInsight,
 } from "@/types/planner";
-
-// ── Subject Color Map ──────────────────────────────────────────────────────
-
-export const SUBJECT_COLORS: Record<string, string> = {
-  DSA: "#22d3ee",
-  Java: "#f97316",
-  "Machine Learning": "#a78bfa",
-  SQL: "#34d399",
-};
-
-// ── Available Subjects ─────────────────────────────────────────────────────
-
-export const AVAILABLE_SUBJECTS = [
-  "DSA",
-  "Java",
-  "Machine Learning",
-  "SQL",
-] as const;
-
-// ── Initial Plan Sessions ──────────────────────────────────────────────────
-
-export const initialPlanSessions: PlanSession[] = [
-  {
-    id: "plan-session-1",
-    subject: "DSA",
-    topic: "Recursion",
-    taskId: "ptask-1",
-    startTime: "09:00",
-    endTime: "11:00",
-    durationMinutes: 120,
-    color: "#22d3ee",
-  },
-  {
-    id: "plan-session-2",
-    subject: "Java",
-    topic: "Collections Framework",
-    taskId: "ptask-3",
-    startTime: "11:30",
-    endTime: "12:30",
-    durationMinutes: 60,
-    color: "#f97316",
-  },
-  {
-    id: "plan-session-3",
-    subject: "Machine Learning",
-    topic: "Random Forest",
-    startTime: "15:00",
-    endTime: "16:00",
-    durationMinutes: 60,
-    color: "#a78bfa",
-  },
-  {
-    id: "plan-session-4",
-    subject: "SQL",
-    topic: "Joins & Subqueries",
-    taskId: "ptask-4",
-    startTime: "19:00",
-    endTime: "20:00",
-    durationMinutes: 60,
-    color: "#34d399",
-  },
-];
-
-// ── Available Tasks (mock task pool) ───────────────────────────────────────
-
-export const availableTasks: PlannedTask[] = [
-  { id: "ptask-1", label: "Binary Search", subject: "DSA" },
-  { id: "ptask-2", label: "Reverse an Array", subject: "DSA" },
-  {
-    id: "ptask-3",
-    label: "Java Collections Practice",
-    subject: "Java",
-  },
-  { id: "ptask-4", label: "SQL JOIN Exercises", subject: "SQL" },
-];
 
 // ── Time Utilities ─────────────────────────────────────────────────────────
 
@@ -235,7 +164,7 @@ export function computePlanSummary(
   };
 }
 
-// ── JARVIS Insight Generation (mock) ───────────────────────────────────────
+// ── JARVIS Insight Generation ──────────────────────────────────────────────
 
 export function generateInsight(
   sessions: PlanSession[],

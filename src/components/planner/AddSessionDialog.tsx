@@ -4,11 +4,17 @@ import { useRef, useEffect, useState, useId } from "react";
 import { X } from "lucide-react";
 import type { PlanSession, PlannedTask } from "@/types/planner";
 import {
-  AVAILABLE_SUBJECTS,
-  SUBJECT_COLORS,
   calculateDuration,
   formatMinutes,
-} from "@/data/mock-planner";
+} from "@/lib/planner-utils";
+
+// Fallback subject colors when no DB subjects are available
+const SUBJECT_COLORS: Record<string, string> = {
+  DSA: "#22d3ee",
+  Java: "#f97316",
+  "Machine Learning": "#a78bfa",
+  SQL: "#34d399",
+};
 
 interface AddSessionDialogProps {
   open: boolean;
@@ -39,7 +45,7 @@ function AddSessionDialogInner({
   const subjectsList =
     availableSubjects && availableSubjects.length > 0
       ? availableSubjects.map((s) => s.name)
-      : (AVAILABLE_SUBJECTS as unknown as string[]);
+      : Object.keys(SUBJECT_COLORS);
 
   // Form state — initialized from editingSession on mount
   const [subject, setSubject] = useState(

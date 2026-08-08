@@ -11,7 +11,7 @@ import type {
 import type { Subject } from "@/types/subjects";
 import { fetchSubjectsForUser } from "./subjects";
 import { getTodayDateString } from "./planner";
-import { formatMinutes } from "@/data/mock-planner";
+import { formatMinutes } from "@/lib/planner-utils";
 
 export interface DashboardData {
   todaySessions: StudySession[];
@@ -79,16 +79,16 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
     }
   }
 
-  // 4. Fetch all study sessions from past 7 days
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-  const sevenDaysAgoStr = sevenDaysAgo.toISOString().split("T")[0];
+  // 4. Fetch all study sessions from past 30 days (for streak calculation)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
 
   const { data: recentSessions } = await supabase
     .from("study_sessions")
     .select("id, started_at, planned_minutes, actual_minutes, status, learning_item_id")
     .eq("user_id", userId)
-    .gte("started_at", `${sevenDaysAgoStr}T00:00:00Z`);
+    .gte("started_at", `${thirtyDaysAgoStr}T00:00:00Z`);
 
   // Compute Today's actual study minutes & completed sessions
   let actualMinutesToday = 0;

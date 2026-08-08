@@ -20,7 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Dedicated Single-User Personal Credentials
 const SINGLE_USER_EMAIL =
-  process.env.NEXT_PUBLIC_STUDYOS_USER_EMAIL || "maxwell@studyos.local";
+  process.env.NEXT_PUBLIC_STUDYOS_USER_EMAIL || "maxwell.mathew@studyos.local";
 const SINGLE_USER_PASSWORD =
   process.env.NEXT_PUBLIC_STUDYOS_USER_PASSWORD || "studyos_personal_maxwell_2026";
 const SINGLE_USER_NAME = "Maxwell";

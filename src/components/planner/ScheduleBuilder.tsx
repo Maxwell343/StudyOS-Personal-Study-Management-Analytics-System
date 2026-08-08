@@ -4,7 +4,7 @@ import { Plus, AlertTriangle } from "lucide-react";
 import type { PlanSession, PlanConflict } from "@/types/planner";
 import type { PlannedTask } from "@/types/planner";
 import { ScheduleSessionCard } from "./ScheduleSessionCard";
-import { timeToMinutes } from "@/data/mock-planner";
+import { timeToMinutes } from "@/lib/planner-utils";
 
 interface ScheduleBuilderProps {
   sessions: PlanSession[];

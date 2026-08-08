@@ -7,7 +7,7 @@ import {
   ArrowDown,
 } from "lucide-react";
 import type { PlanHealthData, PlanHealthStatus } from "@/types/planner";
-import { formatMinutes } from "@/data/mock-planner";
+import { formatMinutes } from "@/lib/planner-utils";
 
 interface PlanHealthProps {
   health: PlanHealthData;

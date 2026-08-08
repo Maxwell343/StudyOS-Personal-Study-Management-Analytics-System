@@ -3,7 +3,7 @@
 import { Pencil, Trash2 } from "lucide-react";
 import type { PlanSession } from "@/types/planner";
 import type { PlannedTask } from "@/types/planner";
-import { formatMinutes } from "@/data/mock-planner";
+import { formatMinutes } from "@/lib/planner-utils";
 
 interface ScheduleSessionCardProps {
   session: PlanSession;

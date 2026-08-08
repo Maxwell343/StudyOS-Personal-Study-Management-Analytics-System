@@ -127,7 +127,10 @@ export default function SubjectsPage() {
   }, []);
 
   const handleSaveSubject = async (sub: Subject) => {
-    if (!user) return;
+    if (!user) {
+      alert("You must be logged in and connected to Supabase to save subjects. Please check your .env.local file.");
+      return;
+    }
     try {
       if (editingSubject) {
         await updateSubjectInDb(editingSubject.id, {
@@ -149,8 +152,10 @@ export default function SubjectsPage() {
       setRefreshIndex((prev) => prev + 1);
       setDialogOpen(false);
       setEditingSubject(null);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to save subject:", err);
+      const e = err as Error;
+      alert(`Failed to save subject: ${e.message || "Unknown error"}`);
     }
   };
 
