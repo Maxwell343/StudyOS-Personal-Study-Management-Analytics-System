@@ -77,10 +77,25 @@ function ChartTooltip({
   );
 }
 
+function getWeeklyDateRangeString(): string {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - 6);
+
+  const startMonth = start.toLocaleString("default", { month: "short" });
+  const endMonth = end.toLocaleString("default", { month: "short" });
+
+  if (startMonth === endMonth) {
+    return `${startMonth} ${start.getDate()} – ${end.getDate()}, ${end.getFullYear()}`;
+  }
+  return `${startMonth} ${start.getDate()} – ${endMonth} ${end.getDate()}, ${end.getFullYear()}`;
+}
+
 export function WeeklyAnalytics({ data }: WeeklyAnalyticsProps) {
-  const weeklyTotal = data.reduce((s, d) => s + d.hours, 0);
+  const weeklyTotal = Math.round(data.reduce((s, d) => s + d.hours, 0) * 10) / 10;
   const weeklyAvg = (weeklyTotal / 7).toFixed(1);
   const weeklyTarget = 35;
+  const dateRangeStr = getWeeklyDateRangeString();
 
   return (
     <div
@@ -97,7 +112,7 @@ export function WeeklyAnalytics({ data }: WeeklyAnalyticsProps) {
             Weekly Overview
           </h2>
           <p className="m-0 text-[11px]" style={{ color: "#5a5a6a" }}>
-            Aug 4 – Aug 10, 2026
+            {dateRangeStr}
           </p>
         </div>
         <div className="flex items-end gap-5">

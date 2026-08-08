@@ -14,6 +14,7 @@ interface AddSessionDialogProps {
   open: boolean;
   editingSession: PlanSession | null;
   availableTasks: PlannedTask[];
+  availableSubjects?: { name: string; color: string }[];
   onClose: () => void;
   onSave: (session: PlanSession) => void;
 }
@@ -28,15 +29,21 @@ function AddSessionDialogInner({
   open,
   editingSession,
   availableTasks,
+  availableSubjects,
   onClose,
   onSave,
 }: AddSessionDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const formId = useId();
 
+  const subjectsList =
+    availableSubjects && availableSubjects.length > 0
+      ? availableSubjects.map((s) => s.name)
+      : (AVAILABLE_SUBJECTS as unknown as string[]);
+
   // Form state — initialized from editingSession on mount
   const [subject, setSubject] = useState(
-    editingSession?.subject || AVAILABLE_SUBJECTS[0]
+    editingSession?.subject || subjectsList[0] || "DSA"
   );
   const [topic, setTopic] = useState(editingSession?.topic || "");
   const [startTime, setStartTime] = useState(
@@ -82,15 +89,23 @@ function AddSessionDialogInner({
     e.preventDefault();
     if (!subject || !topic || !isValidDuration) return;
 
+    const matchedSubjectColor =
+      availableSubjects?.find((s) => s.name === subject)?.color ||
+      SUBJECT_COLORS[subject] ||
+      "#22d3ee";
+
+    const matchedTask = availableTasks.find((t) => t.id === selectedTaskId);
+
     const session: PlanSession = {
       id: editingSession?.id || generateSessionId(),
       subject,
       topic,
       taskId: selectedTaskId,
+      learningItemId: matchedTask?.learningItemId || editingSession?.learningItemId,
       startTime,
       endTime,
       durationMinutes: duration,
-      color: SUBJECT_COLORS[subject] || "#22d3ee",
+      color: matchedSubjectColor,
       ...(priority ? { priority: priority as "high" | "medium" | "low" } : {}),
     };
 
@@ -164,7 +179,7 @@ function AddSessionDialogInner({
               }}
               required
             >
-              {AVAILABLE_SUBJECTS.map((s) => (
+              {subjectsList.map((s) => (
                 <option key={s} value={s} style={{ background: "#1a1a24" }}>
                   {s}
                 </option>

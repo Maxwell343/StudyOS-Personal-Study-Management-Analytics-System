@@ -20,13 +20,20 @@ export const metadata: Metadata = {
     "Plan, execute, record, analyze, and adapt your study workflow with StudyOS.",
 };
 
+import { AuthProvider } from "@/context/AuthContext";
+import { TimerProvider } from "@/context/TimerContext";
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable} dark`}
     >
-      <body className="h-full antialiased">{children}</body>
+      <body className="h-full antialiased">
+        <AuthProvider>
+          <TimerProvider>{children}</TimerProvider>
+        </AuthProvider>
+      </body>
     </html>
   );
 }

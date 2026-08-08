@@ -1,4 +1,8 @@
-export function JarvisInsightBar() {
+interface JarvisInsightBarProps {
+  message?: string;
+}
+
+export function JarvisInsightBar({ message }: JarvisInsightBarProps) {
   return (
     <div
       className="mb-5 flex items-center gap-3 rounded-lg px-4 py-[11px]"
@@ -32,19 +36,8 @@ export function JarvisInsightBar() {
         style={{ background: "rgba(255,255,255,0.08)" }}
       />
       <p className="m-0 text-[12.5px]" style={{ color: "#9090a8" }}>
-        Your{" "}
-        <strong className="font-medium" style={{ color: "#d0d0e0" }}>
-          DSA session
-        </strong>{" "}
-        starts in{" "}
-        <strong className="font-semibold" style={{ color: "#22d3ee" }}>
-          18 minutes
-        </strong>
-        . Today&apos;s plan:{" "}
-        <strong className="font-medium" style={{ color: "#d0d0e0" }}>
-          5 focused hours
-        </strong>{" "}
-        across 4 sessions.
+        {message ||
+          "StudyOS ready. No study sessions planned for today yet. Use Plan Tomorrow to structure your day."}
       </p>
     </div>
   );

@@ -1,16 +1,28 @@
 "use client";
 
-import { use, useState, useCallback } from "react";
+import { use, useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, BookOpen } from "lucide-react";
+import { ArrowLeft, BookOpen, Loader2 } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { SubjectDetailHeader } from "@/components/subjects/detail/SubjectDetailHeader";
 import { TopicSection } from "@/components/subjects/detail/TopicSection";
 import { AddSubjectDialog } from "@/components/subjects/AddSubjectDialog";
 import { AddTopicDialog } from "@/components/subjects/detail/AddTopicDialog";
 import { AddLearningItemDialog } from "@/components/subjects/detail/AddLearningItemDialog";
-import { initialSubjects } from "@/data/mock-subjects";
+import { useAuth } from "@/context/AuthContext";
+import {
+  fetchSubjectById,
+  updateSubjectInDb,
+  deleteSubjectInDb,
+  createTopicInDb,
+  updateTopicInDb,
+  deleteTopicInDb,
+  createLearningItemInDb,
+  updateLearningItemInDb,
+  deleteLearningItemInDb,
+  toggleLearningItemCompletionInDb,
+} from "@/lib/data-access/subjects";
 import type { Subject, Topic, LearningItem } from "@/types/subjects";
 
 export default function SubjectDetailPage({
@@ -20,12 +32,11 @@ export default function SubjectDetailPage({
 }) {
   const { subjectId } = use(params);
   const router = useRouter();
-
-  // Find initial subject from mock data
-  const initialSubject = initialSubjects.find((s) => s.id === subjectId);
+  const { user, loading: authLoading } = useAuth();
 
   // ── State ──────────────────────────────────────────────────────────────────
-  const [subject, setSubject] = useState<Subject | undefined>(initialSubject);
+  const [subject, setSubject] = useState<Subject | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Dialog States
   const [editSubjectOpen, setEditSubjectOpen] = useState(false);
@@ -37,47 +48,133 @@ export default function SubjectDetailPage({
   const [activeTopicIdForItem, setActiveTopicIdForItem] = useState<string>("");
   const [editingItem, setEditingItem] = useState<LearningItem | null>(null);
 
-  // ── Handlers: Item Toggle (NOT_STARTED / IN_PROGRESS <-> COMPLETED) ────────
+  // ── Data Fetching ──────────────────────────────────────────────────────────
+  const [refreshIndex, setRefreshIndex] = useState(0);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function load() {
+      if (!user) {
+        if (!isCancelled) {
+          setSubject(null);
+          setLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const data = await fetchSubjectById(user.id, subjectId);
+        if (!isCancelled) {
+          setSubject(data);
+        }
+      } catch (err) {
+        console.error("Error loading subject detail:", err);
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    if (!authLoading) {
+      load();
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [user, subjectId, authLoading, refreshIndex]);
+
+  const loadSubject = useCallback(() => {
+    setRefreshIndex((prev) => prev + 1);
+  }, []);
+
+  // ── Handlers: Item Toggle (NOT_STARTED <-> COMPLETED) ──────────────────────
   const handleToggleItem = useCallback(
-    (itemId: string) => {
-      if (!subject) return;
+    async (itemId: string) => {
+      if (!subject || !user) return;
 
-      const updatedTopics = subject.topics.map((top) => {
-        const item = top.learningItems.find((i) => i.id === itemId);
-        if (!item) return top;
+      // Find current item
+      let currentStatus = "NOT_STARTED";
+      let itemTitle = "";
+      for (const t of subject.topics) {
+        const found = t.learningItems.find((i) => i.id === itemId);
+        if (found) {
+          currentStatus = found.status;
+          itemTitle = found.title;
+          break;
+        }
+      }
 
-        const isCurrentlyCompleted = item.status === "COMPLETED";
-        const updatedItem: LearningItem = {
-          ...item,
-          status: isCurrentlyCompleted ? "NOT_STARTED" : "COMPLETED",
-          completedAt: isCurrentlyCompleted ? undefined : new Date().toISOString(),
-        };
+      // Optimistic update
+      const isCurrentlyCompleted = currentStatus === "COMPLETED";
+      const nextStatus = isCurrentlyCompleted ? "NOT_STARTED" : "COMPLETED";
 
+      setSubject((prev) => {
+        if (!prev) return prev;
         return {
-          ...top,
-          learningItems: top.learningItems.map((i) =>
-            i.id === itemId ? updatedItem : i
-          ),
+          ...prev,
+          topics: prev.topics.map((t) => ({
+            ...t,
+            learningItems: t.learningItems.map((i) =>
+              i.id === itemId
+                ? {
+                    ...i,
+                    status: nextStatus as LearningItem["status"],
+                    completedAt: isCurrentlyCompleted ? undefined : new Date().toISOString(),
+                  }
+                : i
+            ),
+          })),
         };
       });
 
-      setSubject({
-        ...subject,
-        topics: updatedTopics,
-      });
+      try {
+        await toggleLearningItemCompletionInDb(
+          itemId,
+          currentStatus as LearningItem["status"],
+          user.id,
+          subject.id,
+          itemTitle
+        );
+      } catch (err) {
+        console.error("Failed to toggle item in DB, reverting:", err);
+        await loadSubject();
+      }
     },
-    [subject]
+    [subject, user, loadSubject]
   );
 
   // ── Handlers: Subject CRUD ────────────────────────────────────────────────
-  const handleSaveSubject = useCallback((updated: Subject) => {
-    setSubject((prev) => (prev ? { ...prev, ...updated } : updated));
-    setEditSubjectOpen(false);
-  }, []);
+  const handleSaveSubject = useCallback(
+    async (updated: Subject) => {
+      try {
+        await updateSubjectInDb(subjectId, {
+          name: updated.name,
+          description: updated.description,
+          category: updated.category,
+          color: updated.color,
+          targetDate: updated.targetDate,
+        });
+        await loadSubject();
+        setEditSubjectOpen(false);
+      } catch (err) {
+        console.error("Error updating subject:", err);
+      }
+    },
+    [subjectId, loadSubject]
+  );
 
-  const handleDeleteSubject = useCallback(() => {
-    if (confirm(`Are you sure you want to delete "${subject?.name}"?`)) {
-      router.push("/subjects");
+  const handleDeleteSubject = useCallback(async () => {
+    if (!subject) return;
+    if (confirm(`Are you sure you want to delete "${subject.name}" and all its topics?`)) {
+      try {
+        await deleteSubjectInDb(subject.id);
+        router.push("/subjects");
+      } catch (err) {
+        console.error("Error deleting subject:", err);
+      }
     }
   }, [subject, router]);
 
@@ -93,39 +190,44 @@ export default function SubjectDetailPage({
   }, []);
 
   const handleSaveTopic = useCallback(
-    (t: Topic) => {
+    async (t: Topic) => {
       if (!subject) return;
-
-      const exists = subject.topics.some((top) => top.id === t.id);
-      let newTopics: Topic[];
-
-      if (exists) {
-        newTopics = subject.topics.map((top) => (top.id === t.id ? t : top));
-      } else {
-        newTopics = [...subject.topics, t];
+      try {
+        if (editingTopic) {
+          await updateTopicInDb(t.id, {
+            name: t.name,
+            description: t.description,
+            order: t.order,
+          });
+        } else {
+          await createTopicInDb(subject.id, {
+            name: t.name,
+            description: t.description,
+            order: subject.topics.length + 1,
+          });
+        }
+        await loadSubject();
+        setTopicDialogOpen(false);
+        setEditingTopic(null);
+      } catch (err) {
+        console.error("Error saving topic:", err);
       }
-
-      setSubject({
-        ...subject,
-        topics: newTopics,
-      });
-      setTopicDialogOpen(false);
-      setEditingTopic(null);
     },
-    [subject]
+    [subject, editingTopic, loadSubject]
   );
 
   const handleDeleteTopic = useCallback(
-    (topicId: string) => {
-      if (!subject) return;
-      if (confirm("Are you sure you want to delete this topic?")) {
-        setSubject({
-          ...subject,
-          topics: subject.topics.filter((top) => top.id !== topicId),
-        });
+    async (topicId: string) => {
+      if (confirm("Are you sure you want to delete this topic and all its learning items?")) {
+        try {
+          await deleteTopicInDb(topicId);
+          await loadSubject();
+        } catch (err) {
+          console.error("Error deleting topic:", err);
+        }
       }
     },
-    [subject]
+    [loadSubject]
   );
 
   // ── Handlers: Learning Item CRUD ──────────────────────────────────────────
@@ -142,55 +244,60 @@ export default function SubjectDetailPage({
   }, []);
 
   const handleSaveLearningItem = useCallback(
-    (item: LearningItem) => {
-      if (!subject) return;
-
-      const updatedTopics = subject.topics.map((top) => {
-        if (top.id !== activeTopicIdForItem) return top;
-
-        const exists = top.learningItems.some((i) => i.id === item.id);
-        let newItems: LearningItem[];
-
-        if (exists) {
-          newItems = top.learningItems.map((i) => (i.id === item.id ? item : i));
+    async (item: LearningItem) => {
+      try {
+        if (editingItem) {
+          await updateLearningItemInDb(item.id, {
+            title: item.title,
+            description: item.description,
+            estimatedMinutes: item.estimatedMinutes,
+            priority: item.priority,
+            resources: item.resources,
+          });
         } else {
-          newItems = [...top.learningItems, item];
+          await createLearningItemInDb(activeTopicIdForItem, {
+            title: item.title,
+            description: item.description,
+            estimatedMinutes: item.estimatedMinutes,
+            priority: item.priority,
+            resources: item.resources,
+          });
         }
-
-        return {
-          ...top,
-          learningItems: newItems,
-        };
-      });
-
-      setSubject({
-        ...subject,
-        topics: updatedTopics,
-      });
-      setItemDialogOpen(false);
-      setEditingItem(null);
+        await loadSubject();
+        setItemDialogOpen(false);
+        setEditingItem(null);
+      } catch (err) {
+        console.error("Error saving learning item:", err);
+      }
     },
-    [subject, activeTopicIdForItem]
+    [editingItem, activeTopicIdForItem, loadSubject]
   );
 
   const handleDeleteLearningItem = useCallback(
-    (itemId: string) => {
-      if (!subject) return;
-
-      const updatedTopics = subject.topics.map((top) => ({
-        ...top,
-        learningItems: top.learningItems.filter((i) => i.id !== itemId),
-      }));
-
-      setSubject({
-        ...subject,
-        topics: updatedTopics,
-      });
+    async (itemId: string) => {
+      try {
+        await deleteLearningItemInDb(itemId);
+        await loadSubject();
+      } catch (err) {
+        console.error("Error deleting learning item:", err);
+      }
     },
-    [subject]
+    [loadSubject]
   );
 
-  // ── Not Found State ───────────────────────────────────────────────────────
+  // ── Loading & Not Found States ────────────────────────────────────────────
+  if (loading || authLoading) {
+    return (
+      <div className="flex h-screen w-full overflow-hidden bg-background font-sans text-foreground">
+        <Sidebar />
+        <main className="flex flex-1 flex-col items-center justify-center p-8">
+          <Loader2 size={32} className="animate-spin text-[#22d3ee]" />
+          <span className="mt-3 text-xs text-[#6b6b80]">Loading subject curriculum...</span>
+        </main>
+      </div>
+    );
+  }
+
   if (!subject) {
     return (
       <div className="flex h-screen w-full overflow-hidden bg-background font-sans text-foreground">
@@ -206,7 +313,7 @@ export default function SubjectDetailPage({
             Subject Not Found
           </h2>
           <p className="mb-6 max-w-sm text-[13px] text-[#6b6b80]">
-            The requested subject track could not be found or has been removed.
+            The requested subject track could not be found in your curriculum.
           </p>
           <Link
             href="/subjects"

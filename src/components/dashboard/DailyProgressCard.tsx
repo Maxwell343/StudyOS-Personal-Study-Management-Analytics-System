@@ -1,9 +1,49 @@
-export function DailyProgressCard() {
+import { formatMinutes } from "@/data/mock-planner";
+
+interface DailyProgressCardProps {
+  targetMinutes?: number;
+  actualMinutes?: number;
+}
+
+export function DailyProgressCard({
+  targetMinutes = 0,
+  actualMinutes = 0,
+}: DailyProgressCardProps) {
+  const remainingMinutes = Math.max(0, targetMinutes - actualMinutes);
+  const percent =
+    targetMinutes > 0
+      ? Math.min(100, Math.round((actualMinutes / targetMinutes) * 100))
+      : 0;
+  const isTargetMet = actualMinutes >= targetMinutes && targetMinutes > 0;
+  const hasPlan = targetMinutes > 0;
+
   const progressItems = [
-    { label: "PLANNED", value: "5h 00m", color: "#6b6b80" },
-    { label: "ACTUAL", value: "0h 00m", color: "#22d3ee" },
-    { label: "REMAINING", value: "5h 00m", color: "#f59e0b" },
+    { label: "PLANNED", value: formatMinutes(targetMinutes), color: "#6b6b80" },
+    { label: "ACTUAL", value: formatMinutes(actualMinutes), color: "#22d3ee" },
+    {
+      label: "REMAINING",
+      value: formatMinutes(remainingMinutes),
+      color: isTargetMet ? "#22c55e" : "#f59e0b",
+    },
   ];
+
+  const badgeText = isTargetMet
+    ? "Target Met"
+    : hasPlan
+      ? "On Track"
+      : "No Plan Set";
+
+  const badgeColor = isTargetMet ? "#22c55e" : hasPlan ? "#f59e0b" : "#6b6b80";
+  const badgeBg = isTargetMet
+    ? "rgba(34,197,94,0.1)"
+    : hasPlan
+      ? "rgba(245,158,11,0.1)"
+      : "rgba(255,255,255,0.04)";
+  const badgeBorder = isTargetMet
+    ? "rgba(34,197,94,0.2)"
+    : hasPlan
+      ? "rgba(245,158,11,0.2)"
+      : "rgba(255,255,255,0.08)";
 
   return (
     <div
@@ -24,15 +64,15 @@ export function DailyProgressCard() {
         <div
           className="rounded px-2.5 py-[3px]"
           style={{
-            background: "rgba(245,158,11,0.1)",
-            border: "1px solid rgba(245,158,11,0.2)",
+            background: badgeBg,
+            border: `1px solid ${badgeBorder}`,
           }}
         >
           <span
             className="font-mono text-[10px] font-semibold uppercase tracking-[0.8px]"
-            style={{ color: "#f59e0b" }}
+            style={{ color: badgeColor }}
           >
-            On Track
+            {badgeText}
           </span>
         </div>
       </div>
@@ -73,8 +113,10 @@ export function DailyProgressCard() {
           <div
             className="absolute left-0 top-0 h-full rounded-full"
             style={{
-              width: "0%",
-              background: "linear-gradient(90deg, #22d3ee, #0ea5e9)",
+              width: `${percent}%`,
+              background: isTargetMet
+                ? "linear-gradient(90deg, #22c55e, #10b981)"
+                : "linear-gradient(90deg, #22d3ee, #0ea5e9)",
               transition: "width 0.6s ease",
             }}
           />
@@ -84,13 +126,13 @@ export function DailyProgressCard() {
             className="font-mono text-[10px]"
             style={{ color: "#4a4a5a" }}
           >
-            0%
+            {percent}%
           </span>
           <span
             className="font-mono text-[10px]"
             style={{ color: "#4a4a5a" }}
           >
-            Target: 5h
+            Target: {formatMinutes(targetMinutes)}
           </span>
         </div>
       </div>

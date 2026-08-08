@@ -1,7 +1,7 @@
-"use client";
-
 import { useState } from "react";
+import Link from "next/link";
 import type { StudySession, SessionStatus } from "@/types/dashboard";
+import { formatMinutes } from "@/data/mock-planner";
 import { MissionCard } from "./MissionCard";
 
 interface MissionListProps {
@@ -9,15 +9,22 @@ interface MissionListProps {
 }
 
 export function MissionList({ sessions }: MissionListProps) {
-  const [sessionStatuses, setSessionStatuses] = useState<
-    Record<string, SessionStatus>
-  >(Object.fromEntries(sessions.map((s) => [s.id, s.status])));
+  const [overrides, setOverrides] = useState<Record<string, SessionStatus>>({});
 
-  const completedCount = Object.values(sessionStatuses).filter(
-    (s) => s === "completed"
+  const totalPlannedMinutes = sessions.reduce(
+    (acc, s) => acc + (s.plannedMinutes || 0),
+    0
+  );
+  const formattedDuration = formatMinutes(totalPlannedMinutes);
+
+  const getStatus = (id: string, originalStatus: SessionStatus) =>
+    overrides[id] || originalStatus;
+
+  const completedCount = sessions.filter(
+    (s) => getStatus(s.id, s.status) === "completed"
   ).length;
 
-  const cycleSessionStatus = (id: string) => {
+  const cycleSessionStatus = (id: string, originalStatus: SessionStatus) => {
     const order: SessionStatus[] = [
       "upcoming",
       "starting-soon",
@@ -25,8 +32,8 @@ export function MissionList({ sessions }: MissionListProps) {
       "paused",
       "completed",
     ];
-    setSessionStatuses((prev) => {
-      const current = prev[id];
+    setOverrides((prev) => {
+      const current = prev[id] || originalStatus;
       const idx = order.indexOf(current);
       const next = order[(idx + 1) % order.length];
       return { ...prev, [id]: next };
@@ -47,7 +54,8 @@ export function MissionList({ sessions }: MissionListProps) {
             Today&apos;s Mission
           </h2>
           <span className="text-[11px]" style={{ color: "#4a4a5a" }}>
-            · {sessions.length} sessions · 5h planned
+            · {sessions.length} session{sessions.length !== 1 ? "s" : ""} ·{" "}
+            {formattedDuration} planned
           </span>
         </div>
         <span
@@ -58,17 +66,33 @@ export function MissionList({ sessions }: MissionListProps) {
         </span>
       </div>
 
-      <div className="flex flex-col gap-2">
-        {sessions.map((session, idx) => (
-          <MissionCard
-            key={session.id}
-            session={session}
-            status={sessionStatuses[session.id]}
-            isNext={idx === 0}
-            onCycle={() => cycleSessionStatus(session.id)}
-          />
-        ))}
-      </div>
+      {sessions.length === 0 ? (
+        <div
+          className="rounded-lg border border-white/[0.04] bg-white/[0.01] px-4 py-6 text-center text-xs"
+          style={{ color: "#5a5a6a" }}
+        >
+          No study sessions planned for today. Use{" "}
+          <Link
+            href="/plan-tomorrow"
+            className="text-[#22d3ee] underline underline-offset-2 hover:text-[#38bdf8]"
+          >
+            Plan Tomorrow
+          </Link>{" "}
+          to schedule your focused missions.
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {sessions.map((session, idx) => (
+            <MissionCard
+              key={session.id}
+              session={session}
+              status={getStatus(session.id, session.status)}
+              isNext={idx === 0}
+              onCycle={() => cycleSessionStatus(session.id, session.status)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

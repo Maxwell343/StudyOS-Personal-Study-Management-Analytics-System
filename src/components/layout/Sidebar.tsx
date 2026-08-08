@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "@/lib/constants";
+import { useAuth } from "@/context/AuthContext";
 
 // Map icon names to Lucide components
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number }>> = {
@@ -30,6 +31,9 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number }>> = {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { profile } = useAuth();
+
+  const displayName = profile?.name || "Maxwell";
 
   return (
     <aside
@@ -143,7 +147,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* ── Bottom ─────────────────────────────────────────────────────── */}
+      {/* ── Bottom: Personal User Profile ──────────────────────────────── */}
       <div
         className="p-2"
         style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
@@ -155,28 +159,23 @@ export function Sidebar() {
           <Settings size={14} />
           Settings
         </button>
-        <div className="flex items-center gap-2.5 px-2.5 pt-2 pb-1">
+
+        <div className="flex items-center gap-2 px-2 pt-2 pb-1">
           <div
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-black"
             style={{
               background: "linear-gradient(135deg, #22d3ee, #a78bfa)",
             }}
           >
-            M
+            {displayName.charAt(0).toUpperCase()}
           </div>
-          <div>
-            <div className="text-xs font-medium" style={{ color: "#d0d0e0" }}>
-              Maxwell
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-xs font-medium" style={{ color: "#d0d0e0" }}>
+              {displayName}
             </div>
-            <div className="text-[10px]" style={{ color: "#5a5a6a" }}>
-              Pro Plan
+            <div className="truncate text-[10px]" style={{ color: "#5a5a6a" }}>
+              Personal Workspace
             </div>
-          </div>
-          <div className="ml-auto flex items-center gap-1">
-            <div
-              className="pulse-dot h-[5px] w-[5px] rounded-full"
-              style={{ background: "#22c55e" }}
-            />
           </div>
         </div>
       </div>
