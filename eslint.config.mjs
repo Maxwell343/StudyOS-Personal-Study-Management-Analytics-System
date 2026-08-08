@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Figma reference project (not part of the Next.js application):
+    "figma-reference/**",
   ]),
 ]);
 

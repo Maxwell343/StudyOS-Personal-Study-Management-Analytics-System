@@ -1,0 +1,139 @@
+"use client";
+
+import { Play } from "lucide-react";
+import type { StudySession, SessionStatus } from "@/types/dashboard";
+import { STATUS_CONFIG } from "@/lib/constants";
+
+interface MissionCardProps {
+  session: StudySession;
+  status: SessionStatus;
+  isNext: boolean;
+  onCycle: () => void;
+}
+
+function StatusBadge({ status }: { status: SessionStatus }) {
+  const cfg = STATUS_CONFIG[status];
+
+  return (
+    <div
+      className="inline-flex items-center gap-1 rounded-[3px] px-1.5 py-0.5"
+      style={{ background: cfg.bg }}
+    >
+      {cfg.dot && (
+        <div
+          className="pulse-dot h-1 w-1 rounded-full"
+          style={{ background: cfg.dot }}
+        />
+      )}
+      <span
+        className="font-mono text-[9px] font-bold tracking-[0.5px]"
+        style={{ color: cfg.color }}
+      >
+        {cfg.label}
+      </span>
+    </div>
+  );
+}
+
+export function MissionCard({
+  session,
+  status,
+  isNext,
+  onCycle,
+}: MissionCardProps) {
+  const isCompleted = status === "completed";
+  const isActive = status === "active";
+
+  return (
+    <div
+      className="session-card relative grid items-center gap-3.5 rounded-[7px] px-3 py-2.5"
+      style={{
+        gridTemplateColumns: "90px 1fr auto",
+        border: `1px solid ${isNext ? "rgba(34,211,238,0.14)" : "rgba(255,255,255,0.04)"}`,
+        background: isNext ? "rgba(34,211,238,0.03)" : "transparent",
+        opacity: isCompleted ? 0.55 : 1,
+      }}
+    >
+      {/* Left accent */}
+      <div
+        className="absolute left-0 top-[20%] bottom-[20%] w-0.5 rounded-r-sm"
+        style={{
+          background: session.color,
+          opacity: isNext ? 0.9 : 0.3,
+        }}
+      />
+
+      {/* Time column */}
+      <div className="pl-1.5">
+        <div
+          className="mb-1 whitespace-nowrap font-mono text-[10.5px]"
+          style={{ color: isNext ? "#c0c0d0" : "#6b6b80" }}
+        >
+          {session.startTime} — {session.endTime}
+        </div>
+        <StatusBadge status={status} />
+      </div>
+
+      {/* Subject + topic */}
+      <div>
+        <div className="mb-0.5 flex items-center gap-[7px]">
+          <div
+            className="h-1.5 w-1.5 shrink-0 rounded-full"
+            style={{ background: session.color }}
+          />
+          <span
+            className="text-[13px] font-semibold tracking-tight"
+            style={{
+              color: isCompleted ? "#6b6b80" : "#f0f0f4",
+              textDecoration: isCompleted ? "line-through" : "none",
+            }}
+          >
+            {session.subject}
+          </span>
+          <span className="text-[11px]" style={{ color: "#3a3a4a" }}>
+            ·
+          </span>
+          <span
+            className="text-xs"
+            style={{ color: isCompleted ? "#4a4a5a" : "#8a8a9e" }}
+          >
+            {session.topic}
+          </span>
+        </div>
+        <div
+          className="pl-[13px] font-mono text-[10.5px]"
+          style={{ color: "#4a4a5a" }}
+        >
+          {session.duration}
+        </div>
+      </div>
+
+      {/* Action button */}
+      <button
+        onClick={onCycle}
+        className="flex cursor-pointer items-center gap-[5px] whitespace-nowrap rounded-[5px] px-3 py-[5px] text-[11px] font-semibold"
+        style={{
+          border: isNext
+            ? "1px solid rgba(34,211,238,0.2)"
+            : "1px solid rgba(255,255,255,0.06)",
+          background: isActive ? "rgba(34,211,238,0.08)" : "transparent",
+          color: isNext ? "#22d3ee" : "#5a5a6a",
+          transition: "all 0.12s ease",
+        }}
+      >
+        {isActive ? (
+          <>
+            <span className="text-[8px]">⏸</span> Pause
+          </>
+        ) : isCompleted ? (
+          "✓ Done"
+        ) : (
+          <>
+            <Play size={9} />
+            Start
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
