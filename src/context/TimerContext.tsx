@@ -44,6 +44,9 @@ interface TimerContextValue {
   completeSession: (markItemCompleted?: boolean) => Promise<number>;
   abandonSession: () => Promise<void>;
   refreshActiveSession: () => Promise<void>;
+  isOvertime: boolean;
+  showTargetReachedToast: boolean;
+  dismissToast: () => void;
 }
 
 const TimerContext = createContext<TimerContextValue | undefined>(undefined);
@@ -53,6 +56,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   const [activeSession, setActiveSession] = useState<ActiveSessionDetails | null>(null);
   const [, setTick] = useState(0);
   const notifiedFinishedRef = useRef(false);
+  const previousElapsedRef = useRef(-1);
+  const [showTargetReachedToast, setShowTargetReachedToast] = useState(false);
 
   // ── Sync with DB on mount / user change ────────────────────────────────────
   const refreshActiveSession = useCallback(async () => {
@@ -103,30 +108,43 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     const interval = setInterval(() => {
       setTick((t) => (t + 1) % 1000000);
 
-      // Check if target planned duration reached for notification
+      // Check if target planned duration reached for notification exactly once
       const secs = calculateElapsedSeconds(
         activeSession.startedAt,
         activeSession.pausedAt,
         activeSession.totalPausedSeconds
       );
       const plannedSecs = (activeSession.plannedMinutes || 60) * 60;
+      
+      const prevSecs = previousElapsedRef.current;
+      
+      // Threshold crossing detection
       if (
+        prevSecs !== -1 && 
+        prevSecs < plannedSecs && 
         secs >= plannedSecs &&
-        !notifiedFinishedRef.current &&
-        typeof window !== "undefined" &&
-        "Notification" in window &&
-        Notification.permission === "granted"
+        !notifiedFinishedRef.current
       ) {
         notifiedFinishedRef.current = true;
-        try {
-          new Notification("🎯 StudyOS Target Reached!", {
-            body: `You've completed your planned ${activeSession.plannedMinutes}m on ${activeSession.subjectName}: ${activeSession.topicName}.`,
-            icon: "/favicon.ico",
-          });
-        } catch {
-          // Ignore notification display errors
+        setShowTargetReachedToast(true);
+        
+        if (
+          typeof window !== "undefined" &&
+          "Notification" in window &&
+          Notification.permission === "granted"
+        ) {
+          try {
+            new Notification("🎯 StudyOS Target Reached!", {
+              body: `You've completed your planned ${activeSession.plannedMinutes}m on ${activeSession.subjectName}: ${activeSession.topicName}.`,
+              icon: "/favicon.ico",
+            });
+          } catch {
+            // Ignore notification display errors
+          }
         }
       }
+      
+      previousElapsedRef.current = secs;
     }, 1000);
 
     return () => clearInterval(interval);
@@ -159,6 +177,8 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       }
 
       notifiedFinishedRef.current = false;
+      previousElapsedRef.current = -1;
+      setShowTargetReachedToast(false);
       const newSession = await startStudySession(user.id, input);
       setActiveSession(newSession);
     },
@@ -230,13 +250,16 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
   }, [activeSession]);
 
   const plannedSecs = (activeSession?.plannedMinutes || 60) * 60;
-  const remainingSecs = Math.max(0, plannedSecs - elapsedSeconds);
+  const isOvertime = elapsedSeconds > plannedSecs;
+  const remainingSecs = Math.max(0, plannedSecs - Math.min(elapsedSeconds, plannedSecs));
   const formattedElapsed = useMemo(() => formatTimerSeconds(elapsedSeconds), [elapsedSeconds]);
-  const formattedRemaining = useMemo(() => formatTimerSeconds(remainingSecs), [remainingSecs]);
+  const formattedRemaining = useMemo(() => formatTimerSeconds(Math.abs(plannedSecs - elapsedSeconds)), [elapsedSeconds, plannedSecs]);
   const progressPercent = useMemo(() => {
     if (!plannedSecs) return 0;
     return Math.min(100, Math.round((elapsedSeconds / plannedSecs) * 100));
   }, [elapsedSeconds, plannedSecs]);
+
+  const dismissToast = useCallback(() => setShowTargetReachedToast(false), []);
 
   const value: TimerContextValue = {
     activeSession,
@@ -253,9 +276,58 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     completeSession,
     abandonSession,
     refreshActiveSession,
+    isOvertime,
+    showTargetReachedToast,
+    dismissToast,
   };
 
-  return <TimerContext.Provider value={value}>{children}</TimerContext.Provider>;
+  return (
+    <TimerContext.Provider value={value}>
+      {children}
+      
+      {/* Target Reached In-App Toast */}
+      {showTargetReachedToast && activeSession && (
+        <div 
+          className="fixed right-6 top-6 z-50 animate-in slide-in-from-right-4 fade-in duration-300"
+          style={{ width: "320px" }}
+        >
+          <div 
+            className="flex flex-col rounded-lg p-4 shadow-xl"
+            style={{ 
+              background: "#1e1e28",
+              border: "1px solid rgba(34,211,238,0.3)",
+              borderLeft: "4px solid #22d3ee"
+            }}
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="m-0 text-[14px] font-bold text-white">Target Reached</h3>
+                <p className="m-0 mt-1 text-[13px]" style={{ color: "#a0a0b8" }}>
+                  You&apos;ve completed your planned {activeSession.plannedMinutes}m on {activeSession.subjectName}: {activeSession.topicName}.
+                </p>
+              </div>
+              <button 
+                onClick={dismissToast}
+                className="ml-4 cursor-pointer rounded text-[#6b6b80] hover:text-white"
+                style={{ background: "transparent", border: "none" }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button 
+                onClick={dismissToast}
+                className="flex-1 cursor-pointer rounded-[5px] py-1.5 text-xs font-semibold"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#f0f0f4" }}
+              >
+                Continue (Overtime)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </TimerContext.Provider>
+  );
 }
 
 export function useSessionTimer() {

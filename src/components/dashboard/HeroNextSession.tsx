@@ -28,6 +28,8 @@ export function HeroNextSession({
     resumeSession,
     completeSession,
     abandonSession,
+    isOvertime,
+    showTargetReachedToast,
   } = useSessionTimer();
 
   const isRunning = isActive || isPaused;
@@ -79,8 +81,10 @@ export function HeroNextSession({
   };
 
   const handleAbandon = async () => {
-    await abandonSession();
-    if (onSessionUpdated) onSessionUpdated();
+    if (window.confirm("Are you sure you want to abandon this session? Progress will be saved but it will be marked as abandoned.")) {
+      await abandonSession();
+      if (onSessionUpdated) onSessionUpdated();
+    }
   };
 
   return (
@@ -136,14 +140,20 @@ export function HeroNextSession({
                   color: isRunning
                     ? isPaused
                       ? "#f97316"
-                      : "#22c55e"
+                      : isOvertime
+                        ? "#f87171" // Red for overtime
+                        : "#22c55e"
                     : "#22d3ee",
                 }}
               >
                 {isRunning
                   ? isPaused
                     ? "⏸ PAUSED"
-                    : "● ACTIVE TIMER"
+                    : showTargetReachedToast
+                      ? "● TIME REACHED"
+                      : isOvertime
+                        ? "● OVERTIME"
+                        : "● ACTIVE TIMER"
                   : session
                     ? "NEXT SESSION"
                     : "STUDY OS"}
@@ -206,7 +216,9 @@ export function HeroNextSession({
             </span>
             <span className="text-xs" style={{ color: "#6b6b80" }}>
               {isRunning
-                ? `${formattedRemaining} remaining (${progressPercent}%)`
+                ? isOvertime
+                  ? `Over target duration by ${formattedRemaining}`
+                  : `${formattedRemaining} remaining (${progressPercent}%)`
                 : session
                   ? "Ready to start"
                   : "Use Plan Tomorrow to lock your schedule"}
@@ -219,10 +231,12 @@ export function HeroNextSession({
               <div
                 className="h-full rounded-full transition-all duration-300"
                 style={{
-                  width: `${progressPercent}%`,
+                  width: `${isOvertime ? 100 : progressPercent}%`,
                   background: isPaused
                     ? "#f97316"
-                    : "linear-gradient(90deg, #22d3ee, #22c55e)",
+                    : isOvertime
+                      ? "linear-gradient(90deg, #f87171, #ef4444)"
+                      : "linear-gradient(90deg, #22d3ee, #22c55e)",
                 }}
               />
             </div>

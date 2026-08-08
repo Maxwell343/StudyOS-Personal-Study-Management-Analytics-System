@@ -10,7 +10,7 @@ import type {
 } from "@/types/dashboard";
 import type { Subject } from "@/types/subjects";
 import { fetchSubjectsForUser } from "./subjects";
-import { getTodayDateString } from "./planner";
+import { getTodayDateString, getLocalYYYYMMDD } from "./planner";
 import { formatMinutes } from "@/lib/planner-utils";
 
 export interface DashboardData {
@@ -82,7 +82,7 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
   // 4. Fetch all study sessions from past 30 days (for streak calculation)
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
+  const thirtyDaysAgoStr = getLocalYYYYMMDD(thirtyDaysAgo);
 
   const { data: recentSessions } = await supabase
     .from("study_sessions")
@@ -138,13 +138,15 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    const dStr = d.toISOString().split("T")[0];
+    const dStr = getLocalYYYYMMDD(d);
     weeklyMap.set(dStr, 0);
   }
 
   (recentSessions || []).forEach((s) => {
     if (s.status === "COMPLETED" && s.actual_minutes) {
-      const dateKey = s.started_at.split("T")[0];
+      // Create a local Date object from the UTC timestamp, then get local YYYY-MM-DD
+      const localDate = new Date(s.started_at);
+      const dateKey = getLocalYYYYMMDD(localDate);
       if (weeklyMap.has(dateKey)) {
         const current = weeklyMap.get(dateKey) || 0;
         weeklyMap.set(dateKey, current + s.actual_minutes / 60);
@@ -167,18 +169,20 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
   // 6. Current Streak Calculation (consecutive days with completed study sessions)
   let streak = 0;
   const testDate = new Date();
-  const hasToday = (recentSessions || []).some(
-    (s) => s.started_at.startsWith(today) && s.status === "COMPLETED"
-  );
+  const hasToday = (recentSessions || []).some((s) => {
+    const localStr = getLocalYYYYMMDD(new Date(s.started_at));
+    return localStr === today && s.status === "COMPLETED";
+  });
   if (hasToday) streak++;
 
   for (let i = 1; i <= 30; i++) {
     const d = new Date();
     d.setDate(testDate.getDate() - i);
-    const dStr = d.toISOString().split("T")[0];
-    const studiedOnDay = (recentSessions || []).some(
-      (s) => s.started_at.startsWith(dStr) && s.status === "COMPLETED"
-    );
+    const dStr = getLocalYYYYMMDD(d);
+    const studiedOnDay = (recentSessions || []).some((s) => {
+      const localStr = getLocalYYYYMMDD(new Date(s.started_at));
+      return localStr === dStr && s.status === "COMPLETED";
+    });
     if (studiedOnDay) {
       streak++;
     } else {
