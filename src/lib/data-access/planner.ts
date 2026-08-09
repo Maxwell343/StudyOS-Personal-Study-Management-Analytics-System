@@ -180,7 +180,7 @@ export async function savePlanInDb(
         subject_id: matchingSubject?.id || null,
         topic_id: foundTopicId || null,
         learning_item_id: foundLearningItemId || null,
-        title: `${s.subject}: ${s.topic}`,
+        title: s.topic,
         start_time: `${s.startTime}:00`,
         end_time: `${s.endTime}:00`,
         planned_minutes: s.durationMinutes,
@@ -228,6 +228,8 @@ export function extractAvailableTasksFromSubjects(subjects: Subject[]): PlannedT
             label: `${top.name} — ${item.title}`,
             subject: sub.name,
             learningItemId: item.id,
+            topicName: top.name,
+            itemTitle: item.title,
           });
         }
       }

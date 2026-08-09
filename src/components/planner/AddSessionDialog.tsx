@@ -48,6 +48,14 @@ function AddSessionDialogInner({
       : Object.keys(SUBJECT_COLORS);
 
   // Form state — initialized from editingSession on mount
+  const initialTaskIds: string[] = editingSession?.learningItemIds
+    ? editingSession.learningItemIds
+    : editingSession?.learningItemId
+    ? [editingSession.learningItemId]
+    : editingSession?.taskId
+    ? [editingSession.taskId]
+    : [];
+
   const [subject, setSubject] = useState(
     editingSession?.subject || subjectsList[0] || "DSA"
   );
@@ -56,9 +64,7 @@ function AddSessionDialogInner({
     editingSession?.startTime || "09:00"
   );
   const [endTime, setEndTime] = useState(editingSession?.endTime || "10:00");
-  const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(
-    editingSession?.taskId
-  );
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>(initialTaskIds);
   const [priority, setPriority] = useState<"high" | "medium" | "low" | "">(
     editingSession?.priority || ""
   );
@@ -91,6 +97,30 @@ function AddSessionDialogInner({
   const duration = calculateDuration(startTime, endTime);
   const isValidDuration = duration > 0;
 
+  const handleToggleTask = (task: PlannedTask) => {
+    const isSelected = selectedTaskIds.includes(task.id);
+    const nextIds = isSelected
+      ? selectedTaskIds.filter((id) => id !== task.id)
+      : [...selectedTaskIds, task.id];
+
+    setSelectedTaskIds(nextIds);
+
+    // Auto-populate the Topic field with the Module Name(s)
+    const selectedTaskObjs = availableTasks.filter((t) => nextIds.includes(t.id));
+    if (selectedTaskObjs.length > 0) {
+      const moduleNames = Array.from(
+        new Set(
+          selectedTaskObjs.map((t) => {
+            if (t.topicName) return t.topicName;
+            const parts = t.label.split(" — ");
+            return parts[0] || t.label;
+          })
+        )
+      );
+      setTopic(moduleNames.join(", "));
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!subject || !topic || !isValidDuration) return;
@@ -100,14 +130,16 @@ function AddSessionDialogInner({
       SUBJECT_COLORS[subject] ||
       "#22d3ee";
 
-    const matchedTask = availableTasks.find((t) => t.id === selectedTaskId);
+    const matchedTask = availableTasks.find((t) => selectedTaskIds.includes(t.id));
 
     const session: PlanSession = {
       id: editingSession?.id || generateSessionId(),
       subject,
-      topic,
-      taskId: selectedTaskId,
+      topic: topic.trim(),
+      taskId: selectedTaskIds[0],
       learningItemId: matchedTask?.learningItemId || editingSession?.learningItemId,
+      learningItemIds: selectedTaskIds,
+      taskIds: selectedTaskIds,
       startTime,
       endTime,
       durationMinutes: duration,
@@ -174,7 +206,7 @@ function AddSessionDialogInner({
               value={subject}
               onChange={(e) => {
                 setSubject(e.target.value);
-                setSelectedTaskId(undefined);
+                setSelectedTaskIds([]);
               }}
               className="w-full rounded-md px-3 py-2 text-[13px]"
               style={{
@@ -293,70 +325,73 @@ function AddSessionDialogInner({
           {/* Task selection */}
           {filteredTasks.length > 0 && (
             <div>
-              <div
-                className="mb-1.5 text-[11px] font-medium uppercase tracking-[0.5px]"
-                style={{ color: "#6b6b80" }}
-              >
-                Add from existing tasks
+              <div className="mb-1.5 flex items-center justify-between">
+                <div
+                  className="text-[11px] font-medium uppercase tracking-[0.5px]"
+                  style={{ color: "#6b6b80" }}
+                >
+                  Add from existing tasks
+                </div>
+                {selectedTaskIds.length > 0 && (
+                  <span className="font-mono text-[10px] font-bold text-[#22d3ee]">
+                    {selectedTaskIds.length} task{selectedTaskIds.length > 1 ? "s" : ""} selected
+                  </span>
+                )}
               </div>
-              <div className="flex flex-col gap-1">
-                {filteredTasks.map((task) => (
-                  <button
-                    key={task.id}
-                    type="button"
-                    onClick={() =>
-                      setSelectedTaskId(
-                        selectedTaskId === task.id ? undefined : task.id
-                      )
-                    }
-                    className="flex w-full cursor-pointer items-center gap-2.5 rounded-md border border-transparent px-2.5 py-2 text-left"
-                    style={{
-                      background:
-                        selectedTaskId === task.id
+              <div className="flex max-h-[180px] flex-col gap-1 overflow-y-auto pr-1">
+                {filteredTasks.map((task) => {
+                  const isSelected = selectedTaskIds.includes(task.id);
+                  return (
+                    <button
+                      key={task.id}
+                      type="button"
+                      onClick={() => handleToggleTask(task)}
+                      className="flex w-full cursor-pointer items-center gap-2.5 rounded-md border border-transparent px-2.5 py-2 text-left transition-all"
+                      style={{
+                        background: isSelected
                           ? "rgba(34,211,238,0.06)"
                           : "transparent",
-                      transition: "all 0.12s",
-                    }}
-                  >
-                    {/* Checkbox */}
-                    <div
-                      className="flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded"
-                      style={{
-                        border: `1.5px solid ${
-                          selectedTaskId === task.id
-                            ? "#22d3ee"
-                            : "rgba(255,255,255,0.12)"
-                        }`,
-                        background:
-                          selectedTaskId === task.id
-                            ? "#22d3ee"
-                            : "transparent",
-                        transition: "all 0.12s",
                       }}
                     >
-                      {selectedTaskId === task.id && (
-                        <svg
-                          width="8"
-                          height="8"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="#000"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M20 6L9 17l-5-5" />
-                        </svg>
-                      )}
-                    </div>
-                    <span
-                      className="text-[12.5px]"
-                      style={{ color: "#c0c0d0" }}
-                    >
-                      {task.label}
-                    </span>
-                  </button>
-                ))}
+                      {/* Checkbox */}
+                      <div
+                        className="flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded"
+                        style={{
+                          border: `1.5px solid ${
+                            isSelected
+                              ? "#22d3ee"
+                              : "rgba(255,255,255,0.12)"
+                          }`,
+                          background: isSelected
+                            ? "#22d3ee"
+                            : "transparent",
+                          transition: "all 0.12s",
+                        }}
+                      >
+                        {isSelected && (
+                          <svg
+                            width="8"
+                            height="8"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#000"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
+                        )}
+                      </div>
+                      <span
+                        className="text-[12.5px]"
+                        style={{ color: isSelected ? "#f0f0f4" : "#c0c0d0" }}
+                      >
+                        {task.label}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

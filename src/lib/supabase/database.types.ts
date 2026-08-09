@@ -50,6 +50,7 @@ export interface Database {
           color: string;
           target_date: string | null;
           archived: boolean;
+          dbms_seeded: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -62,6 +63,7 @@ export interface Database {
           color?: string;
           target_date?: string | null;
           archived?: boolean;
+          dbms_seeded?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -74,6 +76,7 @@ export interface Database {
           color?: string;
           target_date?: string | null;
           archived?: boolean;
+          dbms_seeded?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -366,6 +369,13 @@ export interface Database {
       seed_user_curriculum: {
         Args: {
           p_user_id: string;
+        };
+        Returns: void;
+      };
+      seed_dbms_curriculum: {
+        Args: {
+          p_user_id: string;
+          p_subject_id: string;
         };
         Returns: void;
       };

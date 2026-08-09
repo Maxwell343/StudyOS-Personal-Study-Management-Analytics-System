@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useCallback, useEffect } from "react";
+import { use, useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, BookOpen, Loader2 } from "lucide-react";
@@ -22,8 +22,18 @@ import {
   updateLearningItemInDb,
   deleteLearningItemInDb,
   toggleLearningItemCompletionInDb,
+  bulkToggleLearningItemsInDb,
+  seedDbmsCurriculumInDb,
 } from "@/lib/data-access/subjects";
-import type { Subject, Topic, LearningItem } from "@/types/subjects";
+import type { Subject, Topic, LearningItem, LearningItemStatus } from "@/types/subjects";
+
+// ── DBMS subject name variants (case-insensitive match) ──────────────────────
+const DBMS_NAME_PATTERNS = ["database management systems", "dbms"];
+
+function isDbmsSubject(name: string): boolean {
+  const lower = name.toLowerCase().trim();
+  return DBMS_NAME_PATTERNS.some((p) => lower.includes(p));
+}
 
 export default function SubjectDetailPage({
   params,
@@ -37,6 +47,10 @@ export default function SubjectDetailPage({
   // ── State ──────────────────────────────────────────────────────────────────
   const [subject, setSubject] = useState<Subject | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Track whether we have already attempted the DBMS seed for this session.
+  // This prevents repeated seed attempts on hot-reloads or fast navigation.
+  const dbmsSeedAttemptedRef = useRef(false);
 
   // Dialog States
   const [editSubjectOpen, setEditSubjectOpen] = useState(false);
@@ -67,6 +81,32 @@ export default function SubjectDetailPage({
         const data = await fetchSubjectById(user.id, subjectId);
         if (!isCancelled) {
           setSubject(data);
+
+          // ── Safe DBMS auto-seed ────────────────────────────────────────────
+          // Only attempt once per component mount (tracked by ref).
+          // Only fires when:
+          //   1. This is a DBMS subject.
+          //   2. The DB-side `dbms_seeded` flag is FALSE (checked server-side in the RPC).
+          //   3. We have not already attempted the seed this session (ref guard).
+          if (
+            data &&
+            isDbmsSubject(data.name) &&
+            !dbmsSeedAttemptedRef.current
+          ) {
+            dbmsSeedAttemptedRef.current = true;
+            // The RPC itself is idempotent: it reads the dbms_seeded flag and
+            // returns immediately without modifying data if already seeded.
+            try {
+              await seedDbmsCurriculumInDb(user.id, subjectId);
+              // Reload only if we're not cancelled — the seed may have added topics
+              if (!isCancelled) {
+                setRefreshIndex((prev) => prev + 1);
+              }
+            } catch (seedErr) {
+              console.error("DBMS curriculum seed error:", seedErr);
+              // Non-fatal: user can still use the page
+            }
+          }
         }
       } catch (err) {
         console.error("Error loading subject detail:", err);
@@ -140,6 +180,45 @@ export default function SubjectDetailPage({
         );
       } catch (err) {
         console.error("Failed to toggle item in DB, reverting:", err);
+        await loadSubject();
+      }
+    },
+    [subject, user, loadSubject]
+  );
+
+  // ── Handlers: Bulk Topic Toggle ────────────────────────────────────────────
+  const handleBulkToggleTopic = useCallback(
+    async (topic: Topic) => {
+      if (!subject || !user) return;
+
+      const allCompleted = topic.learningItems.every((i) => i.status === "COMPLETED");
+      const newStatus: LearningItemStatus = allCompleted ? "NOT_STARTED" : "COMPLETED";
+
+      // Optimistic update
+      setSubject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          topics: prev.topics.map((t) =>
+            t.id === topic.id
+              ? {
+                  ...t,
+                  learningItems: t.learningItems.map((i) => ({
+                    ...i,
+                    status: newStatus,
+                    completedAt:
+                      newStatus === "COMPLETED" ? new Date().toISOString() : undefined,
+                  })),
+                }
+              : t
+          ),
+        };
+      });
+
+      try {
+        await bulkToggleLearningItemsInDb(topic.id, newStatus, user.id, subject.id);
+      } catch (err) {
+        console.error("Failed to bulk toggle topic in DB, reverting:", err);
         await loadSubject();
       }
     },
@@ -394,6 +473,7 @@ export default function SubjectDetailPage({
                     topic={topic}
                     subjectColor={subject.color}
                     onToggleItem={handleToggleItem}
+                    onBulkToggleTopic={handleBulkToggleTopic}
                     onEditTopic={() => handleOpenEditTopic(topic)}
                     onDeleteTopic={() => handleDeleteTopic(topic.id)}
                     onAddLearningItem={() => handleOpenAddItem(topic.id)}

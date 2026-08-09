@@ -54,7 +54,7 @@ const TimerContext = createContext<TimerContextValue | undefined>(undefined);
 export function TimerProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [activeSession, setActiveSession] = useState<ActiveSessionDetails | null>(null);
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
   const notifiedFinishedRef = useRef(false);
   const previousElapsedRef = useRef(-1);
   const [showTargetReachedToast, setShowTargetReachedToast] = useState(false);
@@ -247,7 +247,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       activeSession.pausedAt,
       activeSession.totalPausedSeconds
     );
-  }, [activeSession]);
+  }, [activeSession, tick]);
 
   const plannedSecs = (activeSession?.plannedMinutes || 60) * 60;
   const isOvertime = elapsedSeconds > plannedSecs;

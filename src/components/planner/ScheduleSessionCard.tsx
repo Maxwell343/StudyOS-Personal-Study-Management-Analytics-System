@@ -16,7 +16,7 @@ interface ScheduleSessionCardProps {
 
 export function ScheduleSessionCard({
   session,
-  task,
+  task: _task,
   isLocked,
   hasConflict,
   onEdit,
@@ -106,16 +106,6 @@ export function ScheduleSessionCard({
           >
             {formatMinutes(session.durationMinutes)} planned
           </span>
-          {task && (
-            <>
-              <span className="text-[9px]" style={{ color: "#3a3a4a" }}>
-                ·
-              </span>
-              <span className="text-[10.5px]" style={{ color: "#5a5a6a" }}>
-                {task.label}
-              </span>
-            </>
-          )}
         </div>
       </div>
 

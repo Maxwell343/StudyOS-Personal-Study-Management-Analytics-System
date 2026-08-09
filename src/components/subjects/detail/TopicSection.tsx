@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Plus, Pencil, Trash2, Clock } from "lucide-react";
 import type { Topic, LearningItem } from "@/types/subjects";
 import { getTopicStats, formatMinutes } from "@/lib/learning-progress";
@@ -10,6 +10,7 @@ interface TopicSectionProps {
   topic: Topic;
   subjectColor: string;
   onToggleItem: (itemId: string) => void;
+  onBulkToggleTopic: (topic: Topic) => void;
   onEditTopic: () => void;
   onDeleteTopic: () => void;
   onAddLearningItem: () => void;
@@ -21,6 +22,7 @@ export function TopicSection({
   topic,
   subjectColor,
   onToggleItem,
+  onBulkToggleTopic,
   onEditTopic,
   onDeleteTopic,
   onAddLearningItem,
@@ -29,6 +31,27 @@ export function TopicSection({
 }: TopicSectionProps) {
   const [isOpen, setIsOpen] = useState(true);
   const stats = getTopicStats(topic);
+  const checkboxRef = useRef<HTMLInputElement>(null);
+
+  // Derive checkbox state from topic stats
+  const isFullyComplete = stats.totalItems > 0 && stats.completedItems === stats.totalItems;
+  const isPartial = stats.completedItems > 0 && stats.completedItems < stats.totalItems;
+  const isEmpty = stats.totalItems === 0;
+
+  // Set indeterminate state via DOM ref — this can't be set via JSX props
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = isPartial;
+    }
+  }, [isPartial]);
+
+  function handleTopicCheckbox(e: React.ChangeEvent<HTMLInputElement>) {
+    // Prevent default — we control the state via Supabase
+    e.preventDefault();
+    if (!isEmpty) {
+      onBulkToggleTopic(topic);
+    }
+  }
 
   return (
     <div
@@ -40,42 +63,70 @@ export function TopicSection({
     >
       {/* Header Bar */}
       <div className="flex items-center justify-between gap-4">
-        {/* Accordion Toggle + Topic Details */}
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex flex-1 cursor-pointer items-start gap-2.5 text-left"
-        >
-          <div className="mt-0.5 text-[#7a7a8e]">
-            {isOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+        {/* Topic-level Checkbox + Accordion Toggle + Topic Details */}
+        <div className="flex flex-1 items-start gap-2.5 min-w-0">
+          {/* Topic Checkbox — derived from learning items */}
+          <div className="mt-0.5 shrink-0">
+            <input
+              ref={checkboxRef}
+              type="checkbox"
+              checked={isFullyComplete}
+              disabled={isEmpty}
+              onChange={handleTopicCheckbox}
+              aria-label={
+                isFullyComplete
+                  ? `Mark all items in "${topic.name}" as not started`
+                  : `Mark all items in "${topic.name}" as completed`
+              }
+              className="topic-checkbox"
+              style={{
+                width: "14px",
+                height: "14px",
+                borderRadius: "4px",
+                cursor: isEmpty ? "not-allowed" : "pointer",
+                accentColor: subjectColor,
+                opacity: isEmpty ? 0.3 : 1,
+              }}
+            />
           </div>
 
-          <div className="flex-1">
-            <div className="flex items-center gap-2.5">
-              <h3 className="m-0 text-sm font-bold text-[#f0f0f4]">
-                {topic.name}
-              </h3>
-              <div
-                className="rounded px-1.5 py-0.5 font-mono text-[10px] font-bold"
-                style={{
-                  background: `${subjectColor}15`,
-                  color: subjectColor,
-                }}
-              >
-                {stats.progressPercent}%
-              </div>
+          {/* Accordion Toggle button */}
+          <button
+            type="button"
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex flex-1 cursor-pointer items-start gap-2 text-left min-w-0"
+          >
+            <div className="mt-0.5 shrink-0 text-[#7a7a8e]">
+              {isOpen ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
             </div>
 
-            {topic.description && (
-              <p className="m-0 mt-0.5 text-[11.5px] text-[#7a7a8e]">
-                {topic.description}
-              </p>
-            )}
-          </div>
-        </button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h3 className="m-0 text-sm font-bold text-[#f0f0f4]">
+                  {topic.name}
+                </h3>
+                <div
+                  className="rounded px-1.5 py-0.5 font-mono text-[10px] font-bold"
+                  style={{
+                    background: `${subjectColor}15`,
+                    color: subjectColor,
+                  }}
+                >
+                  {stats.progressPercent}%
+                </div>
+              </div>
+
+              {topic.description && (
+                <p className="m-0 mt-0.5 text-[11.5px] text-[#7a7a8e]">
+                  {topic.description}
+                </p>
+              )}
+            </div>
+          </button>
+        </div>
 
         {/* Right Info: Progress Numbers & Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <div className="flex items-center gap-3 text-right max-sm:hidden">
             <div className="font-mono text-[11px] text-[#a0a0b8]">
               <span className="font-bold text-[#f0f0f4]">{stats.completedItems}</span>
