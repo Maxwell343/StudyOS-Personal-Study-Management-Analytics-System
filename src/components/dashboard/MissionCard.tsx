@@ -1,6 +1,6 @@
 "use client";
 
-import { Play } from "lucide-react";
+import { Play, Trash2 } from "lucide-react";
 import type { StudySession, SessionStatus } from "@/types/dashboard";
 import { STATUS_CONFIG } from "@/lib/constants";
 
@@ -9,6 +9,7 @@ interface MissionCardProps {
   status: SessionStatus;
   isNext: boolean;
   onCycle: () => void;
+  onDelete?: () => void;
 }
 
 function StatusBadge({ status }: { status: SessionStatus }) {
@@ -40,6 +41,7 @@ export function MissionCard({
   status,
   isNext,
   onCycle,
+  onDelete,
 }: MissionCardProps) {
   const isCompleted = status === "completed";
   const isActive = status === "active";
@@ -108,32 +110,51 @@ export function MissionCard({
         </div>
       </div>
 
-      {/* Action button */}
-      <button
-        onClick={onCycle}
-        className="flex cursor-pointer items-center gap-[5px] whitespace-nowrap rounded-[5px] px-3 py-[5px] text-[11px] font-semibold"
-        style={{
-          border: isNext
-            ? "1px solid rgba(34,211,238,0.2)"
-            : "1px solid rgba(255,255,255,0.06)",
-          background: isActive ? "rgba(34,211,238,0.08)" : "transparent",
-          color: isNext ? "#22d3ee" : "#5a5a6a",
-          transition: "all 0.12s ease",
-        }}
-      >
-        {isActive ? (
-          <>
-            <span className="text-[8px]">⏸</span> Pause
-          </>
-        ) : isCompleted ? (
-          "✓ Done"
-        ) : (
-          <>
-            <Play size={9} />
-            Start
-          </>
+      {/* Action buttons */}
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={onCycle}
+          className="flex cursor-pointer items-center gap-[5px] whitespace-nowrap rounded-[5px] px-3 py-[5px] text-[11px] font-semibold"
+          style={{
+            border: isNext
+              ? "1px solid rgba(34,211,238,0.2)"
+              : "1px solid rgba(255,255,255,0.06)",
+            background: isActive ? "rgba(34,211,238,0.08)" : "transparent",
+            color: isNext ? "#22d3ee" : "#5a5a6a",
+            transition: "all 0.12s ease",
+          }}
+        >
+          {isActive ? (
+            <>
+              <span className="text-[8px]">⏸</span> Pause
+            </>
+          ) : isCompleted ? (
+            "✓ Done"
+          ) : (
+            <>
+              <Play size={9} />
+              Start
+            </>
+          )}
+        </button>
+        {onDelete && (
+          <button
+            type="button"
+            onClick={onDelete}
+            title="Delete mission"
+            aria-label="Delete mission"
+            className="flex h-[27px] w-[27px] cursor-pointer items-center justify-center rounded-[5px]"
+            style={{
+              background: "rgba(239,68,68,0.05)",
+              border: "1px solid rgba(239,68,68,0.15)",
+              color: "#ef4444",
+              transition: "all 0.12s ease",
+            }}
+          >
+            <Trash2 size={11} />
+          </button>
         )}
-      </button>
+      </div>
     </div>
   );
 }

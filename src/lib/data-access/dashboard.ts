@@ -29,6 +29,8 @@ export interface DashboardData {
 
 interface RawPlannedSessionRow {
   id: string;
+  topic_id?: string | null;
+  learning_item_id?: string | null;
   start_time: string;
   end_time: string;
   planned_minutes: number;
@@ -78,6 +80,40 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
       plannedSessionsRaw = psData as unknown as RawPlannedSessionRow[];
     }
   }
+
+  // 3b. Fetch planned sessions for other dates to exclude future-planned tasks/modules from today's task list
+  const { data: futurePlannedSessions } = await supabase
+    .from("planned_sessions")
+    .select("topic_id, learning_item_id, title, study_plans!inner(plan_date)")
+    .eq("user_id", userId)
+    .neq("study_plans.plan_date", today);
+
+  const futurePlanItemIds = new Set<string>();
+  const futurePlanTopicIds = new Set<string>();
+  const futurePlanTitles = new Set<string>();
+
+  (futurePlannedSessions || []).forEach((row) => {
+    if (row.learning_item_id) {
+      futurePlanItemIds.add(row.learning_item_id);
+    }
+    if (row.topic_id) {
+      futurePlanTopicIds.add(row.topic_id);
+    }
+    if (row.title) {
+      futurePlanTitles.add(row.title.toLowerCase().trim());
+    }
+  });
+
+  const todayPlanItemIds = new Set<string>();
+  const todayPlanTopicIds = new Set<string>();
+  plannedSessionsRaw.forEach((row) => {
+    if (row.learning_item_id) {
+      todayPlanItemIds.add(row.learning_item_id);
+    }
+    if (row.topic_id) {
+      todayPlanTopicIds.add(row.topic_id);
+    }
+  });
 
   // 4. Fetch all study sessions from past 30 days (for streak calculation)
   const thirtyDaysAgo = new Date();
@@ -144,7 +180,6 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
 
   (recentSessions || []).forEach((s) => {
     if (s.status === "COMPLETED" && s.actual_minutes) {
-      // Create a local Date object from the UTC timestamp, then get local YYYY-MM-DD
       const localDate = new Date(s.started_at);
       const dateKey = getLocalYYYYMMDD(localDate);
       if (weeklyMap.has(dateKey)) {
@@ -203,19 +238,69 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
     });
   }
 
-  // 8. Daily Tasks (uncompleted items from subjects)
+  // 8. Daily Tasks (tasks for today: prioritize items in today's plan, exclude items planned for future days)
   const dailyTasks: DailyTask[] = [];
+
+  const allItems: {
+    item: typeof subjects[0]["topics"][0]["learningItems"][0];
+    topicId: string;
+    topicName: string;
+    subjectName: string;
+  }[] = [];
+
   for (const sub of subjects) {
     for (const top of sub.topics) {
       for (const item of top.learningItems) {
-        if (dailyTasks.length >= 5) break;
-        dailyTasks.push({
-          id: item.id,
-          label: item.title,
-          subject: sub.name,
-          done: item.status === "COMPLETED",
+        allItems.push({
+          item,
+          topicId: top.id,
+          topicName: top.name,
+          subjectName: sub.name,
         });
       }
+    }
+  }
+
+  // Priority 1: Items explicitly planned for TODAY (by item ID or topic ID)
+  if (todayPlanItemIds.size > 0 || todayPlanTopicIds.size > 0) {
+    for (const { item, topicId, subjectName } of allItems) {
+      if (todayPlanItemIds.has(item.id) || todayPlanTopicIds.has(topicId)) {
+        if (!dailyTasks.some((dt) => dt.id === item.id)) {
+          dailyTasks.push({
+            id: item.id,
+            label: item.title,
+            subject: subjectName,
+            done: (item.status as string) === "COMPLETED",
+          });
+        }
+      }
+    }
+  }
+
+  // Priority 2: Fill remaining slots with uncompleted items NOT planned for future dates
+  if (dailyTasks.length < 5) {
+    for (const { item, topicId, topicName, subjectName } of allItems) {
+      if (dailyTasks.length >= 5) break;
+
+      const isFuturePlanned =
+        futurePlanItemIds.has(item.id) ||
+        futurePlanTopicIds.has(topicId) ||
+        futurePlanTitles.has(topicName.toLowerCase().trim());
+
+      if (
+        dailyTasks.some((dt) => dt.id === item.id) ||
+        (item.status as string) === "COMPLETED" ||
+        isFuturePlanned
+      ) {
+        continue;
+      }
+
+      dailyTasks.push({
+        id: item.id,
+        label: item.title,
+        subject: subjectName,
+        done: (item.status as string) === "COMPLETED",
+      });
     }
   }
 
@@ -332,4 +417,56 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
     actualMinutesToday,
     completedSessionsToday,
   };
+}
+
+/**
+ * Delete a planned session from today's mission list.
+ * Cleans up linked study_sessions, updates the study_plan target_minutes,
+ * and maintains complete data integrity.
+ */
+export async function deletePlannedSessionFromDb(
+  userId: string,
+  sessionId: string
+): Promise<void> {
+  // 1. Fetch details of the session to get its study_plan_id
+  const { data: sessionRow } = await supabase
+    .from("planned_sessions")
+    .select("study_plan_id")
+    .eq("id", sessionId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  // 2. Delete linked active or paused study_sessions
+  await supabase
+    .from("study_sessions")
+    .delete()
+    .eq("planned_session_id", sessionId)
+    .eq("user_id", userId);
+
+  // 3. Delete the planned session
+  const { error: deleteError } = await supabase
+    .from("planned_sessions")
+    .delete()
+    .eq("id", sessionId)
+    .eq("user_id", userId);
+
+  if (deleteError) throw deleteError;
+
+  // 4. Update plan target minutes if plan exists
+  if (sessionRow?.study_plan_id) {
+    const { data: remainingSessions } = await supabase
+      .from("planned_sessions")
+      .select("planned_minutes")
+      .eq("study_plan_id", sessionRow.study_plan_id);
+
+    const newTargetMinutes = (remainingSessions || []).reduce(
+      (sum, s) => sum + (s.planned_minutes || 0),
+      0
+    );
+
+    await supabase
+      .from("study_plans")
+      .update({ target_minutes: newTargetMinutes })
+      .eq("id", sessionRow.study_plan_id);
+  }
 }

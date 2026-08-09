@@ -9,12 +9,11 @@ import { DailyProgressCard } from "@/components/dashboard/DailyProgressCard";
 import { HeroNextSession } from "@/components/dashboard/HeroNextSession";
 import { MissionList } from "@/components/dashboard/MissionList";
 import { CurrentFocusCard } from "@/components/dashboard/CurrentFocusCard";
-import { TaskListCard } from "@/components/dashboard/TaskListCard";
 import { SubjectProgress } from "@/components/dashboard/SubjectProgress";
 import { WeeklyAnalytics } from "@/components/dashboard/WeeklyAnalytics";
 import { useAuth } from "@/context/AuthContext";
-import { fetchDashboardData, DashboardData } from "@/lib/data-access/dashboard";
-import { toggleLearningItemCompletionInDb } from "@/lib/data-access/subjects";
+import { useSessionTimer } from "@/context/TimerContext";
+import { fetchDashboardData, deletePlannedSessionFromDb, DashboardData } from "@/lib/data-access/dashboard";
 import type { DailyMetric, WeeklyDataPoint } from "@/types/dashboard";
 import { Loader2 } from "lucide-react";
 
@@ -101,26 +100,30 @@ export default function DashboardPage() {
     };
   }, [user, authLoading, refreshCount]);
 
-  const handleToggleTask = useCallback(
-    async (taskId: string, done: boolean) => {
+  const { activeSession, abandonSession } = useSessionTimer();
+
+  const handleDeleteSession = useCallback(
+    async (sessionId: string) => {
       if (!user) return;
-      try {
-        const currentStatus = done ? "NOT_STARTED" : "COMPLETED";
-        await toggleLearningItemCompletionInDb(taskId, currentStatus, user.id);
-        // Refresh metrics quietly in background
-        setRefreshCount((c) => c + 1);
-      } catch (err) {
-        console.error("Error toggling task completion:", err);
+      if (confirm("Are you sure you want to delete this session from today's mission?")) {
+        try {
+          if (activeSession?.plannedSessionId === sessionId) {
+            await abandonSession();
+          }
+          await deletePlannedSessionFromDb(user.id, sessionId);
+          setRefreshCount((c) => c + 1);
+        } catch (err) {
+          console.error("Error deleting planned session:", err);
+        }
       }
     },
-    [user]
+    [user, activeSession, abandonSession]
   );
 
   const activeSessions = data?.todaySessions || [];
   const nextSession = data?.nextSession || null;
   const metrics = data?.dailyMetrics || DEFAULT_METRICS;
   const focusTasks = data?.focusTasks || [];
-  const dailyTasks = data?.dailyTasks || [];
   const subjectProgress = data?.subjectProgress || [];
   const weeklyData = data?.weeklyData || DEFAULT_WEEKLY_DATA;
   const targetMinutes = data?.targetMinutesToday ?? 0;
@@ -152,6 +155,7 @@ export default function DashboardPage() {
                 sessionIndex={0}
                 totalSessions={activeSessions.length}
                 onSessionUpdated={() => setRefreshCount((c) => c + 1)}
+                onDeleteSession={handleDeleteSession}
               />
 
               {/* Daily Metrics */}
@@ -163,23 +167,22 @@ export default function DashboardPage() {
                 actualMinutes={actualMinutes}
               />
 
-              {/* Main Grid: Mission + Focus | Tasks + Subjects */}
+              {/* Main Grid: Mission + Focus | Subjects */}
               <div
                 className="mb-4 grid gap-4 max-lg:grid-cols-1"
                 style={{ gridTemplateColumns: "1fr 320px" }}
               >
                 {/* Left column */}
                 <div className="flex flex-col gap-3.5">
-                  <MissionList sessions={activeSessions} />
+                  <MissionList
+                    sessions={activeSessions}
+                    onDeleteSession={handleDeleteSession}
+                  />
                   <CurrentFocusCard tasks={focusTasks} />
                 </div>
 
                 {/* Right column */}
                 <div className="flex flex-col gap-3.5">
-                  <TaskListCard
-                    tasks={dailyTasks}
-                    onToggleTask={handleToggleTask}
-                  />
                   <SubjectProgress subjects={subjectProgress} />
                 </div>
               </div>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useSessionTimer } from "@/context/TimerContext";
-import { Play, Pause, CheckCircle2, RotateCcw, Clock, Calendar } from "lucide-react";
+import { Play, Pause, CheckCircle2, RotateCcw, Clock, Calendar, Trash2 } from "lucide-react";
 import type { StudySession } from "@/types/dashboard";
 
 interface HeroNextSessionProps {
@@ -8,6 +8,7 @@ interface HeroNextSessionProps {
   sessionIndex: number;
   totalSessions: number;
   onSessionUpdated?: () => void;
+  onDeleteSession?: (sessionId: string) => void;
 }
 
 export function HeroNextSession({
@@ -15,6 +16,7 @@ export function HeroNextSession({
   sessionIndex,
   totalSessions,
   onSessionUpdated,
+  onDeleteSession,
 }: HeroNextSessionProps) {
   const {
     activeSession,
@@ -293,18 +295,36 @@ export function HeroNextSession({
               </button>
             </>
           ) : session ? (
-            <button
-              onClick={handleStart}
-              className="flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-[7px] px-6 py-2.5 text-[13px] font-semibold tracking-[0.2px]"
-              style={{
-                border: "1px solid rgba(34,211,238,0.35)",
-                background: "rgba(34,211,238,0.1)",
-                color: "#22d3ee",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <Play size={11} /> Start Study Session
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleStart}
+                className="flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-[7px] px-6 py-2.5 text-[13px] font-semibold tracking-[0.2px]"
+                style={{
+                  border: "1px solid rgba(34,211,238,0.35)",
+                  background: "rgba(34,211,238,0.1)",
+                  color: "#22d3ee",
+                  transition: "all 0.15s ease",
+                }}
+              >
+                <Play size={11} /> Start Study Session
+              </button>
+              {onDeleteSession && (
+                <button
+                  onClick={() => onDeleteSession(session.id)}
+                  title="Delete mission"
+                  aria-label="Delete mission"
+                  className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[7px]"
+                  style={{
+                    background: "rgba(239,68,68,0.05)",
+                    border: "1px solid rgba(239,68,68,0.2)",
+                    color: "#ef4444",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <Trash2 size={13} />
+                </button>
+              )}
+            </div>
           ) : (
             <Link
               href="/plan-tomorrow"

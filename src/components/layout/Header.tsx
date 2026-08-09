@@ -5,7 +5,7 @@ import { useSessionTimer } from "@/context/TimerContext";
 import { useState, useEffect } from "react";
 
 export function Header() {
-  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);

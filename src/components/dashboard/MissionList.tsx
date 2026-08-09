@@ -6,9 +6,10 @@ import { MissionCard } from "./MissionCard";
 
 interface MissionListProps {
   sessions: StudySession[];
+  onDeleteSession?: (sessionId: string) => void;
 }
 
-export function MissionList({ sessions }: MissionListProps) {
+export function MissionList({ sessions, onDeleteSession }: MissionListProps) {
   const [overrides, setOverrides] = useState<Record<string, SessionStatus>>({});
 
   const totalPlannedMinutes = sessions.reduce(
@@ -89,6 +90,7 @@ export function MissionList({ sessions }: MissionListProps) {
               status={getStatus(session.id, session.status)}
               isNext={idx === 0}
               onCycle={() => cycleSessionStatus(session.id, session.status)}
+              onDelete={onDeleteSession ? () => onDeleteSession(session.id) : undefined}
             />
           ))}
         </div>
