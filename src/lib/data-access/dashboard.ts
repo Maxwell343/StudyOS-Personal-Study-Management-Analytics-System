@@ -49,6 +49,18 @@ interface RawPlannedSessionRow {
 /**
  * Fetch all dashboard metrics and items for a user.
  */
+function cleanTopicTitle(topic: string, subjectName?: string): string {
+  if (!topic) return "";
+  let cleaned = topic.trim();
+  if (subjectName) {
+    const escapedSubject = subjectName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const prefixReg = new RegExp(`^(?:${escapedSubject}\\s*:\\s*)+`, "gi");
+    cleaned = cleaned.replace(prefixReg, "").trim();
+  }
+  cleaned = cleaned.replace(/(.+?):\s*\1(?::|\s|$)/gi, "$1").trim();
+  return cleaned || topic;
+}
+
 export async function fetchDashboardData(userId: string): Promise<DashboardData> {
   const today = getTodayDateString();
 
@@ -140,13 +152,16 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
     else if (row.status === "ACTIVE") appStatus = "active";
     else if (row.status === "PAUSED") appStatus = "paused";
 
+    const rawTopic = topObj?.name || row.title || "Study Session";
+    const cleanedTopic = cleanTopicTitle(rawTopic, sub?.name);
+
     return {
       id: row.id,
       startTime: row.start_time.slice(0, 5),
       endTime: row.end_time.slice(0, 5),
       timeRange: `${row.start_time.slice(0, 5)} - ${row.end_time.slice(0, 5)}`,
       subject: sub?.name || "General",
-      topic: topObj?.name || row.title || "Study Session",
+      topic: cleanedTopic,
       duration: formatMinutes(row.planned_minutes),
       plannedMinutes: row.planned_minutes,
       status: appStatus,
@@ -326,8 +341,7 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
 
   // 10. Next upcoming session
   const nextSession =
-    todaySessionsList.find((s) => s.status !== "completed") ||
-    (todaySessionsList.length > 0 ? todaySessionsList[0] : null);
+    todaySessionsList.find((s) => s.status !== "completed") || null;
 
   // 11. Daily Metrics Grid
   const hoursStudied = (actualMinutesToday / 60).toFixed(1);

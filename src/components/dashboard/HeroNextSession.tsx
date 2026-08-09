@@ -11,6 +11,18 @@ interface HeroNextSessionProps {
   onDeleteSession?: (sessionId: string) => void;
 }
 
+function cleanTopicTitle(topic?: string, subjectName?: string): string {
+  if (!topic) return "";
+  let cleaned = topic.trim();
+  if (subjectName) {
+    const escapedSubject = subjectName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const prefixReg = new RegExp(`^(?:${escapedSubject}\\s*:\\s*)+`, "gi");
+    cleaned = cleaned.replace(prefixReg, "").trim();
+  }
+  cleaned = cleaned.replace(/(.+?):\s*\1(?::|\s|$)/gi, "$1").trim();
+  return cleaned || topic;
+}
+
 export function HeroNextSession({
   session,
   sessionIndex,
@@ -35,17 +47,26 @@ export function HeroNextSession({
   } = useSessionTimer();
 
   const isRunning = isActive || isPaused;
+  const isDayComplete = !isRunning && !session && totalSessions > 0;
 
   const currentSubject = isRunning
     ? activeSession?.subjectName || session?.subject || "Focus Session"
-    : session?.subject || "No Active Schedule";
+    : isDayComplete
+      ? "Done for the Day! 🎉"
+      : session?.subject || "No Active Schedule";
 
-  const currentTopic = isRunning
+  const rawTopic = isRunning
     ? activeSession?.topicName ||
       activeSession?.title ||
       session?.topic ||
       "Deep Work"
-    : session?.topic || "Plan your day to start structured tracking";
+    : isDayComplete
+      ? "All planned missions for today are completed."
+      : session?.topic || "Plan your day to start structured tracking";
+
+  const currentTopic = isDayComplete
+    ? rawTopic
+    : cleanTopicTitle(rawTopic, currentSubject);
 
   const handleStart = async () => {
     if (session) {
@@ -145,7 +166,9 @@ export function HeroNextSession({
                       : isOvertime
                         ? "#f87171" // Red for overtime
                         : "#22c55e"
-                    : "#22d3ee",
+                    : isDayComplete
+                      ? "#22c55e"
+                      : "#22d3ee",
                 }}
               >
                 {isRunning
@@ -156,9 +179,11 @@ export function HeroNextSession({
                       : isOvertime
                         ? "● OVERTIME"
                         : "● ACTIVE TIMER"
-                  : session
-                    ? "NEXT SESSION"
-                    : "STUDY OS"}
+                  : isDayComplete
+                    ? "✓ DAY COMPLETE 🎉"
+                    : session
+                      ? "NEXT SESSION"
+                      : "STUDY OS"}
               </span>
             </div>
             {totalSessions > 0 && (
@@ -166,7 +191,7 @@ export function HeroNextSession({
                 className="font-mono text-[11px]"
                 style={{ color: "#4a4a5a" }}
               >
-                · Session {sessionIndex + 1} of {totalSessions}
+                · {isDayComplete ? `${totalSessions} of ${totalSessions} completed` : `Session ${sessionIndex + 1} of ${totalSessions}`}
               </span>
             )}
           </div>
@@ -191,13 +216,15 @@ export function HeroNextSession({
               <Clock size={12} />
               <span
                 className="font-mono text-xs font-semibold"
-                style={{ color: isRunning ? "#22c55e" : "#a0a0b8" }}
+                style={{ color: isRunning || isDayComplete ? "#22c55e" : "#a0a0b8" }}
               >
                 {isRunning
                   ? formattedElapsed
-                  : session
-                    ? session.timeRange
-                    : "00:00"}
+                  : isDayComplete
+                    ? "Complete"
+                    : session
+                      ? session.timeRange
+                      : "00:00"}
               </span>
             </div>
             <span className="text-[11px]" style={{ color: "#3a3a4a" }}>
@@ -209,9 +236,11 @@ export function HeroNextSession({
             >
               {isRunning
                 ? `${activeSession?.plannedMinutes || 60}m planned`
-                : session
-                  ? `${session.duration || "1h 00m"} planned`
-                  : "0m planned today"}
+                : isDayComplete
+                  ? `${totalSessions} session${totalSessions !== 1 ? "s" : ""} done`
+                  : session
+                    ? `${session.duration || "1h 00m"} planned`
+                    : "0m planned today"}
             </span>
             <span className="text-[11px]" style={{ color: "#3a3a4a" }}>
               ·
@@ -221,9 +250,11 @@ export function HeroNextSession({
                 ? isOvertime
                   ? `Over target duration by ${formattedRemaining}`
                   : `${formattedRemaining} remaining (${progressPercent}%)`
-                : session
-                  ? "Ready to start"
-                  : "Use Plan Tomorrow to lock your schedule"}
+                : isDayComplete
+                  ? "All daily planned sessions finished 🎉"
+                  : session
+                    ? "Ready to start"
+                    : "Use Plan Tomorrow to lock your schedule"}
             </span>
           </div>
 
@@ -294,6 +325,19 @@ export function HeroNextSession({
                 <RotateCcw size={12} />
               </button>
             </>
+          ) : isDayComplete ? (
+            <Link
+              href="/plan-tomorrow"
+              className="flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-[7px] px-5 py-2.5 text-[12.5px] font-semibold tracking-[0.2px]"
+              style={{
+                border: "1px solid rgba(34,197,94,0.35)",
+                background: "rgba(34,197,94,0.1)",
+                color: "#22c55e",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <Calendar size={13} /> Plan Tomorrow&apos;s Schedule
+            </Link>
           ) : session ? (
             <div className="flex items-center gap-2">
               <button
