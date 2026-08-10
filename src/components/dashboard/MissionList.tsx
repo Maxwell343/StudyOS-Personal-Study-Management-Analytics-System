@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { AlertCircle, Calendar, Clock, Plus } from "lucide-react";
+import { AlertCircle, Calendar, Clock, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import type { StudySession, SessionStatus } from "@/types/dashboard";
 import { formatMinutes } from "@/lib/planner-utils";
 import { MissionCard } from "./MissionCard";
@@ -23,6 +23,8 @@ export function MissionList({
   onAddSession,
 }: MissionListProps) {
   const [overrides, setOverrides] = useState<Record<string, SessionStatus>>({});
+  const [activeIndex, setActiveIndex] = useState(0);
+  const sliderRef = useRef<HTMLDivElement>(null);
 
   const totalPlannedMinutes = sessions.reduce(
     (acc, s) => acc + (s.plannedMinutes || 0),
@@ -57,16 +59,53 @@ export function MissionList({
     });
   };
 
+  const handlePrevSlide = () => {
+    if (activeIndex > 0) {
+      const nextIdx = activeIndex - 1;
+      setActiveIndex(nextIdx);
+      scrollToSlide(nextIdx);
+    }
+  };
+
+  const handleNextSlide = () => {
+    if (activeIndex < sessions.length - 1) {
+      const nextIdx = activeIndex + 1;
+      setActiveIndex(nextIdx);
+      scrollToSlide(nextIdx);
+    }
+  };
+
+  const scrollToSlide = (index: number) => {
+    const container = sliderRef.current;
+    if (!container) return;
+    const children = container.children;
+    if (children[index]) {
+      children[index].scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  };
+
+  // Sync scroll position with activeIndex
+  const handleScroll = () => {
+    const container = sliderRef.current;
+    if (!container) return;
+    const scrollTop = container.scrollTop;
+    const itemHeight = 70; // approx height of MissionCard
+    const newIdx = Math.min(sessions.length - 1, Math.max(0, Math.round(scrollTop / itemHeight)));
+    if (newIdx !== activeIndex) {
+      setActiveIndex(newIdx);
+    }
+  };
+
   return (
     <div
-      className="rounded-[10px] px-[18px] py-4"
+      className="flex flex-col h-full rounded-[10px] px-[18px] py-4"
       style={{
         background: "#13131a",
         border: "1px solid rgba(255,255,255,0.06)",
       }}
     >
       {/* Header */}
-      <div className="mb-3.5 flex items-center justify-between">
+      <div className="mb-3.5 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <h2 className="m-0 text-[13px] font-semibold text-[#f0f0f4]">
             Today&apos;s Mission
@@ -76,7 +115,35 @@ export function MissionList({
             {formattedDuration} planned
           </span>
         </div>
+
         <div className="flex items-center gap-2.5">
+          {/* Mission Slider Nav Controls */}
+          {sessions.length > 1 && (
+            <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-md px-1 py-0.5">
+              <button
+                type="button"
+                onClick={handlePrevSlide}
+                disabled={activeIndex === 0}
+                className="flex h-5 w-5 items-center justify-center rounded text-[#8a8a9e] transition hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Previous session"
+              >
+                <ChevronLeft size={13} />
+              </button>
+              <span className="font-mono text-[10px] text-[#22d3ee] px-1 font-semibold">
+                {activeIndex + 1}/{sessions.length}
+              </span>
+              <button
+                type="button"
+                onClick={handleNextSlide}
+                disabled={activeIndex === sessions.length - 1}
+                className="flex h-5 w-5 items-center justify-center rounded text-[#8a8a9e] transition hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Next session"
+              >
+                <ChevronRight size={13} />
+              </button>
+            </div>
+          )}
+
           {onAddSession && (
             <button
               type="button"
@@ -86,6 +153,7 @@ export function MissionList({
               <Plus size={11} /> Add Session
             </button>
           )}
+
           <span
             className="font-mono text-[10px]"
             style={{ color: "#4a4a5a" }}
@@ -97,7 +165,7 @@ export function MissionList({
 
       {/* Missed Sessions Notification Alert Banner */}
       {missedSessions.length > 0 && (
-        <div className="mb-3.5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-200">
+        <div className="mb-3.5 shrink-0 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-200">
           <div className="flex items-center gap-2">
             <AlertCircle size={15} className="shrink-0 text-red-400" />
             <div>
@@ -134,7 +202,7 @@ export function MissionList({
 
       {sessions.length === 0 ? (
         <div
-          className="flex flex-col items-center gap-3 rounded-lg border border-white/[0.04] bg-white/[0.01] px-4 py-6 text-center text-xs"
+          className="flex flex-1 flex-col items-center justify-center gap-3 rounded-lg border border-white/[0.04] bg-white/[0.01] px-4 py-6 text-center text-xs"
           style={{ color: "#5a5a6a" }}
         >
           <div>No study sessions planned for today yet.</div>
@@ -157,21 +225,56 @@ export function MissionList({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          {sessions.map((session, idx) => (
-            <MissionCard
-              key={session.id}
-              session={session}
-              status={getStatus(session.id, session.status)}
-              isNext={idx === 0}
-              onCycle={() => cycleSessionStatus(session.id, session.status)}
-              onDelete={onDeleteSession ? () => onDeleteSession(session.id) : undefined}
-              onMoveToTomorrow={onMoveToTomorrow ? () => onMoveToTomorrow(session.id) : undefined}
-              onReschedule={onOpenRescheduleModal ? () => onOpenRescheduleModal(session) : undefined}
-            />
-          ))}
+        <div className="flex flex-1 flex-col justify-between min-h-0">
+          {/* Scrollable / Slidable Session Container */}
+          <div
+            ref={sliderRef}
+            onScroll={handleScroll}
+            className="flex-1 min-h-0 overflow-y-auto pr-1.5 flex flex-col gap-2 scroll-smooth"
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "#22d3ee rgba(255,255,255,0.05)",
+            }}
+          >
+            {sessions.map((session, idx) => (
+              <div key={session.id} className="scroll-snap-align-start">
+                <MissionCard
+                  session={session}
+                  status={getStatus(session.id, session.status)}
+                  isNext={idx === 0}
+                  onCycle={() => cycleSessionStatus(session.id, session.status)}
+                  onDelete={onDeleteSession ? () => onDeleteSession(session.id) : undefined}
+                  onMoveToTomorrow={onMoveToTomorrow ? () => onMoveToTomorrow(session.id) : undefined}
+                  onReschedule={onOpenRescheduleModal ? () => onOpenRescheduleModal(session) : undefined}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Slider Dots Indicator Bar */}
+          {sessions.length > 1 && (
+            <div className="mt-3 flex items-center justify-center gap-1.5 pt-2 border-t border-white/5 shrink-0">
+              {sessions.map((s, idx) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveIndex(idx);
+                    scrollToSlide(idx);
+                  }}
+                  className={`h-1.5 rounded-full transition-all duration-200 ${
+                    idx === activeIndex
+                      ? "w-5 bg-[#22d3ee]"
+                      : "w-1.5 bg-white/20 hover:bg-white/40"
+                  }`}
+                  title={`Go to slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
+

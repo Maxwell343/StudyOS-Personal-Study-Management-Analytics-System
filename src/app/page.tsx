@@ -262,13 +262,13 @@ export default function DashboardPage() {
                 actualMinutes={actualMinutes}
               />
 
-              {/* Main Grid: Mission + Focus | Subjects */}
+              {/* Main Grid: Mission | Subjects */}
               <div
-                className="mb-4 grid gap-4 max-lg:grid-cols-1"
+                className="mb-4 grid gap-4 items-stretch max-lg:grid-cols-1"
                 style={{ gridTemplateColumns: "1fr 320px" }}
               >
                 {/* Left column */}
-                <div className="flex flex-col gap-3.5">
+                <div className="flex flex-col h-full">
                   <MissionList
                     sessions={activeSessions}
                     onDeleteSession={handleDeleteSession}
@@ -280,7 +280,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Right column */}
-                <div className="flex flex-col gap-3.5">
+                <div className="flex flex-col h-full">
                   <SubjectProgress subjects={subjectProgress} />
                 </div>
               </div>

@@ -8,13 +8,13 @@ interface SubjectProgressProps {
 export function SubjectProgress({ subjects }: SubjectProgressProps) {
   return (
     <div
-      className="rounded-[10px] px-[18px] py-4"
+      className="flex flex-col h-full rounded-[10px] px-[18px] py-4"
       style={{
         background: "#13131a",
         border: "1px solid rgba(255,255,255,0.06)",
       }}
     >
-      <div className="mb-3.5 flex items-center justify-between">
+      <div className="mb-3.5 flex items-center justify-between shrink-0">
         <h2 className="m-0 text-[13px] font-semibold text-[#f0f0f4]">
           Subject Progress
         </h2>
@@ -25,7 +25,7 @@ export function SubjectProgress({ subjects }: SubjectProgressProps) {
 
       {subjects.length === 0 ? (
         <div
-          className="rounded border border-white/[0.03] bg-white/[0.01] py-5 text-center text-xs"
+          className="flex flex-1 flex-col items-center justify-center rounded border border-white/[0.03] bg-white/[0.01] py-5 text-center text-xs"
           style={{ color: "#5a5a6a" }}
         >
           No subjects created yet. Visit{" "}
@@ -38,7 +38,7 @@ export function SubjectProgress({ subjects }: SubjectProgressProps) {
           to build your curriculum.
         </div>
       ) : (
-        <div className="flex flex-col gap-[13px]">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-1 flex flex-col gap-[13px]">
           {subjects.map((sub) => (
             <div key={sub.id}>
               <div className="mb-[5px] flex items-center justify-between">
