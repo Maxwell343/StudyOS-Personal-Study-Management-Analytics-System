@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Link from "next/link";
-import { AlertCircle, Calendar, Clock } from "lucide-react";
+import { AlertCircle, Calendar, Clock, Plus } from "lucide-react";
 import type { StudySession, SessionStatus } from "@/types/dashboard";
 import { formatMinutes } from "@/lib/planner-utils";
 import { MissionCard } from "./MissionCard";
@@ -11,6 +11,7 @@ interface MissionListProps {
   onMoveToTomorrow?: (sessionId: string) => void;
   onOpenRescheduleModal?: (session: StudySession) => void;
   onMoveAllMissedToTomorrow?: () => void;
+  onAddSession?: () => void;
 }
 
 export function MissionList({
@@ -19,6 +20,7 @@ export function MissionList({
   onMoveToTomorrow,
   onOpenRescheduleModal,
   onMoveAllMissedToTomorrow,
+  onAddSession,
 }: MissionListProps) {
   const [overrides, setOverrides] = useState<Record<string, SessionStatus>>({});
 
@@ -74,12 +76,23 @@ export function MissionList({
             {formattedDuration} planned
           </span>
         </div>
-        <span
-          className="font-mono text-[10px]"
-          style={{ color: "#4a4a5a" }}
-        >
-          {completedCount} / {sessions.length} complete
-        </span>
+        <div className="flex items-center gap-2.5">
+          {onAddSession && (
+            <button
+              type="button"
+              onClick={onAddSession}
+              className="flex cursor-pointer items-center gap-1 rounded border border-[#22d3ee]/30 bg-[#22d3ee]/10 px-2 py-0.5 text-[11px] font-semibold text-[#22d3ee] hover:bg-[#22d3ee]/20 transition"
+            >
+              <Plus size={11} /> Add Session
+            </button>
+          )}
+          <span
+            className="font-mono text-[10px]"
+            style={{ color: "#4a4a5a" }}
+          >
+            {completedCount} / {sessions.length} complete
+          </span>
+        </div>
       </div>
 
       {/* Missed Sessions Notification Alert Banner */}
@@ -121,17 +134,27 @@ export function MissionList({
 
       {sessions.length === 0 ? (
         <div
-          className="rounded-lg border border-white/[0.04] bg-white/[0.01] px-4 py-6 text-center text-xs"
+          className="flex flex-col items-center gap-3 rounded-lg border border-white/[0.04] bg-white/[0.01] px-4 py-6 text-center text-xs"
           style={{ color: "#5a5a6a" }}
         >
-          No study sessions planned for today. Use{" "}
-          <Link
-            href="/plan-tomorrow"
-            className="text-[#22d3ee] underline underline-offset-2 hover:text-[#38bdf8]"
-          >
-            Plan Tomorrow
-          </Link>{" "}
-          to schedule your focused missions.
+          <div>No study sessions planned for today yet.</div>
+          <div className="flex items-center gap-3">
+            {onAddSession && (
+              <button
+                type="button"
+                onClick={onAddSession}
+                className="flex cursor-pointer items-center gap-1.5 rounded-md border border-[#22d3ee]/35 bg-[#22d3ee]/10 px-3.5 py-1.5 text-xs font-semibold text-[#22d3ee] hover:bg-[#22d3ee]/20 transition"
+              >
+                <Plus size={13} /> Add Today&apos;s Mission
+              </button>
+            )}
+            <Link
+              href="/plan-tomorrow"
+              className="text-[#22d3ee] underline underline-offset-2 hover:text-[#38bdf8]"
+            >
+              Plan Tomorrow
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-2">

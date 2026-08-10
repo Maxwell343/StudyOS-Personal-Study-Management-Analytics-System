@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { JarvisInsightBar } from "@/components/dashboard/JarvisInsightBar";
@@ -12,6 +12,7 @@ import { CurrentFocusCard } from "@/components/dashboard/CurrentFocusCard";
 import { SubjectProgress } from "@/components/dashboard/SubjectProgress";
 import { WeeklyAnalytics } from "@/components/dashboard/WeeklyAnalytics";
 import { RescheduleSessionModal } from "@/components/dashboard/RescheduleSessionModal";
+import { AddSessionDialog } from "@/components/planner/AddSessionDialog";
 import { useAuth } from "@/context/AuthContext";
 import { useSessionTimer } from "@/context/TimerContext";
 import {
@@ -19,9 +20,12 @@ import {
   deletePlannedSessionFromDb,
   movePlannedSessionToTomorrow,
   reschedulePlannedSessionCustom,
+  addPlannedSessionToToday,
   DashboardData,
 } from "@/lib/data-access/dashboard";
+import { extractAvailableTasksFromSubjects } from "@/lib/data-access/planner";
 import type { DailyMetric, WeeklyDataPoint, StudySession } from "@/types/dashboard";
+import type { PlanSession, PlannedTask } from "@/types/planner";
 import { Loader2 } from "lucide-react";
 
 const DEFAULT_METRICS: DailyMetric[] = [
@@ -75,9 +79,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshCount, setRefreshCount] = useState(0);
 
-  // Reschedule Modal State
+  // Reschedule Modal & Add Session Dialog States
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
   const [sessionToReschedule, setSessionToReschedule] = useState<StudySession | null>(null);
+  const [addSessionDialogOpen, setAddSessionDialogOpen] = useState(false);
 
   useEffect(() => {
     let isCancelled = false;
@@ -112,6 +117,19 @@ export default function DashboardPage() {
   }, [user, authLoading, refreshCount]);
 
   const { activeSession, abandonSession } = useSessionTimer();
+
+  const availableTasks: PlannedTask[] = useMemo(() => {
+    if (!data?.rawSubjects) return [];
+    return extractAvailableTasksFromSubjects(data.rawSubjects);
+  }, [data?.rawSubjects]);
+
+  const availableSubjectOptions = useMemo(() => {
+    if (!data?.rawSubjects) return [];
+    return data.rawSubjects.map((s) => ({
+      name: s.name,
+      color: s.color,
+    }));
+  }, [data?.rawSubjects]);
 
   const handleDeleteSession = useCallback(
     async (sessionId: string) => {
@@ -181,6 +199,21 @@ export default function DashboardPage() {
     [user, sessionToReschedule]
   );
 
+  const handleAddSessionToToday = useCallback(
+    async (newSession: PlanSession) => {
+      if (!user || !data?.rawSubjects) return;
+      try {
+        await addPlannedSessionToToday(user.id, newSession, data.rawSubjects);
+        setRefreshCount((c) => c + 1);
+        setAddSessionDialogOpen(false);
+      } catch (err) {
+        console.error("Error adding session to today:", err);
+        alert("Failed to add session to today's plan.");
+      }
+    },
+    [user, data?.rawSubjects]
+  );
+
   const activeSessions = data?.todaySessions || [];
   const nextSession = data?.nextSession || null;
   const metrics = data?.dailyMetrics || DEFAULT_METRICS;
@@ -243,6 +276,7 @@ export default function DashboardPage() {
                     onMoveToTomorrow={handleMoveToTomorrow}
                     onOpenRescheduleModal={handleOpenRescheduleModal}
                     onMoveAllMissedToTomorrow={handleMoveAllMissedToTomorrow}
+                    onAddSession={() => setAddSessionDialogOpen(true)}
                   />
                   <CurrentFocusCard tasks={focusTasks} />
                 </div>
@@ -269,6 +303,16 @@ export default function DashboardPage() {
           setSessionToReschedule(null);
         }}
         onConfirm={handleConfirmReschedule}
+      />
+
+      {/* Add Session to Today Dialog */}
+      <AddSessionDialog
+        open={addSessionDialogOpen}
+        editingSession={null}
+        availableTasks={availableTasks}
+        availableSubjects={availableSubjectOptions}
+        onClose={() => setAddSessionDialogOpen(false)}
+        onSave={handleAddSessionToToday}
       />
     </div>
   );

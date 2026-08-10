@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
+import type { PlanSession } from "@/types/planner";
 import type {
   StudySession,
   FocusTask,
@@ -26,6 +27,7 @@ export interface DashboardData {
   targetMinutesToday: number;
   actualMinutesToday: number;
   completedSessionsToday: number;
+  rawSubjects: Subject[];
 }
 
 interface RawPlannedSessionRow {
@@ -462,6 +464,7 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
     targetMinutesToday,
     actualMinutesToday,
     completedSessionsToday,
+    rawSubjects: subjects,
   };
 }
 
@@ -722,4 +725,98 @@ export async function reschedulePlannedSessionCustom(
 
   const targetTarget = (targetSessions || []).reduce((s, row) => s + (row.planned_minutes || 0), 0);
   await supabase.from("study_plans").update({ target_minutes: targetTarget }).eq("id", targetPlanId);
+}
+
+/**
+ * Add a new planned session directly to Today's study plan.
+ */
+export async function addPlannedSessionToToday(
+  userId: string,
+  session: PlanSession,
+  subjects: Subject[]
+): Promise<void> {
+  const today = getTodayDateString();
+
+  // 1. Fetch or create today's study plan
+  let { data: todayPlan } = await supabase
+    .from("study_plans")
+    .select("id, target_minutes")
+    .eq("user_id", userId)
+    .eq("plan_date", today)
+    .maybeSingle();
+
+  let todayPlanId = todayPlan?.id;
+
+  if (!todayPlanId) {
+    const { data: newPlan, error: createErr } = await supabase
+      .from("study_plans")
+      .insert({
+        user_id: userId,
+        plan_date: today,
+        target_minutes: session.durationMinutes,
+        status: "DRAFT",
+      })
+      .select("id")
+      .single();
+
+    if (createErr) throw createErr;
+    todayPlanId = newPlan.id;
+  }
+
+  // 2. Resolve subject & topic IDs
+  const matchingSubject = subjects.find(
+    (sub) => sub.name.toLowerCase() === session.subject.toLowerCase()
+  );
+
+  let foundTopicId = "";
+  let foundLearningItemId = session.learningItemId || "";
+
+  if (matchingSubject) {
+    for (const top of matchingSubject.topics) {
+      if (top.name.toLowerCase() === session.topic.toLowerCase()) {
+        foundTopicId = top.id;
+      }
+      for (const item of top.learningItems) {
+        if (item.id === session.learningItemId) {
+          foundTopicId = top.id;
+          foundLearningItemId = item.id;
+          break;
+        }
+      }
+    }
+    if (!foundTopicId && matchingSubject.topics.length > 0) {
+      foundTopicId = matchingSubject.topics[0].id;
+    }
+  }
+
+  const rowToInsert: Database["public"]["Tables"]["planned_sessions"]["Insert"] = {
+    study_plan_id: todayPlanId,
+    user_id: userId,
+    subject_id: matchingSubject?.id || null,
+    topic_id: foundTopicId || null,
+    learning_item_id: foundLearningItemId || null,
+    title: session.topic,
+    start_time: `${session.startTime}:00`,
+    end_time: `${session.endTime}:00`,
+    planned_minutes: session.durationMinutes,
+    status: "PLANNED",
+  };
+
+  const { error: insertError } = await supabase
+    .from("planned_sessions")
+    .insert(rowToInsert);
+
+  if (insertError) throw insertError;
+
+  // 3. Recalculate target minutes for today's plan
+  const { data: allSessions } = await supabase
+    .from("planned_sessions")
+    .select("planned_minutes")
+    .eq("study_plan_id", todayPlanId);
+
+  const newTarget = (allSessions || []).reduce((sum, s) => sum + (s.planned_minutes || 0), 0);
+  await supabase
+    .from("study_plans")
+    .update({ target_minutes: newTarget })
+    .eq("id", todayPlanId);
 }

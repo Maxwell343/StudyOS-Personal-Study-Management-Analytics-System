@@ -158,31 +158,31 @@ export function MissionCard({
           </button>
         )}
 
-        <button
-          onClick={onCycle}
-          className="flex cursor-pointer items-center gap-[5px] whitespace-nowrap rounded-[5px] px-3 py-[5px] text-[11px] font-semibold"
-          style={{
-            border: isNext
-              ? "1px solid rgba(34,211,238,0.2)"
-              : "1px solid rgba(255,255,255,0.06)",
-            background: isActive ? "rgba(34,211,238,0.08)" : "transparent",
-            color: isNext ? "#22d3ee" : "#5a5a6a",
-            transition: "all 0.12s ease",
-          }}
-        >
-          {isActive ? (
-            <>
-              <span className="text-[8px]">⏸</span> Pause
-            </>
-          ) : isCompleted ? (
-            "✓ Done"
-          ) : (
-            <>
-              <Play size={9} />
-              Start
-            </>
-          )}
-        </button>
+        {!isCompleted && (
+          <button
+            onClick={onCycle}
+            className="flex cursor-pointer items-center gap-[5px] whitespace-nowrap rounded-[5px] px-3 py-[5px] text-[11px] font-semibold"
+            style={{
+              border: isNext
+                ? "1px solid rgba(34,211,238,0.2)"
+                : "1px solid rgba(255,255,255,0.06)",
+              background: isActive ? "rgba(34,211,238,0.08)" : "transparent",
+              color: isNext ? "#22d3ee" : "#5a5a6a",
+              transition: "all 0.12s ease",
+            }}
+          >
+            {isActive ? (
+              <>
+                <span className="text-[8px]">⏸</span> Pause
+              </>
+            ) : (
+              <>
+                <Play size={9} />
+                Start
+              </>
+            )}
+          </button>
+        )}
         {onDelete && (
           <button
             type="button"
