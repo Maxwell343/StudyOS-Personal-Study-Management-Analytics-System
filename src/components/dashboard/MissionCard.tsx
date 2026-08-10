@@ -1,6 +1,6 @@
 "use client";
 
-import { Play, Trash2 } from "lucide-react";
+import { Play, Trash2, Calendar, Clock } from "lucide-react";
 import type { StudySession, SessionStatus } from "@/types/dashboard";
 import { STATUS_CONFIG } from "@/lib/constants";
 
@@ -10,10 +10,12 @@ interface MissionCardProps {
   isNext: boolean;
   onCycle: () => void;
   onDelete?: () => void;
+  onMoveToTomorrow?: () => void;
+  onReschedule?: () => void;
 }
 
 function StatusBadge({ status }: { status: SessionStatus }) {
-  const cfg = STATUS_CONFIG[status];
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.upcoming;
 
   return (
     <div
@@ -42,17 +44,37 @@ export function MissionCard({
   isNext,
   onCycle,
   onDelete,
+  onMoveToTomorrow,
+  onReschedule,
 }: MissionCardProps) {
   const isCompleted = status === "completed";
   const isActive = status === "active";
+  const isMissed = status === "missed";
+  const isBehind = status === "behind-schedule";
+
+  let borderColor = "rgba(255,255,255,0.04)";
+  let bgColor = "transparent";
+
+  if (isCompleted) {
+    borderColor = "rgba(255,255,255,0.03)";
+  } else if (isMissed) {
+    borderColor = "rgba(239,68,68,0.25)";
+    bgColor = "rgba(239,68,68,0.03)";
+  } else if (isBehind) {
+    borderColor = "rgba(245,158,11,0.25)";
+    bgColor = "rgba(245,158,11,0.03)";
+  } else if (isNext) {
+    borderColor = "rgba(34,211,238,0.14)";
+    bgColor = "rgba(34,211,238,0.03)";
+  }
 
   return (
     <div
       className="session-card relative grid items-center gap-3.5 rounded-[7px] px-3 py-2.5"
       style={{
         gridTemplateColumns: "90px 1fr auto",
-        border: `1px solid ${isNext ? "rgba(34,211,238,0.14)" : "rgba(255,255,255,0.04)"}`,
-        background: isNext ? "rgba(34,211,238,0.03)" : "transparent",
+        border: `1px solid ${borderColor}`,
+        background: bgColor,
         opacity: isCompleted ? 0.55 : 1,
       }}
     >
@@ -60,8 +82,8 @@ export function MissionCard({
       <div
         className="absolute left-0 top-[20%] bottom-[20%] w-0.5 rounded-r-sm"
         style={{
-          background: session.color,
-          opacity: isNext ? 0.9 : 0.3,
+          background: isMissed ? "#ef4444" : isBehind ? "#f59e0b" : session.color,
+          opacity: isNext || isMissed || isBehind ? 0.9 : 0.3,
         }}
       />
 
@@ -69,7 +91,7 @@ export function MissionCard({
       <div className="pl-1.5">
         <div
           className="mb-1 whitespace-nowrap font-mono text-[10.5px]"
-          style={{ color: isNext ? "#c0c0d0" : "#6b6b80" }}
+          style={{ color: isMissed ? "#f87171" : isNext ? "#c0c0d0" : "#6b6b80" }}
         >
           {session.startTime} — {session.endTime}
         </div>
@@ -104,14 +126,38 @@ export function MissionCard({
         </div>
         <div
           className="pl-[13px] font-mono text-[10.5px]"
-          style={{ color: "#4a4a5a" }}
+          style={{ color: isMissed ? "#ef4444" : "#4a4a5a" }}
         >
-          {session.duration}
+          {session.duration} {isMissed && "· Time slot passed"}
         </div>
       </div>
 
       {/* Action buttons */}
       <div className="flex items-center gap-1.5">
+        {(isMissed || isBehind) && onMoveToTomorrow && (
+          <button
+            type="button"
+            onClick={onMoveToTomorrow}
+            title="Move to Tomorrow's Plan"
+            className="flex cursor-pointer items-center gap-1 rounded-[5px] border border-[#22d3ee]/20 bg-[#22d3ee]/10 px-2.5 py-[5px] text-[11px] font-semibold text-[#22d3ee] hover:bg-[#22d3ee]/20 transition"
+          >
+            <Calendar size={10} />
+            Tomorrow
+          </button>
+        )}
+
+        {(isMissed || isBehind) && onReschedule && (
+          <button
+            type="button"
+            onClick={onReschedule}
+            title="Reschedule session"
+            className="flex cursor-pointer items-center gap-1 rounded-[5px] border border-amber-500/20 bg-amber-500/10 px-2.5 py-[5px] text-[11px] font-semibold text-amber-400 hover:bg-amber-500/20 transition"
+          >
+            <Clock size={10} />
+            Reschedule
+          </button>
+        )}
+
         <button
           onClick={onCycle}
           className="flex cursor-pointer items-center gap-[5px] whitespace-nowrap rounded-[5px] px-3 py-[5px] text-[11px] font-semibold"

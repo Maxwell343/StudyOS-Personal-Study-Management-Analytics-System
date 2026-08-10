@@ -9,6 +9,8 @@ interface HeroNextSessionProps {
   totalSessions: number;
   onSessionUpdated?: () => void;
   onDeleteSession?: (sessionId: string) => void;
+  onMoveToTomorrow?: (sessionId: string) => void;
+  onOpenRescheduleModal?: (session: StudySession) => void;
 }
 
 function cleanTopicTitle(topic?: string, subjectName?: string): string {
@@ -29,6 +31,8 @@ export function HeroNextSession({
   totalSessions,
   onSessionUpdated,
   onDeleteSession,
+  onMoveToTomorrow,
+  onOpenRescheduleModal,
 }: HeroNextSessionProps) {
   const {
     activeSession,
@@ -181,9 +185,11 @@ export function HeroNextSession({
                         : "● ACTIVE TIMER"
                   : isDayComplete
                     ? "✓ DAY COMPLETE 🎉"
-                    : session
-                      ? "NEXT SESSION"
-                      : "STUDY OS"}
+                    : session?.status === "missed"
+                      ? "⚠ MISSED SESSION"
+                      : session
+                        ? "NEXT SESSION"
+                        : "STUDY OS"}
               </span>
             </div>
             {totalSessions > 0 && (
@@ -216,7 +222,7 @@ export function HeroNextSession({
               <Clock size={12} />
               <span
                 className="font-mono text-xs font-semibold"
-                style={{ color: isRunning || isDayComplete ? "#22c55e" : "#a0a0b8" }}
+                style={{ color: isRunning || isDayComplete ? "#22c55e" : session?.status === "missed" ? "#ef4444" : "#a0a0b8" }}
               >
                 {isRunning
                   ? formattedElapsed
@@ -245,16 +251,18 @@ export function HeroNextSession({
             <span className="text-[11px]" style={{ color: "#3a3a4a" }}>
               ·
             </span>
-            <span className="text-xs" style={{ color: "#6b6b80" }}>
+            <span className="text-xs" style={{ color: session?.status === "missed" ? "#ef4444" : "#6b6b80" }}>
               {isRunning
                 ? isOvertime
                   ? `Over target duration by ${formattedRemaining}`
                   : `${formattedRemaining} remaining (${progressPercent}%)`
                 : isDayComplete
                   ? "All daily planned sessions finished 🎉"
-                  : session
-                    ? "Ready to start"
-                    : "Use Plan Tomorrow to lock your schedule"}
+                  : session?.status === "missed"
+                    ? "Scheduled time slot passed. Reschedule or move to tomorrow."
+                    : session
+                      ? "Ready to start"
+                      : "Use Plan Tomorrow to lock your schedule"}
             </span>
           </div>
 
@@ -339,10 +347,30 @@ export function HeroNextSession({
               <Calendar size={13} /> Plan Tomorrow&apos;s Schedule
             </Link>
           ) : session ? (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {session.status === "missed" && onMoveToTomorrow && (
+                <button
+                  type="button"
+                  onClick={() => onMoveToTomorrow(session.id)}
+                  className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[7px] border border-[#22d3ee]/35 bg-[#22d3ee]/10 px-4 py-2.5 text-[12.5px] font-semibold text-[#22d3ee] hover:bg-[#22d3ee]/20 transition"
+                >
+                  <Calendar size={13} /> Move to Tomorrow
+                </button>
+              )}
+
+              {session.status === "missed" && onOpenRescheduleModal && (
+                <button
+                  type="button"
+                  onClick={() => onOpenRescheduleModal(session)}
+                  className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[7px] border border-amber-500/35 bg-amber-500/10 px-4 py-2.5 text-[12.5px] font-semibold text-amber-300 hover:bg-amber-500/20 transition"
+                >
+                  <Clock size={13} /> Reschedule Today
+                </button>
+              )}
+
               <button
                 onClick={handleStart}
-                className="flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-[7px] px-6 py-2.5 text-[13px] font-semibold tracking-[0.2px]"
+                className="flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-[7px] px-5 py-2.5 text-[13px] font-semibold tracking-[0.2px]"
                 style={{
                   border: "1px solid rgba(34,211,238,0.35)",
                   background: "rgba(34,211,238,0.1)",
@@ -350,7 +378,7 @@ export function HeroNextSession({
                   transition: "all 0.15s ease",
                 }}
               >
-                <Play size={11} /> Start Study Session
+                <Play size={11} /> Start Session
               </button>
               {onDeleteSession && (
                 <button

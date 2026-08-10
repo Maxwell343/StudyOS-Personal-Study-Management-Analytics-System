@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
+import type { Database } from "@/lib/supabase/database.types";
 import type {
   StudySession,
   FocusTask,
@@ -10,7 +11,7 @@ import type {
 } from "@/types/dashboard";
 import type { Subject } from "@/types/subjects";
 import { fetchSubjectsForUser } from "./subjects";
-import { getTodayDateString, getLocalYYYYMMDD } from "./planner";
+import { getTodayDateString, getLocalYYYYMMDD, getTomorrowDateString } from "./planner";
 import { formatMinutes } from "@/lib/planner-utils";
 
 export interface DashboardData {
@@ -59,6 +60,36 @@ function cleanTopicTitle(topic: string, subjectName?: string): string {
   }
   cleaned = cleaned.replace(/(.+?):\s*\1(?::|\s|$)/gi, "$1").trim();
   return cleaned || topic;
+}
+
+export function computeDynamicSessionStatus(
+  rowStatus: string,
+  startTimeStr: string,
+  endTimeStr: string,
+  nowDate: Date = new Date()
+): StudySession["status"] {
+  if (rowStatus === "COMPLETED") return "completed";
+  if (rowStatus === "ACTIVE") return "active";
+  if (rowStatus === "PAUSED") return "paused";
+
+  const nowMinutes = nowDate.getHours() * 60 + nowDate.getMinutes();
+
+  const [sh, sm] = startTimeStr.slice(0, 5).split(":").map(Number);
+  const startMinutes = (sh || 0) * 60 + (sm || 0);
+
+  const [eh, em] = endTimeStr.slice(0, 5).split(":").map(Number);
+  const endMinutes = (eh || 0) * 60 + (em || 0);
+
+  if (nowMinutes > endMinutes) {
+    return "missed";
+  }
+  if (nowMinutes >= startMinutes && nowMinutes <= endMinutes) {
+    return "behind-schedule";
+  }
+  if (startMinutes - nowMinutes <= 15 && startMinutes - nowMinutes > 0) {
+    return "starting-soon";
+  }
+  return "upcoming";
 }
 
 export async function fetchDashboardData(userId: string): Promise<DashboardData> {
@@ -142,15 +173,23 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
   let actualMinutesToday = 0;
   let completedSessionsToday = 0;
 
+  (recentSessions || []).forEach((s) => {
+    if (s.started_at.startsWith(today) && s.status === "COMPLETED") {
+      actualMinutesToday += s.actual_minutes || 0;
+      completedSessionsToday += 1;
+    }
+  });
+
   const todaySessionsList: StudySession[] = plannedSessionsRaw.map((row) => {
     const sub = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
     const li = Array.isArray(row.learning_items) ? row.learning_items[0] : row.learning_items;
     const topObj = Array.isArray(li?.topics) ? li?.topics[0] : li?.topics;
 
-    let appStatus: StudySession["status"] = "upcoming";
-    if (row.status === "COMPLETED") appStatus = "completed";
-    else if (row.status === "ACTIVE") appStatus = "active";
-    else if (row.status === "PAUSED") appStatus = "paused";
+    const appStatus = computeDynamicSessionStatus(
+      row.status,
+      row.start_time,
+      row.end_time
+    );
 
     const rawTopic = topObj?.name || row.title || "Study Session";
     const cleanedTopic = cleanTopicTitle(rawTopic, sub?.name);
@@ -167,13 +206,6 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
       status: appStatus,
       color: sub?.color || "#22d3ee",
     };
-  });
-
-  (recentSessions || []).forEach((s) => {
-    if (s.started_at.startsWith(today) && s.status === "COMPLETED") {
-      actualMinutesToday += s.actual_minutes || 0;
-      completedSessionsToday += 1;
-    }
   });
 
   const targetMinutesToday =
@@ -483,4 +515,211 @@ export async function deletePlannedSessionFromDb(
       .update({ target_minutes: newTargetMinutes })
       .eq("id", sessionRow.study_plan_id);
   }
+}
+
+/**
+ * Move a planned session from today to tomorrow's study plan.
+ * If tomorrow's study plan doesn't exist, create it.
+ */
+export async function movePlannedSessionToTomorrow(
+  userId: string,
+  sessionId: string,
+  newStartTime?: string,
+  newEndTime?: string
+): Promise<void> {
+  const tomorrowDate = getTomorrowDateString();
+
+  // 1. Fetch current session details
+  const { data: sessionRow, error: sessionErr } = await supabase
+    .from("planned_sessions")
+    .select("study_plan_id, planned_minutes, start_time, end_time")
+    .eq("id", sessionId)
+    .eq("user_id", userId)
+    .single();
+
+  if (sessionErr || !sessionRow) throw new Error("Planned session not found");
+
+  const oldPlanId = sessionRow.study_plan_id;
+
+  // 2. Fetch or create tomorrow's study plan
+  const { data: tomorrowPlan, error: planErr } = await supabase
+    .from("study_plans")
+    .select("id, target_minutes")
+    .eq("user_id", userId)
+    .eq("plan_date", tomorrowDate)
+    .maybeSingle();
+
+  if (planErr) throw planErr;
+
+  let tomorrowPlanId = tomorrowPlan?.id;
+
+  if (!tomorrowPlanId) {
+    const { data: newPlan, error: createErr } = await supabase
+      .from("study_plans")
+      .insert({
+        user_id: userId,
+        plan_date: tomorrowDate,
+        target_minutes: sessionRow.planned_minutes || 60,
+        status: "DRAFT",
+      })
+      .select("id")
+      .single();
+
+    if (createErr) throw createErr;
+    tomorrowPlanId = newPlan.id;
+  }
+
+  // 3. Move session to tomorrow's plan and reset status to PLANNED
+  const updatePayload: Database["public"]["Tables"]["planned_sessions"]["Update"] = {
+    study_plan_id: tomorrowPlanId,
+    status: "PLANNED",
+  };
+  if (newStartTime) updatePayload.start_time = `${newStartTime}:00`;
+  if (newEndTime) updatePayload.end_time = `${newEndTime}:00`;
+
+  const { error: updateErr } = await supabase
+    .from("planned_sessions")
+    .update(updatePayload)
+    .eq("id", sessionId)
+    .eq("user_id", userId);
+
+  if (updateErr) throw updateErr;
+
+  // 4. Recalculate target minutes for old plan (today)
+  if (oldPlanId) {
+    const { data: oldSessions } = await supabase
+      .from("planned_sessions")
+      .select("planned_minutes")
+      .eq("study_plan_id", oldPlanId);
+
+    const oldTarget = (oldSessions || []).reduce((s, row) => s + (row.planned_minutes || 0), 0);
+    await supabase.from("study_plans").update({ target_minutes: oldTarget }).eq("id", oldPlanId);
+  }
+
+  // 5. Recalculate target minutes for tomorrow's plan
+  const { data: newSessions } = await supabase
+    .from("planned_sessions")
+    .select("planned_minutes")
+    .eq("study_plan_id", tomorrowPlanId);
+
+  const newTarget = (newSessions || []).reduce((s, row) => s + (row.planned_minutes || 0), 0);
+  await supabase.from("study_plans").update({ target_minutes: newTarget }).eq("id", tomorrowPlanId);
+}
+
+/**
+ * Reschedule a planned session for later today with new start & end times.
+ */
+export async function reschedulePlannedSessionToday(
+  userId: string,
+  sessionId: string,
+  newStartTime: string,
+  newEndTime: string
+): Promise<void> {
+  const [sh, sm] = newStartTime.split(":").map(Number);
+  const [eh, em] = newEndTime.split(":").map(Number);
+  const plannedMinutes = Math.max(15, (eh * 60 + em) - (sh * 60 + sm));
+
+  const { error } = await supabase
+    .from("planned_sessions")
+    .update({
+      start_time: `${newStartTime}:00`,
+      end_time: `${newEndTime}:00`,
+      planned_minutes: plannedMinutes,
+      status: "PLANNED",
+    })
+    .eq("id", sessionId)
+    .eq("user_id", userId);
+
+  if (error) throw error;
+}
+
+/**
+ * Reschedule a planned session with custom parameters (date, start, end, duration, topic).
+ */
+export async function reschedulePlannedSessionCustom(
+  userId: string,
+  sessionId: string,
+  options: {
+    targetDate: string; // YYYY-MM-DD
+    startTime: string; // HH:MM
+    endTime: string;   // HH:MM
+    plannedMinutes: number;
+    title?: string;
+  }
+): Promise<void> {
+  // 1. Fetch current session details
+  const { data: sessionRow } = await supabase
+    .from("planned_sessions")
+    .select("study_plan_id")
+    .eq("id", sessionId)
+    .eq("user_id", userId)
+    .single();
+
+  const oldPlanId = sessionRow?.study_plan_id;
+
+  // 2. Fetch or create plan for targetDate
+  const { data: targetPlan } = await supabase
+    .from("study_plans")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("plan_date", options.targetDate)
+    .maybeSingle();
+
+  let targetPlanId = targetPlan?.id;
+
+  if (!targetPlanId) {
+    const { data: newPlan, error: createErr } = await supabase
+      .from("study_plans")
+      .insert({
+        user_id: userId,
+        plan_date: options.targetDate,
+        target_minutes: options.plannedMinutes,
+        status: "DRAFT",
+      })
+      .select("id")
+      .single();
+
+    if (createErr) throw createErr;
+    targetPlanId = newPlan.id;
+  }
+
+  // 3. Update session
+  const updatePayload: Database["public"]["Tables"]["planned_sessions"]["Update"] = {
+    study_plan_id: targetPlanId,
+    start_time: `${options.startTime}:00`,
+    end_time: `${options.endTime}:00`,
+    planned_minutes: options.plannedMinutes,
+    status: "PLANNED",
+  };
+  if (options.title) {
+    updatePayload.title = options.title;
+  }
+
+  const { error: updateErr } = await supabase
+    .from("planned_sessions")
+    .update(updatePayload)
+    .eq("id", sessionId)
+    .eq("user_id", userId);
+
+  if (updateErr) throw updateErr;
+
+  // 4. Update target minutes for old plan if different
+  if (oldPlanId && oldPlanId !== targetPlanId) {
+    const { data: oldSessions } = await supabase
+      .from("planned_sessions")
+      .select("planned_minutes")
+      .eq("study_plan_id", oldPlanId);
+
+    const oldTarget = (oldSessions || []).reduce((s, row) => s + (row.planned_minutes || 0), 0);
+    await supabase.from("study_plans").update({ target_minutes: oldTarget }).eq("id", oldPlanId);
+  }
+
+  // 5. Update target minutes for target plan
+  const { data: targetSessions } = await supabase
+    .from("planned_sessions")
+    .select("planned_minutes")
+    .eq("study_plan_id", targetPlanId);
+
+  const targetTarget = (targetSessions || []).reduce((s, row) => s + (row.planned_minutes || 0), 0);
+  await supabase.from("study_plans").update({ target_minutes: targetTarget }).eq("id", targetPlanId);
 }

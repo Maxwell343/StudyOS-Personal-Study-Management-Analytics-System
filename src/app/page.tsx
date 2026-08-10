@@ -11,10 +11,17 @@ import { MissionList } from "@/components/dashboard/MissionList";
 import { CurrentFocusCard } from "@/components/dashboard/CurrentFocusCard";
 import { SubjectProgress } from "@/components/dashboard/SubjectProgress";
 import { WeeklyAnalytics } from "@/components/dashboard/WeeklyAnalytics";
+import { RescheduleSessionModal } from "@/components/dashboard/RescheduleSessionModal";
 import { useAuth } from "@/context/AuthContext";
 import { useSessionTimer } from "@/context/TimerContext";
-import { fetchDashboardData, deletePlannedSessionFromDb, DashboardData } from "@/lib/data-access/dashboard";
-import type { DailyMetric, WeeklyDataPoint } from "@/types/dashboard";
+import {
+  fetchDashboardData,
+  deletePlannedSessionFromDb,
+  movePlannedSessionToTomorrow,
+  reschedulePlannedSessionCustom,
+  DashboardData,
+} from "@/lib/data-access/dashboard";
+import type { DailyMetric, WeeklyDataPoint, StudySession } from "@/types/dashboard";
 import { Loader2 } from "lucide-react";
 
 const DEFAULT_METRICS: DailyMetric[] = [
@@ -68,6 +75,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshCount, setRefreshCount] = useState(0);
 
+  // Reschedule Modal State
+  const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
+  const [sessionToReschedule, setSessionToReschedule] = useState<StudySession | null>(null);
+
   useEffect(() => {
     let isCancelled = false;
 
@@ -120,6 +131,56 @@ export default function DashboardPage() {
     [user, activeSession, abandonSession]
   );
 
+  const handleMoveToTomorrow = useCallback(
+    async (sessionId: string) => {
+      if (!user) return;
+      try {
+        await movePlannedSessionToTomorrow(user.id, sessionId);
+        setRefreshCount((c) => c + 1);
+      } catch (err) {
+        console.error("Error moving session to tomorrow:", err);
+        alert("Failed to move session to tomorrow.");
+      }
+    },
+    [user]
+  );
+
+  const handleMoveAllMissedToTomorrow = useCallback(async () => {
+    if (!user || !data) return;
+    const missed = data.todaySessions.filter((s) => s.status === "missed");
+    if (missed.length === 0) return;
+
+    try {
+      await Promise.all(
+        missed.map((s) => movePlannedSessionToTomorrow(user.id, s.id))
+      );
+      setRefreshCount((c) => c + 1);
+    } catch (err) {
+      console.error("Error moving missed sessions to tomorrow:", err);
+      alert("Failed to move missed sessions.");
+    }
+  }, [user, data]);
+
+  const handleOpenRescheduleModal = useCallback((session: StudySession) => {
+    setSessionToReschedule(session);
+    setRescheduleModalOpen(true);
+  }, []);
+
+  const handleConfirmReschedule = useCallback(
+    async (options: {
+      targetDate: string;
+      startTime: string;
+      endTime: string;
+      plannedMinutes: number;
+      topic?: string;
+    }) => {
+      if (!user || !sessionToReschedule) return;
+      await reschedulePlannedSessionCustom(user.id, sessionToReschedule.id, options);
+      setRefreshCount((c) => c + 1);
+    },
+    [user, sessionToReschedule]
+  );
+
   const activeSessions = data?.todaySessions || [];
   const nextSession = data?.nextSession || null;
   const metrics = data?.dailyMetrics || DEFAULT_METRICS;
@@ -156,6 +217,8 @@ export default function DashboardPage() {
                 totalSessions={activeSessions.length}
                 onSessionUpdated={() => setRefreshCount((c) => c + 1)}
                 onDeleteSession={handleDeleteSession}
+                onMoveToTomorrow={handleMoveToTomorrow}
+                onOpenRescheduleModal={handleOpenRescheduleModal}
               />
 
               {/* Daily Metrics */}
@@ -177,6 +240,9 @@ export default function DashboardPage() {
                   <MissionList
                     sessions={activeSessions}
                     onDeleteSession={handleDeleteSession}
+                    onMoveToTomorrow={handleMoveToTomorrow}
+                    onOpenRescheduleModal={handleOpenRescheduleModal}
+                    onMoveAllMissedToTomorrow={handleMoveAllMissedToTomorrow}
                   />
                   <CurrentFocusCard tasks={focusTasks} />
                 </div>
@@ -193,6 +259,17 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+
+      {/* Reschedule Session Modal */}
+      <RescheduleSessionModal
+        open={rescheduleModalOpen}
+        session={sessionToReschedule}
+        onClose={() => {
+          setRescheduleModalOpen(false);
+          setSessionToReschedule(null);
+        }}
+        onConfirm={handleConfirmReschedule}
+      />
     </div>
   );
 }
