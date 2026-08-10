@@ -8,7 +8,6 @@ import { DailyMetricsGrid } from "@/components/dashboard/DailyMetricsGrid";
 import { DailyProgressCard } from "@/components/dashboard/DailyProgressCard";
 import { HeroNextSession } from "@/components/dashboard/HeroNextSession";
 import { MissionList } from "@/components/dashboard/MissionList";
-import { CurrentFocusCard } from "@/components/dashboard/CurrentFocusCard";
 import { SubjectProgress } from "@/components/dashboard/SubjectProgress";
 import { WeeklyAnalytics } from "@/components/dashboard/WeeklyAnalytics";
 import { RescheduleSessionModal } from "@/components/dashboard/RescheduleSessionModal";
@@ -278,7 +277,6 @@ export default function DashboardPage() {
                     onMoveAllMissedToTomorrow={handleMoveAllMissedToTomorrow}
                     onAddSession={() => setAddSessionDialogOpen(true)}
                   />
-                  <CurrentFocusCard tasks={focusTasks} />
                 </div>
 
                 {/* Right column */}
