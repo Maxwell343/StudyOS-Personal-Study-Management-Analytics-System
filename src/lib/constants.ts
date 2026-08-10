@@ -47,6 +47,11 @@ export const STATUS_CONFIG: Record<SessionStatus, StatusConfig> = {
     color: "#f59e0b",
     bg: "rgba(245,158,11,0.1)",
   },
+  abandoned: {
+    label: "ABANDONED",
+    color: "#6b6b80",
+    bg: "rgba(255,255,255,0.05)",
+  },
 };
 
 // ── Navigation Items ───────────────────────────────────────────────────────
@@ -74,7 +79,7 @@ export const NAV_ITEMS: NavItemConfig[] = [
   },
   { id: "tasks", label: "Tasks", iconName: "CheckSquare" },
   { id: "timer", label: "Study Timer", iconName: "Timer" },
-  { id: "calendar", label: "Calendar", iconName: "Calendar" },
+  { id: "calendar", label: "Calendar", iconName: "Calendar", href: "/calendar" },
   { id: "analytics", label: "Analytics", iconName: "BarChart3" },
   { id: "goals", label: "Goals", iconName: "Target" },
 ];

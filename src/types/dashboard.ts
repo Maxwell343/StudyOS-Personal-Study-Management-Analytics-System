@@ -7,7 +7,8 @@ export type SessionStatus =
   | "paused"
   | "completed"
   | "missed"
-  | "behind-schedule";
+  | "behind-schedule"
+  | "abandoned";
 
 export interface StudySession {
   id: string;
