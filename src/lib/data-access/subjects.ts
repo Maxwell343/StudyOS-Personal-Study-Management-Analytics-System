@@ -126,7 +126,7 @@ export async function fetchSubjectsForUser(userId: string): Promise<Subject[]> {
       }
     } else if (
       (nameLower.includes("dbms") || nameLower.includes("database management systems")) &&
-      totalItems === 0
+      (totalItems < 140 || (sub.topics || []).length < 11)
     ) {
       try {
         await seedDbmsCurriculumInDb(userId, sub.id);
@@ -214,7 +214,7 @@ export async function fetchSubjectById(userId: string, subjectId: string): Promi
     }
   } else if (
     (nameLower.includes("dbms") || nameLower.includes("database management systems")) &&
-    totalItems === 0
+    (totalItems < 140 || (rawSub.topics || []).length < 11)
   ) {
     try {
       await seedDbmsCurriculumInDb(userId, subjectId);
@@ -471,259 +471,200 @@ export async function seedCurriculumForUser(userId: string): Promise<void> {
   }
 }
 
-const DBMS_CURRICULUM_DATA = [
+export const DBMS_CURRICULUM_DATA = [
   {
-    name: "DBMS Foundations",
+    name: "MODULE 1 — DBMS Fundamentals & Keys",
     items: [
-      "DBMS vs File System",
-      "DBMS vs RDBMS",
-      "DBMS Architecture — 2-tier and 3-tier",
-      "Schema vs Instance",
-      "Data Abstraction",
-      "Data Independence",
-      "Super Key",
-      "Candidate Key",
-      "Primary Key",
-      "Foreign Key",
-      "Composite Key",
-      "Alternate Key",
-      "Entity Integrity",
-      "Referential Integrity",
-      "Domain Integrity",
-      "Entity",
-      "Attribute",
-      "Relationship",
-      "Cardinality",
-      "Participation Constraints",
-      "Strong vs Weak Entity",
-      "Basic ER Diagram Design",
-      "ER Diagram to Relational Schema",
+      { title: "Lec 1: DBMS Syllabus & Overview", minutes: 23 },
+      { title: "Lec 2: Introduction to DBMS", minutes: 17 },
+      { title: "Lec 3: File System vs DBMS", minutes: 18 },
+      { title: "Lec 4: 2-Tier & 3-Tier Architecture", minutes: 18 },
+      { title: "Lec 5: Schema", minutes: 10 },
+      { title: "Lec 6: Three Schema Architecture", minutes: 20 },
+      { title: "Lec 7: Data Independence", minutes: 15 },
+      { title: "Lec 8: Integrity Constraints", minutes: 12 },
+      { title: "Lec 9: Candidate Key & Primary Key", minutes: 10 },
+      { title: "Lec 10: Primary Key", minutes: 17 },
+      { title: "Lec 11: Foreign Key", minutes: 14 },
+      { title: "Lec 12: Referential Integrity", minutes: 23 },
+      { title: "Lec 13: Foreign Key Questions", minutes: 14 },
+      { title: "Lec 14: ON DELETE CASCADE", minutes: 11 },
+      { title: "Lec 15: Super Key", minutes: 15 },
     ],
   },
   {
-    name: "Normalization",
+    name: "MODULE 2 — ER Model",
     items: [
-      "Why Normalization?",
-      "Data Redundancy",
-      "Insert Anomaly",
-      "Update Anomaly",
-      "Delete Anomaly",
-      "Functional Dependency",
-      "First Normal Form — 1NF",
-      "Second Normal Form — 2NF",
-      "Partial Dependency",
-      "Third Normal Form — 3NF",
-      "Transitive Dependency",
-      "Boyce-Codd Normal Form — BCNF",
-      "3NF vs BCNF",
-      "Lossless Decomposition",
-      "Dependency Preservation",
-      "Normalize Sample Tables",
-      "Explain Normalization Problems",
+      { title: "Lec 16: Introduction to ER Model", minutes: 14 },
+      { title: "Lec 17: Types of Attributes", minutes: 19 },
+      { title: "Lec 18: One-to-One Relationship", minutes: 22 },
+      { title: "Lec 19: One-to-Many Relationship", minutes: 19 },
+      { title: "Lec 20: Many-to-Many Relationship", minutes: 16 },
+      { title: "Lec 21: Weak Entity Set", minutes: 17 },
+      { title: "Lec 22: Minimizing Tables in ER Model", minutes: 11 },
+      { title: "Lec 23: Important ER Model Questions", minutes: 14 },
     ],
   },
   {
-    name: "SQL Fundamentals",
+    name: "MODULE 3 — Normalization & Functional Dependencies",
     items: [
-      "SELECT",
-      "WHERE",
-      "ORDER BY",
-      "DISTINCT",
-      "COUNT",
-      "SUM",
-      "AVG",
-      "MIN",
-      "MAX",
-      "GROUP BY",
-      "HAVING",
-      "WHERE vs HAVING",
-      "INNER JOIN",
-      "LEFT JOIN",
-      "RIGHT JOIN",
-      "FULL OUTER JOIN",
-      "Subqueries",
-      "Correlated Subqueries",
-      "UNION",
-      "INTERSECT",
-      "EXCEPT / MINUS",
-      "Views",
-      "NOT NULL",
-      "UNIQUE",
-      "CHECK",
-      "DEFAULT",
-      "DELETE vs TRUNCATE vs DROP",
-      "Practice 20+ SQL Queries",
+      { title: "Lec 24: Normalization & Anomalies", minutes: 18, priority: "HIGH" },
+      { title: "Lec 25: 1NF", minutes: 13, priority: "HIGH" },
+      { title: "Lec 26: Closure of Functional Dependency", minutes: 23, priority: "HIGH" },
+      { title: "Lec 27: Functional Dependency & Properties", minutes: 22, priority: "HIGH" },
+      { title: "Lec 28: 2NF", minutes: 23, priority: "HIGH" },
+      { title: "Lec 29: 3NF", minutes: 21, priority: "HIGH" },
+      { title: "Lec 30: BCNF", minutes: 12, priority: "HIGH" },
+      { title: "Lec 31: BCNF & Dependency Preservation", minutes: 15, priority: "HIGH" },
+      { title: "Lec 32: Lossless/Lossy Decomposition & 5NF", minutes: 27, priority: "HIGH" },
+      { title: "Lec 33: All Normal Forms", minutes: 16, priority: "HIGH" },
+      { title: "Lec 34: Minimal/Canonical Cover", minutes: 14, priority: "HIGH" },
+      { title: "Lec 35: Normalization Practice Questions", minutes: 25, priority: "HIGH" },
+      { title: "Lec 36: Finding Normal Form of Relation", minutes: 29, priority: "HIGH" },
+      { title: "Lec 37: Solving Normalization Questions", minutes: 14, priority: "HIGH" },
+      { title: "Lec 38: Important Normalization Questions", minutes: 24, priority: "HIGH" },
+      { title: "Lec 39: Normalization Schema Questions", minutes: 12, priority: "HIGH" },
+      { title: "Lec 40: Cover & Equivalence of FDs", minutes: 18, priority: "HIGH" },
+      { title: "Lec 41: Dependency Preserving Decomposition", minutes: 16, priority: "HIGH" },
+      { title: "Lec 42: Dependency Preserving Decomposition — Example 2", minutes: 12, priority: "HIGH" },
     ],
   },
   {
-    name: "Transactions & ACID",
+    name: "MODULE 4 — Joins & Relational Algebra",
     items: [
-      "What is a Transaction?",
-      "Transaction States",
-      "Atomicity",
-      "Consistency",
-      "Isolation",
-      "Durability",
-      "ACID Properties with Real-World Examples",
-      "COMMIT",
-      "ROLLBACK",
-      "SAVEPOINT",
-      "Serial Transactions",
-      "Concurrent Transactions",
-      "Serializability",
-      "Banking Transaction Example",
-      "Explain ACID Without Notes",
+      { title: "Lec 43: Introduction to Joins & Types", minutes: 16 },
+      { title: "Lec 44: Natural Join", minutes: 21 },
+      { title: "Lec 45: Self Join", minutes: 20 },
+      { title: "Lec 46: Equi Join", minutes: 19 },
+      { title: "Lec 47: Left Outer Join", minutes: 13 },
+      { title: "Lec 48: Right Outer Join", minutes: 14 },
+      { title: "Lec 49: Inner/Left/Right/Full Outer Join Questions", minutes: 9 },
+      { title: "Lec 50: Introduction to Relational Algebra", minutes: 9 },
+      { title: "Lec 51: Projection", minutes: 11 },
+      { title: "Lec 52: Selection", minutes: 12 },
+      { title: "Lec 53: Cartesian Product", minutes: 11 },
+      { title: "Lec 54: Set Difference", minutes: 11 },
+      { title: "Lec 55: Union", minutes: 12 },
+      { title: "Lec 56: Division", minutes: 20 },
+      { title: "Lec 57: Rename Operator", minutes: 18 },
+      { title: "Lec 58: Tuple Calculus", minutes: 21 },
     ],
   },
   {
-    name: "Concurrency Control & Isolation",
+    name: "MODULE 5 — SQL",
     items: [
-      "Why Concurrency Control is Needed",
-      "Lost Update Problem",
-      "Dirty Read",
-      "Non-Repeatable Read",
-      "Phantom Read",
-      "Shared Lock",
-      "Exclusive Lock",
-      "Lock Compatibility",
-      "Two-Phase Locking — 2PL",
-      "Strict 2PL",
-      "Read Uncommitted",
-      "Read Committed",
-      "Repeatable Read",
-      "Serializable",
-      "Isolation Levels",
-      "Isolation Level vs Concurrency Anomalies",
-      "MVCC — Conceptual Understanding",
+      { title: "Lec 59: Introduction to SQL", minutes: 17, priority: "HIGH" },
+      { title: "Lec 60: DDL, DML, DCL, TCL & Constraints", minutes: 16, priority: "HIGH" },
+      { title: "Lec 61: CREATE TABLE", minutes: 12, priority: "HIGH" },
+      { title: "Lec 62: CREATE Command", minutes: 16, priority: "HIGH" },
+      { title: "Lec 63: ALTER Command", minutes: 18, priority: "HIGH" },
+      { title: "Lec 64: ALTER vs UPDATE", minutes: 13, priority: "HIGH" },
+      { title: "Lec 65: DELETE vs DROP vs TRUNCATE", minutes: 15, priority: "HIGH" },
+      { title: "Lec 66: SQL Constraints", minutes: 17, priority: "HIGH" },
+      { title: "Lec 67: SQL Queries & Subqueries — Part 1", minutes: 14, priority: "HIGH" },
+      { title: "Lec 68: Nested Queries & 2nd Highest Salary", minutes: 17, priority: "HIGH" },
+      { title: "Lec 69: GROUP BY", minutes: 14, priority: "HIGH" },
+      { title: "Lec 70: WITH / CTE", minutes: 15, priority: "HIGH" },
+      { title: "Lec 71: HAVING", minutes: 16, priority: "HIGH" },
+      { title: "Lec 72: SQL Queries & Subqueries — Part 5", minutes: 17, priority: "HIGH" },
+      { title: "Lec 73: IN / NOT IN", minutes: 14, priority: "HIGH" },
+      { title: "Lec 74: IN / NOT IN in Subquery", minutes: 15, priority: "HIGH" },
+      { title: "Lec 75: EXISTS / NOT EXISTS", minutes: 19, priority: "HIGH" },
+      { title: "Lec 76: LIKE", minutes: 16, priority: "HIGH" },
+      { title: "Lec 77: SEQUENCE", minutes: 12, priority: "HIGH" },
+      { title: "Lec 78: SQL Query Execution Order", minutes: 12, priority: "HIGH" },
+      { title: "Lec 79: Aggregate Functions", minutes: 16, priority: "HIGH" },
+      { title: "Lec 80: Aggregate Functions & NULL", minutes: 12, priority: "HIGH" },
+      { title: "Lec 81: Correlated Subquery", minutes: 17, priority: "HIGH" },
+      { title: "Lec 82: Non-Correlated Subquery", minutes: 23, priority: "HIGH" },
+      { title: "Lec 83: Joins vs Nested vs Correlated Subquery", minutes: 21, priority: "HIGH" },
+      { title: "Lec 84: Nth Highest Salary", minutes: 18, priority: "HIGH" },
+      { title: "Lec 85: Important SQL Questions", minutes: 15, priority: "HIGH" },
     ],
   },
   {
-    name: "Deadlocks",
+    name: "MODULE 6 — Transactions & Concurrency Control",
     items: [
-      "What is a Deadlock?",
-      "Necessary Conditions for Deadlock",
-      "Deadlock Prevention",
-      "Deadlock Detection",
-      "Deadlock Recovery",
-      "Wait-for Graph",
+      { title: "Lec 86: Introduction to PL-SQL", minutes: 11, priority: "HIGH" },
+      { title: "Lec 87: Transaction Concurrency", minutes: 18, priority: "HIGH" },
+      { title: "Lec 88: ACID Properties", minutes: 19, priority: "HIGH" },
+      { title: "Lec 89: Transaction States", minutes: 17, priority: "HIGH" },
+      { title: "Lec 90: Serial vs Parallel Schedule", minutes: 16, priority: "HIGH" },
+      { title: "Lec 91: Concurrency Problems", minutes: 10, priority: "HIGH" },
+      { title: "Lec 92: Dirty Read / Write-Read Conflict", minutes: 13, priority: "HIGH" },
+      { title: "Lec 93: Read-Write Conflict / Unrepeatable Read", minutes: 13, priority: "HIGH" },
+      { title: "Lec 94: Recoverable vs Irrecoverable Schedule", minutes: 11, priority: "HIGH" },
+      { title: "Lec 95: Cascading vs Cascadeless Schedule", minutes: 17, priority: "HIGH" },
+      { title: "Lec 96: Serializability", minutes: 14, priority: "HIGH" },
+      { title: "Lec 97: Conflict Equivalent Schedules", minutes: 12, priority: "HIGH" },
+      { title: "Lec 98: Conflict Serializability & Precedence Graph", minutes: 17, priority: "HIGH" },
+      { title: "Lec 99: View Serializability", minutes: 16, priority: "HIGH" },
+      { title: "Lec 100: Shared & Exclusive Locking", minutes: 12, priority: "HIGH" },
+      { title: "Lec 101: Drawbacks of S/X Locking", minutes: 16, priority: "HIGH" },
+      { title: "Lec 102: 2-Phase Locking (2PL)", minutes: 15, priority: "HIGH" },
+      { title: "Lec 103: Drawbacks of 2PL", minutes: 16, priority: "HIGH" },
+      { title: "Lec 104: Strict/Rigorous/Conservative 2PL", minutes: 17, priority: "HIGH" },
+      { title: "Lec 105: Timestamp Ordering Protocol", minutes: 20, priority: "HIGH" },
+      { title: "Lec 106: Timestamp Ordering Questions", minutes: 18, priority: "HIGH" },
     ],
   },
   {
-    name: "Indexing & Storage",
+    name: "MODULE 7 — Indexing & B/B+ Trees",
     items: [
-      "Why Indexing?",
-      "How Indexes Improve Query Performance",
-      "Advantages of Indexing",
-      "Disadvantages of Indexing",
-      "Primary Index",
-      "Secondary Index",
-      "Clustered Index",
-      "Non-Clustered Index",
-      "Clustered vs Non-Clustered Index",
-      "Dense Index",
-      "Sparse Index",
-      "Hash Indexing",
-      "B-Tree",
-      "B+ Tree",
-      "B-Tree vs B+ Tree",
-      "Why B+ Tree is Preferred",
-      "Why Not Index Every Column?",
-      "Index Impact on INSERT",
-      "Index Impact on UPDATE",
-      "Index Impact on DELETE",
-      "Heap File Organization",
-      "Sequential File Organization",
-      "Hash File Organization",
+      { title: "Lec 107: Introduction to Indexing", minutes: 15, priority: "HIGH" },
+      { title: "Lec 108: I/O Cost in Indexing — Part 1", minutes: 17, priority: "HIGH" },
+      { title: "Lec 109: I/O Cost in Indexing — Part 2", minutes: 17, priority: "HIGH" },
+      { title: "Lec 110: Types of Indexes", minutes: 10, priority: "HIGH" },
+      { title: "Lec 111: Primary Index", minutes: 13, priority: "HIGH" },
+      { title: "Lec 112: Clustered Index", minutes: 12, priority: "HIGH" },
+      { title: "Lec 113: Secondary & Multilevel Indexing", minutes: 18, priority: "HIGH" },
+      { title: "Lec 114: B-Tree Structure", minutes: 15, priority: "HIGH" },
+      { title: "Lec 115: B-Tree Insertion", minutes: 18, priority: "HIGH" },
+      { title: "Lec 116: Order of B-Tree", minutes: 16, priority: "HIGH" },
+      { title: "Lec 117: B-Tree vs B+Tree", minutes: 20, priority: "HIGH" },
+      { title: "Lec 118: Order of B+Tree", minutes: 15, priority: "HIGH" },
     ],
   },
   {
-    name: "Query Processing & Relational Algebra",
+    name: "MODULE 8 — Database Recovery",
     items: [
-      "Query Processing",
-      "Query Parsing",
-      "Query Execution",
-      "Query Execution Plan",
-      "Query Optimization",
-      "Cost-Based Optimization",
-      "Basic Join Processing",
-      "EXPLAIN / Execution Plans",
-      "Selection",
-      "Projection",
-      "Union",
-      "Set Difference",
-      "Cartesian Product",
-      "Natural Join",
-      "Theta Join",
-      "Division Operator",
+      { title: "Lec 119: Immediate Database Modification / Log Recovery", minutes: 11 },
+      { title: "Lec 120: Deferred Database Modification / Log Recovery", minutes: 16 },
     ],
   },
   {
-    name: "Database Storage & Recovery",
+    name: "MODULE 9 — PL/SQL & Database Objects",
     items: [
-      "Database Storage Basics",
-      "Pages",
-      "Blocks",
-      "Records",
-      "File Organization",
-      "Buffer Management",
-      "Database Failure Types",
-      "Transaction Failure",
-      "System Crash",
-      "Disk Failure",
-      "Log-Based Recovery",
-      "Write-Ahead Logging — WAL",
-      "Checkpoints",
-      "Undo",
-      "Redo",
-      "Crash Recovery",
+      { title: "Lec 121: Basic PL-SQL Programming", minutes: 13 },
+      { title: "Lec 122: PL-SQL While & For Loops", minutes: 11 },
+      { title: "Lec 123: Single-Row & Multi-Row Functions", minutes: 11 },
+      { title: "Lec 124: Character Functions", minutes: 16 },
+      { title: "Lec 125: Views", minutes: 19 },
     ],
   },
   {
-    name: "Modern Database Concepts",
+    name: "MODULE 10 — Advanced DBMS",
     items: [
-      "Database Replication",
-      "Primary-Replica Architecture",
-      "Synchronous Replication",
-      "Asynchronous Replication",
-      "Read Replicas",
-      "Database Partitioning",
-      "Horizontal Partitioning",
-      "Vertical Partitioning",
-      "Database Sharding",
-      "Horizontal Scaling",
-      "Vertical Scaling",
-      "Consistent Hashing — Basic Understanding",
-      "CAP Theorem",
-      "Consistency",
-      "Availability",
-      "Partition Tolerance",
-      "Strong Consistency",
-      "Eventual Consistency",
-      "SQL vs NoSQL",
-      "Key-Value Databases",
-      "Document Databases",
-      "Column-Family Databases",
-      "Graph Databases",
-      "When to Choose SQL vs NoSQL",
-      "OLTP vs OLAP",
+      { title: "Lec 126: RAID 0, 1, 4, 5, 6, RAID 10", minutes: 20 },
+      { title: "Lec 127: Database Objects", minutes: 11 },
+      { title: "Lec 128: Important DBMS & Data Modelling Questions", minutes: 16 },
+      { title: "Lec 129: Advanced DBMS, Big Data & Data Warehouse", minutes: 15 },
+      { title: "Lec 130: Relational Algebra Questions", minutes: 14 },
+      { title: "Lec 131: Codd's 12 Rules of RDBMS", minutes: 19 },
     ],
   },
   {
-    name: "Database Design & Interview Practice",
+    name: "MODULE 11 — Interview & Extra SQL/PL-SQL",
     items: [
-      "Design an E-Commerce Database",
-      "Design a Social Media Database",
-      "Identify Entities",
-      "Identify Relationships",
-      "Choose Primary Keys",
-      "Choose Foreign Keys",
-      "Normalize a Real-World Schema",
-      "Decide Where Indexes Are Required",
-      "Identify Database Performance Bottlenecks",
-      "Normalization vs Denormalization",
-      "Indexing Trade-offs",
-      "SQL vs NoSQL Design Decision",
-      "Explain Database Design and Trade-offs",
+      { title: "Lec 132: Top 15 SQL Interview Questions", minutes: 18 },
+      { title: "Lec 133: Introduction to Hadoop", minutes: 18 },
+      { title: "Lec 134: Introduction to Big Data", minutes: 18 },
+      { title: "Lec 135: Simple vs Complex vs Materialized Views", minutes: 13 },
+      { title: "Lec 136: Procedures in PL-SQL", minutes: 12 },
+      { title: "Lec 137: Fetch Data Using Procedures", minutes: 12 },
+      { title: "Lec 138: Cursor in PL-SQL", minutes: 17 },
+      { title: "Lec 139: %TYPE & %ROWTYPE", minutes: 14 },
+      { title: "Lec 140: Data Cleaning Using SQL Functions", minutes: 12 },
     ],
   },
 ];
@@ -758,7 +699,22 @@ export async function seedDbmsCurriculumInDb(
     .eq("subject_id", subjectId);
 
   const topicList = existingTopics || [];
-  const topicIds = topicList.map((t) => t.id);
+  const validModuleNames = new Set(DBMS_CURRICULUM_DATA.map((m) => m.name.toLowerCase().trim()));
+
+  // Remove outdated topics from previous schema versions if present
+  const outdatedTopics = topicList.filter(
+    (t) => !validModuleNames.has(t.name.toLowerCase().trim())
+  );
+  if (outdatedTopics.length > 0) {
+    const outdatedIds = outdatedTopics.map((t) => t.id);
+    await supabase.from("learning_items").delete().in("topic_id", outdatedIds);
+    await supabase.from("topics").delete().in("id", outdatedIds);
+  }
+
+  const activeTopicList = topicList.filter((t) =>
+    validModuleNames.has(t.name.toLowerCase().trim())
+  );
+  const topicIds = activeTopicList.map((t) => t.id);
 
   let existingItems: Database["public"]["Tables"]["learning_items"]["Row"][] = [];
   if (topicIds.length > 0) {
@@ -774,7 +730,7 @@ export async function seedDbmsCurriculumInDb(
 
     // Find existing topic by name
     let topicId = "";
-    const matchedTopic = topicList.find(
+    const matchedTopic = activeTopicList.find(
       (t) => t.name.toLowerCase().trim() === mod.name.toLowerCase().trim()
     );
 
@@ -796,14 +752,18 @@ export async function seedDbmsCurriculumInDb(
         continue;
       }
       topicId = newTopic.id;
-      topicList.push(newTopic);
+      activeTopicList.push(newTopic);
     }
 
     const currentTopicItems = existingItems.filter((li) => li.topic_id === topicId);
     const itemsToInsert = [];
 
     for (let itemIdx = 0; itemIdx < mod.items.length; itemIdx++) {
-      const itemTitle = mod.items[itemIdx];
+      const itemDef = mod.items[itemIdx];
+      const itemTitle = typeof itemDef === "string" ? itemDef : itemDef.title;
+      const itemMinutes = typeof itemDef === "string" ? 20 : itemDef.minutes;
+      const itemPriority = (typeof itemDef === "object" && "priority" in itemDef && itemDef.priority) || "MEDIUM";
+
       const exists = currentTopicItems.some(
         (li) => li.title.toLowerCase().trim() === itemTitle.toLowerCase().trim()
       );
@@ -814,8 +774,8 @@ export async function seedDbmsCurriculumInDb(
           title: itemTitle,
           display_order: itemIdx + 1,
           status: "NOT_STARTED" as const,
-          priority: "MEDIUM" as const,
-          estimated_minutes: 30,
+          priority: itemPriority as "LOW" | "MEDIUM" | "HIGH",
+          estimated_minutes: itemMinutes,
           resources: [] as unknown as Json,
         });
       }
@@ -831,6 +791,12 @@ export async function seedDbmsCurriculumInDb(
       }
     }
   }
+
+  // Mark subject as seeded
+  await supabase
+    .from("subjects")
+    .update({ dbms_seeded: true })
+    .eq("id", subjectId);
 }
 
 export const PYTHON_CURRICULUM_DATA = [
