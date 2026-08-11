@@ -3,6 +3,7 @@ import type { Database } from "@/lib/supabase/database.types";
 import type { PlanSession } from "@/types/planner";
 import type {
   StudySession,
+  SessionStatus,
   FocusTask,
   DailyTask,
   SubjectProgressData,
@@ -820,3 +821,114 @@ export async function addPlannedSessionToToday(
     .update({ target_minutes: newTarget })
     .eq("id", todayPlanId);
 }
+
+/**
+ * Update a planned session's status (e.g. COMPLETED / PLANNED)
+ * and automatically sync/mark the linked learning item or topic as COMPLETED in the subjects table.
+ */
+export async function updatePlannedSessionStatusInDb(
+  userId: string,
+  sessionId: string,
+  newStatus: SessionStatus
+): Promise<void> {
+  const dbStatus = newStatus === "completed" ? "COMPLETED" : "PLANNED";
+
+  // 1. Update planned_session status in database
+  const { data: sessionRow, error: sErr } = await supabase
+    .from("planned_sessions")
+    .update({ status: dbStatus })
+    .eq("id", sessionId)
+    .eq("user_id", userId)
+    .select("*")
+    .maybeSingle();
+
+  if (sErr || !sessionRow) return;
+
+  const isCompleting = newStatus === "completed";
+  const targetItemStatus = isCompleting ? "COMPLETED" : "NOT_STARTED";
+  const nowTs = new Date().toISOString();
+
+  // 2. If learning_item_id is directly attached to the session
+  if (sessionRow.learning_item_id) {
+    await supabase
+      .from("learning_items")
+      .update({
+        status: targetItemStatus,
+        completed_at: isCompleting ? nowTs : null,
+        last_studied_at: nowTs,
+      })
+      .eq("id", sessionRow.learning_item_id);
+    return;
+  }
+
+  // 3. If topic_id is attached to the session
+  if (sessionRow.topic_id) {
+    const sessionTitleLower = (sessionRow.title || "").toLowerCase().trim();
+
+    const { data: topicItems } = await supabase
+      .from("learning_items")
+      .select("id, title")
+      .eq("topic_id", sessionRow.topic_id);
+
+    const matchingItem = (topicItems || []).find(
+      (li) => li.title.toLowerCase().trim() === sessionTitleLower
+    );
+
+    if (matchingItem) {
+      await supabase
+        .from("learning_items")
+        .update({
+          status: targetItemStatus,
+          completed_at: isCompleting ? nowTs : null,
+          last_studied_at: nowTs,
+        })
+        .eq("id", matchingItem.id);
+    } else {
+      // Mark all items under this topic as completed if session is for the topic
+      await supabase
+        .from("learning_items")
+        .update({
+          status: targetItemStatus,
+          completed_at: isCompleting ? nowTs : null,
+          last_studied_at: nowTs,
+        })
+        .eq("topic_id", sessionRow.topic_id);
+    }
+    return;
+  }
+
+  // 4. Fallback search by subject_id + title across user's subjects
+  if (sessionRow.subject_id && sessionRow.title) {
+    const sessionTitleLower = sessionRow.title.toLowerCase().trim();
+
+    const { data: subTopics } = await supabase
+      .from("topics")
+      .select("id, name")
+      .eq("subject_id", sessionRow.subject_id);
+
+    if (subTopics && subTopics.length > 0) {
+      const topicIds = subTopics.map((t) => t.id);
+
+      const { data: subItems } = await supabase
+        .from("learning_items")
+        .select("id, title")
+        .in("topic_id", topicIds);
+
+      const matchedItem = (subItems || []).find(
+        (li) => li.title.toLowerCase().trim() === sessionTitleLower
+      );
+
+      if (matchedItem) {
+        await supabase
+          .from("learning_items")
+          .update({
+            status: targetItemStatus,
+            completed_at: isCompleting ? nowTs : null,
+            last_studied_at: nowTs,
+          })
+          .eq("id", matchedItem.id);
+      }
+    }
+  }
+}
+

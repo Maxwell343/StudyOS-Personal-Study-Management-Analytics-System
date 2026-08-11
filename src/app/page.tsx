@@ -20,10 +20,11 @@ import {
   movePlannedSessionToTomorrow,
   reschedulePlannedSessionCustom,
   addPlannedSessionToToday,
+  updatePlannedSessionStatusInDb,
   DashboardData,
 } from "@/lib/data-access/dashboard";
 import { extractAvailableTasksFromSubjects } from "@/lib/data-access/planner";
-import type { DailyMetric, WeeklyDataPoint, StudySession } from "@/types/dashboard";
+import type { DailyMetric, WeeklyDataPoint, StudySession, SessionStatus } from "@/types/dashboard";
 import type { PlanSession, PlannedTask } from "@/types/planner";
 import { Loader2 } from "lucide-react";
 
@@ -227,6 +228,19 @@ export default function DashboardPage() {
     [user, data?.rawSubjects]
   );
 
+  const handleUpdateSessionStatus = useCallback(
+    async (sessionId: string, newStatus: SessionStatus) => {
+      if (!user) return;
+      try {
+        await updatePlannedSessionStatusInDb(user.id, sessionId, newStatus);
+        setRefreshCount((c) => c + 1);
+      } catch (err) {
+        console.error("Error updating planned session status:", err);
+      }
+    },
+    [user]
+  );
+
   const activeSessions = data?.todaySessions || [];
   const nextSession = data?.nextSession || null;
   const metrics = data?.dailyMetrics || DEFAULT_METRICS;
@@ -291,6 +305,7 @@ export default function DashboardPage() {
                     onOpenRescheduleModal={handleOpenRescheduleModal}
                     onMoveAllMissedToTomorrow={handleMoveAllMissedToTomorrow}
                     onAddSession={() => setAddSessionDialogOpen(true)}
+                    onUpdateSessionStatus={handleUpdateSessionStatus}
                   />
                 </div>
 

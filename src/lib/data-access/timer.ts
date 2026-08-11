@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import type { Database, Json } from "@/lib/supabase/database.types";
+import { updatePlannedSessionStatusInDb } from "./dashboard";
 
 export type DbStudySession = Database["public"]["Tables"]["study_sessions"]["Row"];
 
@@ -332,14 +333,9 @@ export async function completeStudySession(
       .eq("id", input.learningItemId);
   }
 
-  // Complete planned session
+  // Complete planned session and sync learning items / topics in subject
   if (input.plannedSessionId) {
-    await supabase
-      .from("planned_sessions")
-      .update({
-        status: "COMPLETED",
-      })
-      .eq("id", input.plannedSessionId);
+    await updatePlannedSessionStatusInDb(input.userId, input.plannedSessionId, "completed");
   }
 
   // Log activity

@@ -13,6 +13,7 @@ interface MissionListProps {
   onOpenRescheduleModal?: (session: StudySession) => void;
   onMoveAllMissedToTomorrow?: () => void;
   onAddSession?: () => void;
+  onUpdateSessionStatus?: (sessionId: string, status: SessionStatus) => void;
 }
 
 export function MissionList({
@@ -23,6 +24,7 @@ export function MissionList({
   onOpenRescheduleModal,
   onMoveAllMissedToTomorrow,
   onAddSession,
+  onUpdateSessionStatus,
 }: MissionListProps) {
   const [overrides, setOverrides] = useState<Record<string, SessionStatus>>({});
   const [activeIndex, setActiveIndex] = useState(0);
@@ -53,12 +55,14 @@ export function MissionList({
       "paused",
       "completed",
     ];
-    setOverrides((prev) => {
-      const current = prev[id] || originalStatus;
-      const idx = order.indexOf(current);
-      const next = order[(idx + 1) % order.length];
-      return { ...prev, [id]: next };
-    });
+    const current = overrides[id] || originalStatus;
+    const idx = order.indexOf(current);
+    const next = order[(idx + 1) % order.length];
+
+    setOverrides((prev) => ({ ...prev, [id]: next }));
+    if (onUpdateSessionStatus) {
+      onUpdateSessionStatus(id, next);
+    }
   };
 
   const handlePrevSlide = () => {
