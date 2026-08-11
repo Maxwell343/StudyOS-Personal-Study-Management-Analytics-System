@@ -24,15 +24,22 @@ import {
   toggleLearningItemCompletionInDb,
   bulkToggleLearningItemsInDb,
   seedDbmsCurriculumInDb,
+  seedPythonCurriculumInDb,
 } from "@/lib/data-access/subjects";
 import type { Subject, Topic, LearningItem, LearningItemStatus } from "@/types/subjects";
 
-// ── DBMS subject name variants (case-insensitive match) ──────────────────────
+// ── DBMS & Python subject name variants ──────────────────────────────────────
 const DBMS_NAME_PATTERNS = ["database management systems", "dbms"];
+const PYTHON_NAME_PATTERNS = ["python", "python basics", "python programming"];
 
 function isDbmsSubject(name: string): boolean {
   const lower = name.toLowerCase().trim();
   return DBMS_NAME_PATTERNS.some((p) => lower.includes(p));
+}
+
+function isPythonSubject(name: string): boolean {
+  const lower = name.toLowerCase().trim();
+  return PYTHON_NAME_PATTERNS.some((p) => lower.includes(p));
 }
 
 export default function SubjectDetailPage({
@@ -48,9 +55,9 @@ export default function SubjectDetailPage({
   const [subject, setSubject] = useState<Subject | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Track whether we have already attempted the DBMS seed for this session.
-  // This prevents repeated seed attempts on hot-reloads or fast navigation.
+  // Track whether we have already attempted curriculum seeds for this session.
   const dbmsSeedAttemptedRef = useRef(false);
+  const pythonSeedAttemptedRef = useRef(false);
 
   // Dialog States
   const [editSubjectOpen, setEditSubjectOpen] = useState(false);
@@ -83,28 +90,36 @@ export default function SubjectDetailPage({
           setSubject(data);
 
           // ── Safe DBMS auto-seed ────────────────────────────────────────────
-          // Only attempt once per component mount (tracked by ref).
-          // Only fires when:
-          //   1. This is a DBMS subject.
-          //   2. The DB-side `dbms_seeded` flag is FALSE (checked server-side in the RPC).
-          //   3. We have not already attempted the seed this session (ref guard).
           if (
             data &&
             isDbmsSubject(data.name) &&
             !dbmsSeedAttemptedRef.current
           ) {
             dbmsSeedAttemptedRef.current = true;
-            // The RPC itself is idempotent: it reads the dbms_seeded flag and
-            // returns immediately without modifying data if already seeded.
             try {
               await seedDbmsCurriculumInDb(user.id, subjectId);
-              // Reload only if we're not cancelled — the seed may have added topics
               if (!isCancelled) {
                 setRefreshIndex((prev) => prev + 1);
               }
             } catch (seedErr) {
               console.error("DBMS curriculum seed error:", seedErr);
-              // Non-fatal: user can still use the page
+            }
+          }
+
+          // ── Safe Python auto-seed ──────────────────────────────────────────
+          if (
+            data &&
+            isPythonSubject(data.name) &&
+            !pythonSeedAttemptedRef.current
+          ) {
+            pythonSeedAttemptedRef.current = true;
+            try {
+              await seedPythonCurriculumInDb(user.id, subjectId);
+              if (!isCancelled) {
+                setRefreshIndex((prev) => prev + 1);
+              }
+            } catch (pErr) {
+              console.error("Python curriculum seed error:", pErr);
             }
           }
         }

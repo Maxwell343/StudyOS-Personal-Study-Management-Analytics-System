@@ -108,6 +108,54 @@ export async function fetchSubjectsForUser(userId: string): Promise<Subject[]> {
   }
 
   const subjectsHierarchy = (data || []) as unknown as DbSubjectWithHierarchy[];
+
+  let needsReFetch = false;
+  for (const sub of subjectsHierarchy) {
+    const totalItems = (sub.topics || []).reduce(
+      (acc, t) => acc + (t.learning_items?.length || 0),
+      0
+    );
+
+    const nameLower = sub.name.toLowerCase().trim();
+    if (nameLower.includes("python") && (totalItems < 39 || (sub.topics || []).length < 9)) {
+      try {
+        await seedPythonCurriculumInDb(userId, sub.id);
+        needsReFetch = true;
+      } catch (err) {
+        console.error("Error auto-seeding Python curriculum in fetchSubjectsForUser:", err);
+      }
+    } else if (
+      (nameLower.includes("dbms") || nameLower.includes("database management systems")) &&
+      totalItems === 0
+    ) {
+      try {
+        await seedDbmsCurriculumInDb(userId, sub.id);
+        needsReFetch = true;
+      } catch (err) {
+        console.error("Error auto-seeding DBMS curriculum in fetchSubjectsForUser:", err);
+      }
+    }
+  }
+
+  if (needsReFetch) {
+    const { data: refetched } = await supabase
+      .from("subjects")
+      .select(`
+        *,
+        topics (
+          *,
+          learning_items (*)
+        )
+      `)
+      .eq("user_id", userId)
+      .eq("archived", false)
+      .order("created_at", { ascending: true });
+
+    if (refetched) {
+      return (refetched as unknown as DbSubjectWithHierarchy[]).map(mapDbSubjectToAppSubject);
+    }
+  }
+
   return subjectsHierarchy.map(mapDbSubjectToAppSubject);
 }
 
@@ -135,7 +183,63 @@ export async function fetchSubjectById(userId: string, subjectId: string): Promi
 
   if (!data) return null;
 
-  return mapDbSubjectToAppSubject(data as unknown as DbSubjectWithHierarchy);
+  const rawSub = data as unknown as DbSubjectWithHierarchy;
+  const totalItems = (rawSub.topics || []).reduce(
+    (acc, t) => acc + (t.learning_items?.length || 0),
+    0
+  );
+
+  const nameLower = rawSub.name.toLowerCase().trim();
+  if (nameLower.includes("python") && (totalItems < 39 || (rawSub.topics || []).length < 9)) {
+    try {
+      await seedPythonCurriculumInDb(userId, subjectId);
+      const { data: refetched } = await supabase
+        .from("subjects")
+        .select(`
+          *,
+          topics (
+            *,
+            learning_items (*)
+          )
+        `)
+        .eq("user_id", userId)
+        .eq("id", subjectId)
+        .maybeSingle();
+
+      if (refetched) {
+        return mapDbSubjectToAppSubject(refetched as unknown as DbSubjectWithHierarchy);
+      }
+    } catch (err) {
+      console.error("Error auto-seeding Python in fetchSubjectById:", err);
+    }
+  } else if (
+    (nameLower.includes("dbms") || nameLower.includes("database management systems")) &&
+    totalItems === 0
+  ) {
+    try {
+      await seedDbmsCurriculumInDb(userId, subjectId);
+      const { data: refetched } = await supabase
+        .from("subjects")
+        .select(`
+          *,
+          topics (
+            *,
+            learning_items (*)
+          )
+        `)
+        .eq("user_id", userId)
+        .eq("id", subjectId)
+        .maybeSingle();
+
+      if (refetched) {
+        return mapDbSubjectToAppSubject(refetched as unknown as DbSubjectWithHierarchy);
+      }
+    } catch (err) {
+      console.error("Error auto-seeding DBMS in fetchSubjectById:", err);
+    }
+  }
+
+  return mapDbSubjectToAppSubject(rawSub);
 }
 
 // ── Mutation Functions ───────────────────────────────────────────────────────
@@ -161,7 +265,14 @@ export async function createSubjectInDb(
 
   if (error) throw error;
   
-  // Return the newly created subject with an empty topics array
+  if (data && data.name.toLowerCase().trim().includes("python")) {
+    try {
+      await seedPythonCurriculumInDb(userId, data.id);
+    } catch (sErr) {
+      console.error("Error auto-seeding Python curriculum on subject creation:", sErr);
+    }
+  }
+
   return mapDbSubjectToAppSubject({
     ...data,
     topics: [],
@@ -717,6 +828,181 @@ export async function seedDbmsCurriculumInDb(
 
       if (iErr) {
         console.error("Error inserting DBMS learning items fallback for:", mod.name, iErr);
+      }
+    }
+  }
+}
+
+export const PYTHON_CURRICULUM_DATA = [
+  {
+    name: "Python Basics",
+    items: [
+      { title: "Python Variables & Naming Rules", minutes: 16 },
+      { title: "Python Data Types", minutes: 8 },
+      { title: "Print Statement in Python", minutes: 15 },
+      { title: "Type Conversion in Python", minutes: 16 },
+      { title: "Escape Sequences", minutes: 12 },
+      { title: "Python Operators", minutes: 30 },
+    ],
+  },
+  {
+    name: "Conditional Statements",
+    items: [
+      { title: "If Else Statements in Python", minutes: 32 },
+    ],
+  },
+  {
+    name: "Loops in Python",
+    items: [
+      { title: "While Loops", minutes: 42 },
+      { title: "For Loops", minutes: 15 },
+      { title: "Break & Continue", minutes: 16 },
+      { title: "Pattern Questions in Python", minutes: 66 },
+    ],
+  },
+  {
+    name: "Functions in Python",
+    items: [
+      { title: "Introduction to Functions", minutes: 14 },
+      { title: "Parameters & Arguments", minutes: 19 },
+      { title: "Return Statements", minutes: 23 },
+      { title: "Default & Keyword Arguments", minutes: 34 },
+      { title: "Local vs Global Variables", minutes: 48 },
+      { title: "Lambda Functions", minutes: 15 },
+    ],
+  },
+  {
+    name: "Python Lists",
+    items: [
+      { title: "Introduction to Lists", minutes: 23 },
+      { title: "List Indexing", minutes: 20 },
+      { title: "List Slicing", minutes: 20 },
+      { title: "Looping Through Lists", minutes: 42 },
+      { title: "List Methods in Python", minutes: 54 },
+      { title: "List Comprehension", minutes: 22 },
+      { title: "Lists & Matrix Questions", minutes: 34 },
+    ],
+  },
+  {
+    name: "Python Tuples",
+    items: [
+      { title: "Introduction to Tuples", minutes: 15 },
+      { title: "Packing & Unpacking", minutes: 13 },
+    ],
+  },
+  {
+    name: "Python Dictionaries",
+    items: [
+      { title: "Introduction to Dictionaries", minutes: 25 },
+      { title: "Looping Through Dictionaries", minutes: 38 },
+      { title: "Sorting Dictionary using Lambda", minutes: 21 },
+      { title: "Dictionary Comprehension", minutes: 16 },
+    ],
+  },
+  {
+    name: "Python Sets",
+    items: [
+      { title: "Introduction to Sets", minutes: 13 },
+      { title: "Set Methods in Python", minutes: 15 },
+    ],
+  },
+  {
+    name: "Python Strings",
+    items: [
+      { title: "Introduction to Strings", minutes: 17 },
+      { title: "String Indexing & Slicing", minutes: 6 },
+      { title: "Looping Through Strings", minutes: 15 },
+      { title: "String Functions in Python", minutes: 14 },
+      { title: "Case Conversion Methods", minutes: 10 },
+      { title: "Content Checking Methods", minutes: 13 },
+      { title: "Split & Join in Python", minutes: 38 },
+      { title: "Strip Method in Python", minutes: 15 },
+    ],
+  },
+];
+
+/**
+ * Seed the Python curriculum into an existing Python subject.
+ */
+export async function seedPythonCurriculumInDb(
+  userId: string,
+  subjectId: string
+): Promise<void> {
+  const { data: existingTopics } = await supabase
+    .from("topics")
+    .select("*")
+    .eq("subject_id", subjectId);
+
+  const topicList = existingTopics || [];
+  const topicIds = topicList.map((t) => t.id);
+
+  let existingItems: Database["public"]["Tables"]["learning_items"]["Row"][] = [];
+  if (topicIds.length > 0) {
+    const { data: itemsData } = await supabase
+      .from("learning_items")
+      .select("*")
+      .in("topic_id", topicIds);
+    existingItems = itemsData || [];
+  }
+
+  for (let topicIdx = 0; topicIdx < PYTHON_CURRICULUM_DATA.length; topicIdx++) {
+    const mod = PYTHON_CURRICULUM_DATA[topicIdx];
+
+    let topicId = "";
+    const matchedTopic = topicList.find(
+      (t) => t.name.toLowerCase().trim() === mod.name.toLowerCase().trim()
+    );
+
+    if (matchedTopic) {
+      topicId = matchedTopic.id;
+    } else {
+      const { data: newTopic, error: tErr } = await supabase
+        .from("topics")
+        .insert({
+          subject_id: subjectId,
+          name: mod.name,
+          display_order: topicIdx + 1,
+        })
+        .select()
+        .single();
+
+      if (tErr || !newTopic) {
+        console.error("Error creating Python topic fallback:", mod.name, tErr);
+        continue;
+      }
+      topicId = newTopic.id;
+      topicList.push(newTopic);
+    }
+
+    const currentTopicItems = existingItems.filter((li) => li.topic_id === topicId);
+    const itemsToInsert = [];
+
+    for (let itemIdx = 0; itemIdx < mod.items.length; itemIdx++) {
+      const itemDef = mod.items[itemIdx];
+      const exists = currentTopicItems.some(
+        (li) => li.title.toLowerCase().trim() === itemDef.title.toLowerCase().trim()
+      );
+
+      if (!exists) {
+        itemsToInsert.push({
+          topic_id: topicId,
+          title: itemDef.title,
+          display_order: itemIdx + 1,
+          status: "NOT_STARTED" as const,
+          priority: "MEDIUM" as const,
+          estimated_minutes: itemDef.minutes,
+          resources: [] as unknown as Json,
+        });
+      }
+    }
+
+    if (itemsToInsert.length > 0) {
+      const { error: iErr } = await supabase
+        .from("learning_items")
+        .insert(itemsToInsert);
+
+      if (iErr) {
+        console.error("Error inserting Python learning items for:", mod.name, iErr);
       }
     }
   }
