@@ -11,6 +11,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import type { WeeklyDataPoint } from "@/types/dashboard";
+import { formatMinutes } from "@/lib/planner-utils";
 
 interface WeeklyAnalyticsProps {
   data: WeeklyDataPoint[];
@@ -53,6 +54,8 @@ function ChartTooltip({
   label?: string;
 }) {
   if (!active || !payload?.length) return null;
+  const valHours = payload[0].value;
+  const formattedTime = formatMinutes(Math.round(valHours * 60));
   return (
     <div
       className="rounded-md px-3 py-2"
@@ -71,7 +74,7 @@ function ChartTooltip({
         className="font-mono text-[13px] font-semibold"
         style={{ color: "#f0f0f4", margin: 0 }}
       >
-        {payload[0].value}h studied
+        {formattedTime} studied
       </p>
     </div>
   );
@@ -177,18 +180,19 @@ export function WeeklyAnalytics({ data }: WeeklyAnalyticsProps) {
               strokeDasharray="4 4"
             />
             <Bar dataKey="hours" radius={[4, 4, 0, 0]}>
-              {data.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill={
-                    index === 6
-                      ? "rgba(255,255,255,0.05)"
-                      : entry.hours >= 5
-                        ? "#22d3ee"
-                        : "rgba(34,211,238,0.3)"
-                  }
-                />
-              ))}
+              {data.map((entry, index) => {
+                const isToday = index === 6;
+                const isTargetMet = entry.hours >= 5;
+                let barFill = "rgba(255,255,255,0.04)";
+                if (isToday) {
+                  barFill = entry.hours > 0 ? "#22d3ee" : "rgba(34,211,238,0.2)";
+                } else if (isTargetMet) {
+                  barFill = "#22c55e";
+                } else if (entry.hours > 0) {
+                  barFill = "rgba(34,211,238,0.5)";
+                }
+                return <Cell key={`cell-${index}`} fill={barFill} />;
+              })}
             </Bar>
           </BarChart>
         </ResponsiveContainer>

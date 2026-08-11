@@ -168,20 +168,69 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
 
   const { data: recentSessions } = await supabase
     .from("study_sessions")
-    .select("id, started_at, planned_minutes, actual_minutes, status, learning_item_id")
+    .select("id, started_at, planned_session_id, planned_minutes, actual_minutes, status, learning_item_id")
     .eq("user_id", userId)
     .gte("started_at", `${thirtyDaysAgoStr}T00:00:00Z`);
 
-  // Compute Today's actual study minutes & completed sessions
-  let actualMinutesToday = 0;
-  let completedSessionsToday = 0;
+  // Compute Today's actual study minutes & completed sessions from planned sessions
+  const sessionActualMinsMap = new Map<string, number>();
+  const completedItemIds = new Set<string>();
 
   (recentSessions || []).forEach((s) => {
     if (s.started_at.startsWith(today) && s.status === "COMPLETED") {
-      actualMinutesToday += s.actual_minutes || 0;
-      completedSessionsToday += 1;
+      if (s.planned_session_id && s.actual_minutes) {
+        const current = sessionActualMinsMap.get(s.planned_session_id) || 0;
+        sessionActualMinsMap.set(s.planned_session_id, current + s.actual_minutes);
+      }
+      if (s.learning_item_id) {
+        completedItemIds.add(s.learning_item_id);
+      }
     }
   });
+
+  let actualMinutesToday = 0;
+  let completedSessionsToday = 0;
+
+  if (plannedSessionsRaw.length > 0) {
+    plannedSessionsRaw.forEach((ps) => {
+      if (ps.status === "COMPLETED") {
+        completedSessionsToday += 1;
+        const loggedMins = sessionActualMinsMap.get(ps.id);
+        const mins = loggedMins !== undefined && loggedMins > 0 ? loggedMins : ps.planned_minutes || 0;
+        actualMinutesToday += mins;
+      }
+    });
+
+    (recentSessions || []).forEach((s) => {
+      if (s.started_at.startsWith(today) && s.status === "COMPLETED" && !s.planned_session_id && s.learning_item_id) {
+        if (!completedItemIds.has(s.learning_item_id)) {
+          completedSessionsToday += 1;
+          actualMinutesToday += s.actual_minutes || s.planned_minutes || 0;
+        }
+      }
+    });
+  } else {
+    const seenAdhocItems = new Set<string>();
+    (recentSessions || []).forEach((s) => {
+      if (s.started_at.startsWith(today) && s.status === "COMPLETED") {
+        const key = s.planned_session_id || s.learning_item_id || s.id;
+        if (!seenAdhocItems.has(key)) {
+          seenAdhocItems.add(key);
+          completedSessionsToday += 1;
+          actualMinutesToday += s.actual_minutes || s.planned_minutes || 0;
+        }
+      }
+    });
+  }
+
+  // Purge any orphan unlinked study_sessions rows for today from DB
+  const orphanIdsToDelete = (recentSessions || [])
+    .filter((s) => s.started_at.startsWith(today) && !s.planned_session_id && !s.learning_item_id)
+    .map((s) => s.id);
+
+  if (orphanIdsToDelete.length > 0) {
+    supabase.from("study_sessions").delete().in("id", orphanIdsToDelete).then(() => {});
+  }
 
   const todaySessionsList: StudySession[] = plannedSessionsRaw.map((row) => {
     const sub = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
@@ -229,20 +278,25 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
   }
 
   (recentSessions || []).forEach((s) => {
-    if (s.status === "COMPLETED" && s.actual_minutes) {
+    if (s.status === "COMPLETED") {
       const localDate = new Date(s.started_at);
       const dateKey = getLocalYYYYMMDD(localDate);
-      if (weeklyMap.has(dateKey)) {
+      if (dateKey !== today && weeklyMap.has(dateKey)) {
+        const mins = s.actual_minutes && s.actual_minutes > 0 ? s.actual_minutes : s.planned_minutes || 0;
         const current = weeklyMap.get(dateKey) || 0;
-        weeklyMap.set(dateKey, current + s.actual_minutes / 60);
+        weeklyMap.set(dateKey, current + mins / 60);
       }
     }
   });
 
+  // Dynamically sync Today's real-time deduplicated actual study time
+  weeklyMap.set(today, actualMinutesToday / 60);
+
   const weeklyData: WeeklyDataPoint[] = Array.from(weeklyMap.entries()).map(
     ([dateStr, hours]) => {
-      const d = new Date(dateStr + "T12:00:00Z");
-      const dayName = dayNames[d.getDay()];
+      const [y, m, d] = dateStr.split("-").map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      const dayName = dayNames[dateObj.getDay()];
       return {
         day: dayName,
         hours: Math.round(hours * 10) / 10,
@@ -392,10 +446,10 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
   const dailyMetrics: DailyMetric[] = [
     {
       label: "TOTAL STUDY TIME",
-      value: `${hoursStudied}h`,
+      value: formatMinutes(actualMinutesToday),
       sub:
         targetMinutesToday > 0
-          ? `/ ${totalTargetHours}h target`
+          ? `/ ${formatMinutes(targetMinutesToday)} target`
           : "No target set",
       iconName: "Clock",
       iconColor: "#22d3ee",
@@ -406,7 +460,7 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
       value: `${completedSessionsToday}`,
       sub:
         todaySessionsList.length > 0
-          ? `/ ${todaySessionsList.length} completed`
+          ? `/ ${todaySessionsList.length} planned`
           : "0 planned today",
       iconName: "Target",
       iconColor: "#34d399",
@@ -848,8 +902,71 @@ export async function updatePlannedSessionStatusInDb(
   const targetItemStatus = isCompleting ? "COMPLETED" : "NOT_STARTED";
   const nowTs = new Date().toISOString();
 
-  // 2. If learning_item_id is directly attached to the session
+  // Fetch candidate learning items for topic or subject
+  let candidateItems: { id: string; title: string; topic_id: string }[] = [];
+
+  if (sessionRow.topic_id) {
+    const { data: topicItems } = await supabase
+      .from("learning_items")
+      .select("id, title, topic_id")
+      .eq("topic_id", sessionRow.topic_id);
+    if (topicItems) candidateItems = topicItems;
+  } else if (sessionRow.subject_id) {
+    const { data: subTopics } = await supabase
+      .from("topics")
+      .select("id")
+      .eq("subject_id", sessionRow.subject_id);
+
+    if (subTopics && subTopics.length > 0) {
+      const topicIds = subTopics.map((t) => t.id);
+      const { data: subItems } = await supabase
+        .from("learning_items")
+        .select("id, title, topic_id")
+        .in("topic_id", topicIds);
+      if (subItems) candidateItems = subItems;
+    }
+  }
+
+  const sessionTitleLower = (sessionRow.title || "").toLowerCase().trim();
+  const matchedItemIds = new Set<string>();
+
+  // 2. Direct match by learning_item_id
   if (sessionRow.learning_item_id) {
+    matchedItemIds.add(sessionRow.learning_item_id);
+  }
+
+  // 3. Match items against session title (supporting multiple selected topics)
+  candidateItems.forEach((item) => {
+    const fullTitleLower = item.title.toLowerCase().trim();
+    const cleanTitleLower = item.title.includes(" — ")
+      ? item.title.split(" — ").slice(1).join(" — ").trim().toLowerCase()
+      : fullTitleLower;
+
+    if (
+      sessionTitleLower.includes(fullTitleLower) ||
+      (cleanTitleLower.length > 2 && sessionTitleLower.includes(cleanTitleLower)) ||
+      fullTitleLower.includes(sessionTitleLower)
+    ) {
+      matchedItemIds.add(item.id);
+    }
+  });
+
+  // 4. Special fallback: only mark entire module if session title EXACTLY matches the module name
+  if (matchedItemIds.size === 0 && sessionRow.topic_id) {
+    const { data: topRow } = await supabase
+      .from("topics")
+      .select("name")
+      .eq("id", sessionRow.topic_id)
+      .maybeSingle();
+
+    if (topRow && sessionTitleLower === topRow.name.toLowerCase().trim()) {
+      candidateItems.forEach((item) => matchedItemIds.add(item.id));
+    }
+  }
+
+  // 5. Update ONLY matched learning items in DB
+  if (matchedItemIds.size > 0) {
+    const idsArray = Array.from(matchedItemIds);
     await supabase
       .from("learning_items")
       .update({
@@ -857,78 +974,7 @@ export async function updatePlannedSessionStatusInDb(
         completed_at: isCompleting ? nowTs : null,
         last_studied_at: nowTs,
       })
-      .eq("id", sessionRow.learning_item_id);
-    return;
-  }
-
-  // 3. If topic_id is attached to the session
-  if (sessionRow.topic_id) {
-    const sessionTitleLower = (sessionRow.title || "").toLowerCase().trim();
-
-    const { data: topicItems } = await supabase
-      .from("learning_items")
-      .select("id, title")
-      .eq("topic_id", sessionRow.topic_id);
-
-    const matchingItem = (topicItems || []).find(
-      (li) => li.title.toLowerCase().trim() === sessionTitleLower
-    );
-
-    if (matchingItem) {
-      await supabase
-        .from("learning_items")
-        .update({
-          status: targetItemStatus,
-          completed_at: isCompleting ? nowTs : null,
-          last_studied_at: nowTs,
-        })
-        .eq("id", matchingItem.id);
-    } else {
-      // Mark all items under this topic as completed if session is for the topic
-      await supabase
-        .from("learning_items")
-        .update({
-          status: targetItemStatus,
-          completed_at: isCompleting ? nowTs : null,
-          last_studied_at: nowTs,
-        })
-        .eq("topic_id", sessionRow.topic_id);
-    }
-    return;
-  }
-
-  // 4. Fallback search by subject_id + title across user's subjects
-  if (sessionRow.subject_id && sessionRow.title) {
-    const sessionTitleLower = sessionRow.title.toLowerCase().trim();
-
-    const { data: subTopics } = await supabase
-      .from("topics")
-      .select("id, name")
-      .eq("subject_id", sessionRow.subject_id);
-
-    if (subTopics && subTopics.length > 0) {
-      const topicIds = subTopics.map((t) => t.id);
-
-      const { data: subItems } = await supabase
-        .from("learning_items")
-        .select("id, title")
-        .in("topic_id", topicIds);
-
-      const matchedItem = (subItems || []).find(
-        (li) => li.title.toLowerCase().trim() === sessionTitleLower
-      );
-
-      if (matchedItem) {
-        await supabase
-          .from("learning_items")
-          .update({
-            status: targetItemStatus,
-            completed_at: isCompleting ? nowTs : null,
-            last_studied_at: nowTs,
-          })
-          .eq("id", matchedItem.id);
-      }
-    }
+      .in("id", idsArray);
   }
 }
 

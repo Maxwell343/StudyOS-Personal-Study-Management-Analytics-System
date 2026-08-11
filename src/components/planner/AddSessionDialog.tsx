@@ -105,19 +105,23 @@ function AddSessionDialogInner({
 
     setSelectedTaskIds(nextIds);
 
-    // Auto-populate the Topic field with the Module Name(s)
+    // Auto-populate Topic field with Module Name and specific sub-topics/tasks
     const selectedTaskObjs = availableTasks.filter((t) => nextIds.includes(t.id));
     if (selectedTaskObjs.length > 0) {
-      const moduleNames = Array.from(
-        new Set(
-          selectedTaskObjs.map((t) => {
-            if (t.topicName) return t.topicName;
-            const parts = t.label.split(" — ");
-            return parts[0] || t.label;
-          })
-        )
-      );
-      setTopic(moduleNames.join(", "));
+      const byModule: Record<string, string[]> = {};
+      selectedTaskObjs.forEach((t) => {
+        const modName = t.topicName || t.label.split(" — ")[0] || "Module";
+        const rawItemTitle = t.itemTitle || t.label.split(" — ").slice(1).join(" — ") || t.label;
+        const itemTitle = rawItemTitle.replace(new RegExp(`^${modName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*—\\s*`, "i"), "").trim();
+        if (!byModule[modName]) byModule[modName] = [];
+        byModule[modName].push(itemTitle);
+      });
+
+      const formattedParts = Object.entries(byModule).map(([mod, items]) => {
+        return `${mod}: ${items.join(", ")}`;
+      });
+
+      setTopic(formattedParts.join(" | "));
     }
   };
 

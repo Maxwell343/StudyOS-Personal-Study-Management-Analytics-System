@@ -13,6 +13,33 @@ interface CalendarDayDetailsProps {
   onStartSession?: (session: CalendarSession) => void;
 }
 
+function isSessionStartable(day: CalendarDayData, session: CalendarSession): boolean {
+  if (!day.isToday) return false;
+
+  if (
+    session.status === "active" ||
+    session.status === "paused" ||
+    session.status === "starting-soon" ||
+    session.status === "behind-schedule"
+  ) {
+    return true;
+  }
+
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  const startTimeStr = session.startTime || session.timeRange.split("-")[0]?.trim() || "00:00";
+  const endTimeStr = session.endTime || session.timeRange.split("-")[1]?.trim() || "23:59";
+
+  const [sh, sm] = startTimeStr.slice(0, 5).split(":").map(Number);
+  const startMinutes = (sh || 0) * 60 + (sm || 0);
+
+  const [eh, em] = endTimeStr.slice(0, 5).split(":").map(Number);
+  const endMinutes = (eh || 0) * 60 + (em || 0);
+
+  return nowMinutes >= startMinutes - 15 && nowMinutes <= endMinutes;
+}
+
 export function CalendarDayDetails({
   open,
   day,
@@ -245,7 +272,7 @@ export function CalendarDayDetails({
                       <span className="font-mono text-[11px] text-[#8a8a9e]">
                         {formatMinutes(session.plannedMinutes)} planned
                       </span>
-                      {onStartSession && (
+                      {onStartSession && isSessionStartable(day, session) && (
                         <button
                           type="button"
                           onClick={() => onStartSession(session)}

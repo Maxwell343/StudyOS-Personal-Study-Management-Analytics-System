@@ -68,7 +68,7 @@ export function formatTimerSeconds(totalSeconds: number): string {
  * Fetch any active or paused study session for user.
  */
 export async function fetchActiveSession(userId: string): Promise<ActiveSessionDetails | null> {
-  const { data: session, error } = await supabase
+  const { data: sessions, error } = await supabase
     .from("study_sessions")
     .select(`
       *,
@@ -84,16 +84,39 @@ export async function fetchActiveSession(userId: string): Promise<ActiveSessionD
     `)
     .eq("user_id", userId)
     .in("status", ["ACTIVE", "PAUSED"])
-    .order("started_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("started_at", { ascending: false });
 
-  if (error) {
-    console.error("Error fetching active session:", error);
+  if (error || !sessions || sessions.length === 0) {
     return null;
   }
 
-  if (!session) return null;
+  // If there are duplicate active or paused sessions, auto-abandon all older ones
+  if (sessions.length > 1) {
+    const olderIds = sessions.slice(1).map((s) => s.id);
+    await supabase
+      .from("study_sessions")
+      .update({ status: "ABANDONED", ended_at: new Date().toISOString() })
+      .in("id", olderIds);
+  }
+
+  const session = sessions[0];
+
+  // Auto-abandon stale active sessions older than 8 hours
+  const startedMs = new Date(session.started_at).getTime();
+  if (Date.now() - startedMs > 8 * 60 * 60 * 1000) {
+    await supabase
+      .from("study_sessions")
+      .update({ status: "ABANDONED", ended_at: new Date().toISOString() })
+      .eq("id", session.id);
+
+    if (session.planned_session_id) {
+      await supabase
+        .from("planned_sessions")
+        .update({ status: "PLANNED" })
+        .eq("id", session.planned_session_id);
+    }
+    return null;
+  }
 
   interface NestedSession {
     learning_items: {
@@ -167,6 +190,13 @@ export async function startStudySession(
       if (active) return active;
     }
   }
+
+  // Clean up any lingering active/paused sessions for this user before starting anew
+  await supabase
+    .from("study_sessions")
+    .update({ status: "ABANDONED", ended_at: new Date().toISOString() })
+    .eq("user_id", userId)
+    .in("status", ["ACTIVE", "PAUSED"]);
 
   const startedAt = new Date().toISOString();
 
@@ -350,6 +380,13 @@ export async function completeStudySession(
     metadata: meta,
   });
 
+  // Clean up any other lingering active/paused sessions for this user
+  await supabase
+    .from("study_sessions")
+    .update({ status: "ABANDONED", ended_at: endedAt })
+    .eq("user_id", input.userId)
+    .in("status", ["ACTIVE", "PAUSED"]);
+
   return actualMins;
 }
 
@@ -357,14 +394,29 @@ export async function completeStudySession(
  * Abandon active session.
  */
 export async function abandonStudySession(sessionId: string): Promise<void> {
-  const { error } = await supabase
+  const { data: row } = await supabase
     .from("study_sessions")
     .update({
       status: "ABANDONED",
       ended_at: new Date().toISOString(),
       paused_at: null,
     })
-    .eq("id", sessionId);
+    .eq("id", sessionId)
+    .select("user_id, planned_session_id")
+    .maybeSingle();
 
-  if (error) throw error;
+  if (row?.user_id) {
+    await supabase
+      .from("study_sessions")
+      .update({ status: "ABANDONED", ended_at: new Date().toISOString() })
+      .eq("user_id", row.user_id)
+      .in("status", ["ACTIVE", "PAUSED"]);
+  }
+
+  if (row?.planned_session_id) {
+    await supabase
+      .from("planned_sessions")
+      .update({ status: "PLANNED" })
+      .eq("id", row.planned_session_id);
+  }
 }
