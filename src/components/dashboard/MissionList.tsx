@@ -180,15 +180,6 @@ export function MissionList({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {onStartSession && (
-              <button
-                type="button"
-                onClick={() => onStartSession(missedSessions[0])}
-                className="flex cursor-pointer items-center gap-1 rounded bg-[#22d3ee]/20 px-2.5 py-1 text-[11px] font-semibold text-[#22d3ee] hover:bg-[#22d3ee]/30 transition border border-[#22d3ee]/30"
-              >
-                <Play size={11} /> Resume / Start Now
-              </button>
-            )}
             {onMoveAllMissedToTomorrow && (
               <button
                 type="button"

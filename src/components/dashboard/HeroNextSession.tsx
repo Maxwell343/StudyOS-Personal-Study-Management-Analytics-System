@@ -368,18 +368,37 @@ export function HeroNextSession({
                 </button>
               )}
 
-              <button
-                onClick={handleStart}
-                className="flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-[7px] px-5 py-2.5 text-[13px] font-semibold tracking-[0.2px]"
-                style={{
-                  border: "1px solid rgba(34,211,238,0.35)",
-                  background: "rgba(34,211,238,0.1)",
-                  color: "#22d3ee",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                <Play size={11} /> {session.status === "missed" ? "Resume / Start Session" : "Start Session"}
-              </button>
+              {(() => {
+                const isWorkable = session.status === "starting-soon" || session.status === "behind-schedule";
+                let tooltip = "Start session";
+                if (session.status === "upcoming") {
+                  tooltip = `Available during time slot (${session.timeRange})`;
+                } else if (session.status === "missed") {
+                  tooltip = "Time slot passed. Reschedule or move to tomorrow.";
+                }
+
+                return (
+                  <button
+                    onClick={handleStart}
+                    disabled={!isWorkable}
+                    title={tooltip}
+                    className={`flex items-center gap-2 whitespace-nowrap rounded-[7px] px-5 py-2.5 text-[13px] font-semibold tracking-[0.2px] transition-all duration-150 ${
+                      !isWorkable ? "cursor-not-allowed opacity-35" : "cursor-pointer"
+                    }`}
+                    style={{
+                      border: isWorkable
+                        ? "1px solid rgba(34,211,238,0.35)"
+                        : "1px solid rgba(255,255,255,0.06)",
+                      background: isWorkable
+                        ? "rgba(34,211,238,0.1)"
+                        : "transparent",
+                      color: isWorkable ? "#22d3ee" : "#5a5a6a",
+                    }}
+                  >
+                    <Play size={11} /> Start Session
+                  </button>
+                );
+              })()}
               {onDeleteSession && (
                 <button
                   onClick={() => onDeleteSession(session.id)}

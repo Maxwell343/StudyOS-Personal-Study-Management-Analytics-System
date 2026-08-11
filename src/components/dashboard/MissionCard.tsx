@@ -169,40 +169,51 @@ export function MissionCard({
           </button>
         )}
 
-        {!isCompleted && (
-          <button
-            onClick={handleAction}
-            className="flex cursor-pointer items-center gap-[5px] whitespace-nowrap rounded-[5px] px-3 py-[5px] text-[11px] font-semibold"
-            style={{
-              border: isNext || isMissed
-                ? "1px solid rgba(34,211,238,0.3)"
-                : "1px solid rgba(255,255,255,0.06)",
-              background: isActive
-                ? "rgba(34,211,238,0.08)"
-                : isMissed
-                  ? "rgba(34,211,238,0.1)"
+        {!isCompleted && (() => {
+          const isWorkable = isActive || isPaused || status === "starting-soon" || status === "behind-schedule";
+          let tooltip = "Start session";
+          if (status === "upcoming") {
+            tooltip = `Available during time slot (${session.startTime} - ${session.endTime})`;
+          } else if (status === "missed") {
+            tooltip = "Time slot passed. Reschedule or move to tomorrow.";
+          }
+
+          return (
+            <button
+              onClick={handleAction}
+              disabled={!isWorkable}
+              title={tooltip}
+              className={`flex items-center gap-[5px] whitespace-nowrap rounded-[5px] px-3 py-[5px] text-[11px] font-semibold transition-all duration-150 ${
+                !isWorkable ? "cursor-not-allowed opacity-35" : "cursor-pointer"
+              }`}
+              style={{
+                border: isWorkable
+                  ? "1px solid rgba(34,211,238,0.3)"
+                  : "1px solid rgba(255,255,255,0.06)",
+                background: isActive
+                  ? "rgba(34,211,238,0.08)"
                   : "transparent",
-              color: isNext || isMissed ? "#22d3ee" : "#5a5a6a",
-              transition: "all 0.12s ease",
-            }}
-          >
-            {isActive ? (
-              <>
-                <span className="text-[8px]">⏸</span> Pause
-              </>
-            ) : isPaused || isMissed || isBehind ? (
-              <>
-                <Play size={9} />
-                Resume
-              </>
-            ) : (
-              <>
-                <Play size={9} />
-                Start
-              </>
-            )}
-          </button>
-        )}
+                color: isWorkable ? "#22d3ee" : "#5a5a6a",
+              }}
+            >
+              {isActive ? (
+                <>
+                  <span className="text-[8px]">⏸</span> Pause
+                </>
+              ) : isPaused ? (
+                <>
+                  <Play size={9} />
+                  Resume
+                </>
+              ) : (
+                <>
+                  <Play size={9} />
+                  Start
+                </>
+              )}
+            </button>
+          );
+        })()}
         {onDelete && (
           <button
             type="button"
