@@ -144,6 +144,29 @@ export async function startStudySession(
     title?: string;
   }
 ): Promise<ActiveSessionDetails> {
+  // If there's an existing PAUSED session for this planned session, resume it instead of starting anew
+  if (input.plannedSessionId) {
+    const { data: existingPaused } = await supabase
+      .from("study_sessions")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("planned_session_id", input.plannedSessionId)
+      .eq("status", "PAUSED")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingPaused && existingPaused.paused_at) {
+      await resumeStudySession(
+        existingPaused.id,
+        existingPaused.paused_at,
+        existingPaused.total_paused_seconds || 0
+      );
+      const active = await fetchActiveSession(userId);
+      if (active) return active;
+    }
+  }
+
   const startedAt = new Date().toISOString();
 
   const insertPayload: Database["public"]["Tables"]["study_sessions"]["Insert"] = {

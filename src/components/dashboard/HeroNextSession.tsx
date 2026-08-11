@@ -378,7 +378,7 @@ export function HeroNextSession({
                   transition: "all 0.15s ease",
                 }}
               >
-                <Play size={11} /> Start Session
+                <Play size={11} /> {session.status === "missed" ? "Resume / Start Session" : "Start Session"}
               </button>
               {onDeleteSession && (
                 <button

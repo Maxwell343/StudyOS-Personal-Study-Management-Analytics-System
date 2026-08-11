@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Save, Lock, Unlock } from "lucide-react";
 
 interface PlanHeaderProps {
@@ -13,15 +14,20 @@ export function PlanHeader({
   onSaveDraft,
   onToggleLock,
 }: PlanHeaderProps) {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const [formattedDate, setFormattedDate] = useState<string>("");
 
-  const formattedDate = tomorrow.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  useEffect(() => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setFormattedDate(
+      tomorrow.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    );
+  }, []);
 
   return (
     <header className="flex shrink-0 items-start justify-between px-9 pt-[26px]">

@@ -115,7 +115,21 @@ export default function DashboardPage() {
     };
   }, [user, authLoading, refreshCount]);
 
-  const { activeSession, abandonSession } = useSessionTimer();
+  const { activeSession, abandonSession, startSession } = useSessionTimer();
+
+  const handleStartSession = useCallback(
+    async (session: StudySession) => {
+      await startSession({
+        plannedSessionId: session.id !== "default-session" ? session.id : undefined,
+        plannedMinutes: session.plannedMinutes || 60,
+        subjectName: session.subject,
+        topicName: session.topic,
+        title: `${session.subject}: ${session.topic}`,
+      });
+      setRefreshCount((c) => c + 1);
+    },
+    [startSession]
+  );
 
   const availableTasks: PlannedTask[] = useMemo(() => {
     if (!data?.rawSubjects) return [];
@@ -271,6 +285,7 @@ export default function DashboardPage() {
                 <div className="flex flex-col h-full">
                   <MissionList
                     sessions={activeSessions}
+                    onStartSession={handleStartSession}
                     onDeleteSession={handleDeleteSession}
                     onMoveToTomorrow={handleMoveToTomorrow}
                     onOpenRescheduleModal={handleOpenRescheduleModal}

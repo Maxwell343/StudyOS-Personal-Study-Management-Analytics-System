@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { AlertCircle, Calendar, Clock, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Play, AlertCircle, Calendar, Clock, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import type { StudySession, SessionStatus } from "@/types/dashboard";
 import { formatMinutes } from "@/lib/planner-utils";
 import { MissionCard } from "./MissionCard";
 
 interface MissionListProps {
   sessions: StudySession[];
+  onStartSession?: (session: StudySession) => void;
   onDeleteSession?: (sessionId: string) => void;
   onMoveToTomorrow?: (sessionId: string) => void;
   onOpenRescheduleModal?: (session: StudySession) => void;
@@ -16,6 +17,7 @@ interface MissionListProps {
 
 export function MissionList({
   sessions,
+  onStartSession,
   onDeleteSession,
   onMoveToTomorrow,
   onOpenRescheduleModal,
@@ -178,6 +180,15 @@ export function MissionList({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {onStartSession && (
+              <button
+                type="button"
+                onClick={() => onStartSession(missedSessions[0])}
+                className="flex cursor-pointer items-center gap-1 rounded bg-[#22d3ee]/20 px-2.5 py-1 text-[11px] font-semibold text-[#22d3ee] hover:bg-[#22d3ee]/30 transition border border-[#22d3ee]/30"
+              >
+                <Play size={11} /> Resume / Start Now
+              </button>
+            )}
             {onMoveAllMissedToTomorrow && (
               <button
                 type="button"
@@ -243,6 +254,7 @@ export function MissionList({
                   status={getStatus(session.id, session.status)}
                   isNext={idx === 0}
                   onCycle={() => cycleSessionStatus(session.id, session.status)}
+                  onStartSession={onStartSession ? () => onStartSession(session) : undefined}
                   onDelete={onDeleteSession ? () => onDeleteSession(session.id) : undefined}
                   onMoveToTomorrow={onMoveToTomorrow ? () => onMoveToTomorrow(session.id) : undefined}
                   onReschedule={onOpenRescheduleModal ? () => onOpenRescheduleModal(session) : undefined}

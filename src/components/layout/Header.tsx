@@ -8,6 +8,7 @@ export function Header() {
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
+    setCurrentTime(new Date());
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
@@ -31,16 +32,21 @@ export function Header() {
     formattedElapsed,
   } = useSessionTimer();
 
-  const currentHour = new Date().getHours();
-  let greeting = "Good evening";
-  let emoji = "🌙";
-  
-  if (currentHour < 12) {
-    greeting = "Good morning";
-    emoji = "☀️";
-  } else if (currentHour < 17) {
-    greeting = "Good afternoon";
-    emoji = "🌤️";
+  const currentHour = currentTime ? currentTime.getHours() : null;
+  let greeting = "Good day";
+  let emoji = "✨";
+
+  if (currentHour !== null) {
+    if (currentHour < 12) {
+      greeting = "Good morning";
+      emoji = "☀️";
+    } else if (currentHour < 17) {
+      greeting = "Good afternoon";
+      emoji = "🌤️";
+    } else {
+      greeting = "Good evening";
+      emoji = "🌙";
+    }
   }
 
   return (

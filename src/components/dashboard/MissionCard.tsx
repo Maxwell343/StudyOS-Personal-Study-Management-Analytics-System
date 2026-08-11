@@ -9,6 +9,7 @@ interface MissionCardProps {
   status: SessionStatus;
   isNext: boolean;
   onCycle: () => void;
+  onStartSession?: () => void;
   onDelete?: () => void;
   onMoveToTomorrow?: () => void;
   onReschedule?: () => void;
@@ -43,12 +44,14 @@ export function MissionCard({
   status,
   isNext,
   onCycle,
+  onStartSession,
   onDelete,
   onMoveToTomorrow,
   onReschedule,
 }: MissionCardProps) {
   const isCompleted = status === "completed";
   const isActive = status === "active";
+  const isPaused = status === "paused";
   const isMissed = status === "missed";
   const isBehind = status === "behind-schedule";
 
@@ -67,6 +70,14 @@ export function MissionCard({
     borderColor = "rgba(34,211,238,0.14)";
     bgColor = "rgba(34,211,238,0.03)";
   }
+
+  const handleAction = () => {
+    if (onStartSession) {
+      onStartSession();
+    } else {
+      onCycle();
+    }
+  };
 
   return (
     <div
@@ -160,20 +171,29 @@ export function MissionCard({
 
         {!isCompleted && (
           <button
-            onClick={onCycle}
+            onClick={handleAction}
             className="flex cursor-pointer items-center gap-[5px] whitespace-nowrap rounded-[5px] px-3 py-[5px] text-[11px] font-semibold"
             style={{
-              border: isNext
-                ? "1px solid rgba(34,211,238,0.2)"
+              border: isNext || isMissed
+                ? "1px solid rgba(34,211,238,0.3)"
                 : "1px solid rgba(255,255,255,0.06)",
-              background: isActive ? "rgba(34,211,238,0.08)" : "transparent",
-              color: isNext ? "#22d3ee" : "#5a5a6a",
+              background: isActive
+                ? "rgba(34,211,238,0.08)"
+                : isMissed
+                  ? "rgba(34,211,238,0.1)"
+                  : "transparent",
+              color: isNext || isMissed ? "#22d3ee" : "#5a5a6a",
               transition: "all 0.12s ease",
             }}
           >
             {isActive ? (
               <>
                 <span className="text-[8px]">⏸</span> Pause
+              </>
+            ) : isPaused || isMissed || isBehind ? (
+              <>
+                <Play size={9} />
+                Resume
               </>
             ) : (
               <>
