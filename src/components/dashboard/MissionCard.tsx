@@ -9,6 +9,7 @@ interface MissionCardProps {
   status: SessionStatus;
   isNext: boolean;
   onCycle: () => void;
+  onSelectSession?: (session: StudySession) => void;
   onStartSession?: () => void;
   onDelete?: () => void;
   onMoveToTomorrow?: () => void;
@@ -44,6 +45,7 @@ export function MissionCard({
   status,
   isNext,
   onCycle,
+  onSelectSession,
   onStartSession,
   onDelete,
   onMoveToTomorrow,
@@ -71,7 +73,8 @@ export function MissionCard({
     bgColor = "rgba(34,211,238,0.03)";
   }
 
-  const handleAction = () => {
+  const handleAction = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (onStartSession) {
       onStartSession();
     } else {
@@ -81,7 +84,9 @@ export function MissionCard({
 
   return (
     <div
-      className="session-card relative grid items-center gap-3.5 rounded-[7px] px-3 py-2.5"
+      onClick={() => onSelectSession?.(session)}
+      title="Click to view planned topics & curriculum items"
+      className="session-card group relative grid cursor-pointer items-center gap-3.5 rounded-[7px] px-3 py-2.5 transition-all duration-150 hover:border-cyan-400/30 hover:bg-white/[0.02]"
       style={{
         gridTemplateColumns: "90px 1fr auto",
         border: `1px solid ${borderColor}`,
@@ -91,10 +96,10 @@ export function MissionCard({
     >
       {/* Left accent */}
       <div
-        className="absolute left-0 top-[20%] bottom-[20%] w-0.5 rounded-r-sm"
+        className="absolute left-0 top-[20%] bottom-[20%] w-0.5 rounded-r-sm transition-all group-hover:w-1"
         style={{
           background: isMissed ? "#ef4444" : isBehind ? "#f59e0b" : session.color,
-          opacity: isNext || isMissed || isBehind ? 0.9 : 0.3,
+          opacity: isNext || isMissed || isBehind ? 0.9 : 0.4,
         }}
       />
 
@@ -110,14 +115,14 @@ export function MissionCard({
       </div>
 
       {/* Subject + topic */}
-      <div>
+      <div className="min-w-0">
         <div className="mb-0.5 flex items-center gap-[7px]">
           <div
             className="h-1.5 w-1.5 shrink-0 rounded-full"
             style={{ background: session.color }}
           />
           <span
-            className="text-[13px] font-semibold tracking-tight"
+            className="text-[13px] font-semibold tracking-tight group-hover:text-cyan-300 transition"
             style={{
               color: isCompleted ? "#6b6b80" : "#f0f0f4",
               textDecoration: isCompleted ? "line-through" : "none",
@@ -129,26 +134,35 @@ export function MissionCard({
             ·
           </span>
           <span
-            className="text-xs"
+            className="text-xs truncate font-medium group-hover:text-white transition"
             style={{ color: isCompleted ? "#4a4a5a" : "#8a8a9e" }}
           >
             {session.topic}
           </span>
         </div>
         <div
-          className="pl-[13px] font-mono text-[10.5px]"
+          className="pl-[13px] font-mono text-[10.5px] flex items-center gap-2"
           style={{ color: isMissed ? "#ef4444" : "#4a4a5a" }}
         >
-          {session.duration} {isMissed && "· Time slot passed"}
+          <span>{session.duration} {isMissed && "· Time slot passed"}</span>
+          <span className="opacity-0 group-hover:opacity-100 text-cyan-400 font-sans text-[10px] transition">
+            Click to view topics &rarr;
+          </span>
         </div>
       </div>
 
       {/* Action buttons */}
-      <div className="flex items-center gap-1.5">
+      <div
+        className="flex items-center gap-1.5"
+        onClick={(e) => e.stopPropagation()}
+      >
         {(isMissed || isBehind) && onMoveToTomorrow && (
           <button
             type="button"
-            onClick={onMoveToTomorrow}
+            onClick={(e) => {
+              e.stopPropagation();
+              onMoveToTomorrow();
+            }}
             title="Move to Tomorrow's Plan"
             className="flex cursor-pointer items-center gap-1 rounded-[5px] border border-[#22d3ee]/20 bg-[#22d3ee]/10 px-2.5 py-[5px] text-[11px] font-semibold text-[#22d3ee] hover:bg-[#22d3ee]/20 transition"
           >
@@ -160,7 +174,10 @@ export function MissionCard({
         {(isMissed || isBehind) && onReschedule && (
           <button
             type="button"
-            onClick={onReschedule}
+            onClick={(e) => {
+              e.stopPropagation();
+              onReschedule();
+            }}
             title="Reschedule session"
             className="flex cursor-pointer items-center gap-1 rounded-[5px] border border-amber-500/20 bg-amber-500/10 px-2.5 py-[5px] text-[11px] font-semibold text-amber-400 hover:bg-amber-500/20 transition"
           >
@@ -217,7 +234,10 @@ export function MissionCard({
         {onDelete && (
           <button
             type="button"
-            onClick={onDelete}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
             title="Delete mission"
             aria-label="Delete mission"
             className="flex h-[27px] w-[27px] cursor-pointer items-center justify-center rounded-[5px]"

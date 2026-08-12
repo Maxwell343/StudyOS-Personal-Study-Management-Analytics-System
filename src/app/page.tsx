@@ -12,6 +12,7 @@ import { MissionList } from "@/components/dashboard/MissionList";
 import { SubjectProgress } from "@/components/dashboard/SubjectProgress";
 import { WeeklyAnalytics } from "@/components/dashboard/WeeklyAnalytics";
 import { RescheduleSessionModal } from "@/components/dashboard/RescheduleSessionModal";
+import { SessionTopicModal } from "@/components/dashboard/SessionTopicModal";
 import { AddSessionDialog } from "@/components/planner/AddSessionDialog";
 import { useAuth } from "@/context/AuthContext";
 import { useSessionTimer } from "@/context/TimerContext";
@@ -83,6 +84,7 @@ export default function DashboardPage() {
   // Reschedule Modal & Add Session Dialog States
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
   const [sessionToReschedule, setSessionToReschedule] = useState<StudySession | null>(null);
+  const [selectedTopicSession, setSelectedTopicSession] = useState<StudySession | null>(null);
   const [addSessionDialogOpen, setAddSessionDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -276,6 +278,7 @@ export default function DashboardPage() {
                 session={nextSession}
                 sessionIndex={0}
                 totalSessions={activeSessions.length}
+                onSelectSession={(session) => setSelectedTopicSession(session)}
                 onSessionUpdated={() => setRefreshCount((c) => c + 1)}
                 onDeleteSession={handleDeleteSession}
                 onMoveToTomorrow={handleMoveToTomorrow}
@@ -300,6 +303,7 @@ export default function DashboardPage() {
                 <div className="flex flex-col h-full">
                   <MissionList
                     sessions={activeSessions}
+                    onSelectSession={(session) => setSelectedTopicSession(session)}
                     onStartSession={handleStartSession}
                     onDeleteSession={handleDeleteSession}
                     onMoveToTomorrow={handleMoveToTomorrow}
@@ -322,6 +326,16 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+
+      {/* Planned Topic & Curriculum Items Modal */}
+      <SessionTopicModal
+        session={selectedTopicSession}
+        userId={user?.id}
+        isOpen={Boolean(selectedTopicSession)}
+        onClose={() => setSelectedTopicSession(null)}
+        onStartSession={handleStartSession}
+        onRefreshData={() => setRefreshCount((c) => c + 1)}
+      />
 
       {/* Reschedule Session Modal */}
       <RescheduleSessionModal

@@ -34,6 +34,7 @@ export interface DashboardData {
 
 interface RawPlannedSessionRow {
   id: string;
+  subject_id?: string | null;
   topic_id?: string | null;
   learning_item_id?: string | null;
   start_time: string;
@@ -263,6 +264,9 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
       plannedMinutes: row.planned_minutes,
       status: appStatus,
       color: sub?.color || "#22d3ee",
+      subjectId: row.subject_id || undefined,
+      topicId: row.topic_id || undefined,
+      learningItemId: row.learning_item_id || undefined,
     };
   });
 

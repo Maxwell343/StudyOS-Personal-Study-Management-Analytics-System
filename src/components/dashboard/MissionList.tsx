@@ -7,6 +7,7 @@ import { MissionCard } from "./MissionCard";
 
 interface MissionListProps {
   sessions: StudySession[];
+  onSelectSession?: (session: StudySession) => void;
   onStartSession?: (session: StudySession) => void;
   onDeleteSession?: (sessionId: string) => void;
   onMoveToTomorrow?: (sessionId: string) => void;
@@ -18,6 +19,7 @@ interface MissionListProps {
 
 export function MissionList({
   sessions,
+  onSelectSession,
   onStartSession,
   onDeleteSession,
   onMoveToTomorrow,
@@ -249,6 +251,7 @@ export function MissionList({
                   status={getStatus(session.id, session.status)}
                   isNext={idx === 0}
                   onCycle={() => cycleSessionStatus(session.id, session.status)}
+                  onSelectSession={onSelectSession}
                   onStartSession={onStartSession ? () => onStartSession(session) : undefined}
                   onDelete={onDeleteSession ? () => onDeleteSession(session.id) : undefined}
                   onMoveToTomorrow={onMoveToTomorrow ? () => onMoveToTomorrow(session.id) : undefined}

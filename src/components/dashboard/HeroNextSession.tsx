@@ -7,6 +7,7 @@ interface HeroNextSessionProps {
   session: StudySession | null;
   sessionIndex: number;
   totalSessions: number;
+  onSelectSession?: (session: StudySession) => void;
   onSessionUpdated?: () => void;
   onDeleteSession?: (sessionId: string) => void;
   onMoveToTomorrow?: (sessionId: string) => void;
@@ -29,6 +30,7 @@ export function HeroNextSession({
   session,
   sessionIndex,
   totalSessions,
+  onSelectSession,
   onSessionUpdated,
   onDeleteSession,
   onMoveToTomorrow,
@@ -202,16 +204,25 @@ export function HeroNextSession({
             )}
           </div>
 
-          <div className="mb-1.5 flex items-baseline gap-3">
-            <h2 className="m-0 text-[22px] font-bold tracking-tight text-[#f0f0f4]">
+          <div
+            onClick={() => session && onSelectSession?.(session)}
+            title={session ? "Click to view planned topics & curriculum items" : undefined}
+            className={`mb-1.5 flex items-baseline gap-3 group transition ${session ? "cursor-pointer" : ""}`}
+          >
+            <h2 className="m-0 text-[22px] font-bold tracking-tight text-[#f0f0f4] group-hover:text-cyan-300 transition">
               {currentSubject}
             </h2>
             <span className="text-sm" style={{ color: "#8a8a9e" }}>
               ·
             </span>
-            <span className="text-[15px]" style={{ color: "#b0b0c8" }}>
+            <span className="text-[15px] group-hover:text-white transition" style={{ color: "#b0b0c8" }}>
               {currentTopic}
             </span>
+            {session && (
+              <span className="opacity-0 group-hover:opacity-100 text-cyan-400 font-sans text-xs transition">
+                &rarr; View Topics
+              </span>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-4">

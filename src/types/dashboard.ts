@@ -21,6 +21,9 @@ export interface StudySession {
   plannedMinutes: number;
   status: SessionStatus;
   color: string;
+  subjectId?: string;
+  topicId?: string;
+  learningItemId?: string;
 }
 
 export interface FocusTask {
