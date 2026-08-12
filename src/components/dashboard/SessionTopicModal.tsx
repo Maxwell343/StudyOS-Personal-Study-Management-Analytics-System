@@ -271,6 +271,42 @@ export function SessionTopicModal({
     return sortItemsAscending(list);
   }, [topicDetails?.items, activeUncompletedItems, showCompleted]);
 
+  const todayStr = getTodayDateString();
+
+  // Today's planned items: active uncompleted items + items completed TODAY during the session
+  const todayPlannedItems = useMemo(() => {
+    if (!topicDetails?.items) return [];
+    return topicDetails.items.filter((item: TopicItem) => {
+      const rawStatus = String(item.status || "").toUpperCase();
+      const isCompleted = rawStatus === "COMPLETED" || Boolean(item.completed_at);
+      if (!isCompleted) return true;
+      if (item.completed_at) {
+        const completedDate = String(item.completed_at).slice(0, 10);
+        return completedDate === todayStr;
+      }
+      return false;
+    });
+  }, [topicDetails?.items, todayStr]);
+
+  const todayCompletedCount = useMemo(() => {
+    return todayPlannedItems.filter((item: TopicItem) => {
+      const rawStatus = String(item.status || "").toUpperCase();
+      const isCompleted = rawStatus === "COMPLETED" || Boolean(item.completed_at);
+      if (!isCompleted) return false;
+      if (item.completed_at) {
+        const completedDate = String(item.completed_at).slice(0, 10);
+        return completedDate === todayStr;
+      }
+      return false;
+    }).length;
+  }, [todayPlannedItems, todayStr]);
+
+  const todayTotalCount = todayPlannedItems.length;
+  const todayProgressPercent =
+    todayTotalCount > 0
+      ? Math.round((todayCompletedCount / todayTotalCount) * 100)
+      : 0;
+
   useEffect(() => {
     if (isOpen && session) {
       setShowCompleted(false);
@@ -280,6 +316,7 @@ export function SessionTopicModal({
     }
   }, [isOpen, session, fetchTopicDetails]);
 
+  // ALL HOOKS CALLED AT TOP LEVEL BEFORE CONDITIONAL RETURN
   if (!isOpen || !session) return null;
 
   const handleToggleItem = async (item: TopicItem) => {
@@ -325,42 +362,6 @@ export function SessionTopicModal({
       setTogglingItemId(null);
     }
   };
-
-  const todayStr = getTodayDateString();
-
-  // Today's planned items: active uncompleted items + items completed TODAY during the session
-  const todayPlannedItems = useMemo(() => {
-    if (!topicDetails?.items) return [];
-    return topicDetails.items.filter((item: TopicItem) => {
-      const rawStatus = String(item.status || "").toUpperCase();
-      const isCompleted = rawStatus === "COMPLETED" || Boolean(item.completed_at);
-      if (!isCompleted) return true;
-      if (item.completed_at) {
-        const completedDate = String(item.completed_at).slice(0, 10);
-        return completedDate === todayStr;
-      }
-      return false;
-    });
-  }, [topicDetails?.items, todayStr]);
-
-  const todayCompletedCount = useMemo(() => {
-    return todayPlannedItems.filter((item: TopicItem) => {
-      const rawStatus = String(item.status || "").toUpperCase();
-      const isCompleted = rawStatus === "COMPLETED" || Boolean(item.completed_at);
-      if (!isCompleted) return false;
-      if (item.completed_at) {
-        const completedDate = String(item.completed_at).slice(0, 10);
-        return completedDate === todayStr;
-      }
-      return false;
-    }).length;
-  }, [todayPlannedItems, todayStr]);
-
-  const todayTotalCount = todayPlannedItems.length;
-  const todayProgressPercent =
-    todayTotalCount > 0
-      ? Math.round((todayCompletedCount / todayTotalCount) * 100)
-      : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
