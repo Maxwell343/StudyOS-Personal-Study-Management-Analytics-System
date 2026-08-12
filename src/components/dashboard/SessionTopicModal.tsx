@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import {
   X,
@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/lib/supabase/client";
 import type { StudySession, SessionStatus } from "@/types/dashboard";
 import { formatMinutes } from "@/lib/planner-utils";
+import { getTodayDateString } from "@/lib/data-access/planner";
 
 interface TopicItem {
   id: string;
@@ -31,6 +32,27 @@ interface TopicItem {
   estimated_minutes: number;
   completed_at?: string | null;
   resources?: Array<{ title: string; url?: string; type?: string }> | null;
+}
+
+/**
+ * Filters out items completed on past days, retaining ONLY items planned for today (active/uncompleted + completed today).
+ */
+function filterItemsForTodayPlan(items: TopicItem[]): TopicItem[] {
+  const todayStr = getTodayDateString();
+
+  return items.filter((item) => {
+    const rawStatus = String(item.status || "").toUpperCase();
+    const isCompletedStatus = rawStatus === "COMPLETED" || Boolean(item.completed_at);
+
+    if (isCompletedStatus) {
+      if (!item.completed_at) return false; // Past or seeded completed item without today's date -> Exclude!
+      const completedDate = String(item.completed_at).slice(0, 10);
+      if (completedDate !== todayStr) {
+        return false; // Exclude items completed on past days!
+      }
+    }
+    return true;
+  });
 }
 
 function sortItemsAscending(items: TopicItem[]): TopicItem[] {
@@ -108,16 +130,12 @@ export function SessionTopicModal({
             .select("*")
             .eq("topic_id", topicData.id);
 
-          const sortedItems = sortItemsAscending(
-            (itemsData || []) as unknown as TopicItem[]
-          );
-
           setTopicDetails({
             id: topicData.id,
             subject_id: topicData.subject_id,
             name: topicData.name || session.topic,
             description: topicData.description,
-            items: sortedItems,
+            items: (itemsData || []) as unknown as TopicItem[],
           });
           setLoading(false);
           return;
@@ -144,16 +162,12 @@ export function SessionTopicModal({
             .select("*")
             .eq("topic_id", itemData.topic_id);
 
-          const sortedItems = sortItemsAscending(
-            (allItems || []) as unknown as TopicItem[]
-          );
-
           setTopicDetails({
             id: itemData.topic_id,
             subject_id: topicObj?.subject_id || targetSubjectId || "",
             name: topicObj?.name || session.topic,
             description: topicObj?.description || null,
-            items: sortedItems,
+            items: (allItems || []) as unknown as TopicItem[],
           });
           setLoading(false);
           return;
@@ -196,16 +210,12 @@ export function SessionTopicModal({
                 .select("*")
                 .eq("topic_id", matchedTopic.id);
 
-              const sortedItems = sortItemsAscending(
-                (items || []) as unknown as TopicItem[]
-              );
-
               setTopicDetails({
                 id: matchedTopic.id,
                 subject_id: matchedSub.id,
                 name: matchedTopic.name,
                 description: matchedTopic.description,
-                items: sortedItems,
+                items: (items || []) as unknown as TopicItem[],
               });
               setLoading(false);
               return;
@@ -236,8 +246,34 @@ export function SessionTopicModal({
     }
   }, [session]);
 
+  const [showCompleted, setShowCompleted] = useState(false);
+
+  // Active (uncompleted) sub-topics planned to study
+  const activeUncompletedItems = useMemo(() => {
+    if (!topicDetails?.items) return [];
+    return topicDetails.items.filter((item) => {
+      const rawStatus = String(item.status || "").toUpperCase();
+      const isCompleted = rawStatus === "COMPLETED" || Boolean(item.completed_at);
+      return !isCompleted;
+    });
+  }, [topicDetails?.items]);
+
+  const pastCompletedItems = useMemo(() => {
+    if (!topicDetails?.items) return [];
+    return topicDetails.items.filter((item) => {
+      const rawStatus = String(item.status || "").toUpperCase();
+      return rawStatus === "COMPLETED" || Boolean(item.completed_at);
+    });
+  }, [topicDetails?.items]);
+
+  const displayedItems = useMemo(() => {
+    const list = showCompleted ? topicDetails?.items || [] : activeUncompletedItems;
+    return sortItemsAscending(list);
+  }, [topicDetails?.items, activeUncompletedItems, showCompleted]);
+
   useEffect(() => {
     if (isOpen && session) {
+      setShowCompleted(false);
       fetchTopicDetails();
     } else {
       setTopicDetails(null);
@@ -250,7 +286,9 @@ export function SessionTopicModal({
     if (togglingItemId) return;
     setTogglingItemId(item.id);
 
-    const nextStatus = item.status === "COMPLETED" ? "NOT_STARTED" : "COMPLETED";
+    const isCurrentlyCompleted =
+      String(item.status || "").toUpperCase() === "COMPLETED" || Boolean(item.completed_at);
+    const nextStatus = isCurrentlyCompleted ? "NOT_STARTED" : "COMPLETED";
 
     // Optimistic UI update
     setTopicDetails((prev) => {
@@ -258,7 +296,13 @@ export function SessionTopicModal({
       return {
         ...prev,
         items: prev.items.map((i) =>
-          i.id === item.id ? { ...i, status: nextStatus } : i
+          i.id === item.id
+            ? {
+                ...i,
+                status: nextStatus,
+                completed_at: nextStatus === "COMPLETED" ? new Date().toISOString() : null,
+              }
+            : i
         ),
       };
     });
@@ -282,11 +326,41 @@ export function SessionTopicModal({
     }
   };
 
-  const completedCount =
-    topicDetails?.items.filter((i) => i.status === "COMPLETED").length || 0;
-  const totalCount = topicDetails?.items.length || 0;
-  const progressPercent =
-    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const todayStr = getTodayDateString();
+
+  // Today's planned items: active uncompleted items + items completed TODAY during the session
+  const todayPlannedItems = useMemo(() => {
+    if (!topicDetails?.items) return [];
+    return topicDetails.items.filter((item: TopicItem) => {
+      const rawStatus = String(item.status || "").toUpperCase();
+      const isCompleted = rawStatus === "COMPLETED" || Boolean(item.completed_at);
+      if (!isCompleted) return true;
+      if (item.completed_at) {
+        const completedDate = String(item.completed_at).slice(0, 10);
+        return completedDate === todayStr;
+      }
+      return false;
+    });
+  }, [topicDetails?.items, todayStr]);
+
+  const todayCompletedCount = useMemo(() => {
+    return todayPlannedItems.filter((item: TopicItem) => {
+      const rawStatus = String(item.status || "").toUpperCase();
+      const isCompleted = rawStatus === "COMPLETED" || Boolean(item.completed_at);
+      if (!isCompleted) return false;
+      if (item.completed_at) {
+        const completedDate = String(item.completed_at).slice(0, 10);
+        return completedDate === todayStr;
+      }
+      return false;
+    }).length;
+  }, [todayPlannedItems, todayStr]);
+
+  const todayTotalCount = todayPlannedItems.length;
+  const todayProgressPercent =
+    todayTotalCount > 0
+      ? Math.round((todayCompletedCount / todayTotalCount) * 100)
+      : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
@@ -349,22 +423,22 @@ export function SessionTopicModal({
             </button>
           </div>
 
-          {/* Progress Bar (if items exist) */}
-          {totalCount > 0 && (
+          {/* Progress Bar for Today's Planned Session */}
+          {todayTotalCount > 0 && (
             <div className="mt-5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5">
               <div className="mb-2 flex items-center justify-between text-xs">
                 <span className="font-semibold text-white/80">
-                  Planned Curriculum Progress
+                  Today&apos;s Planned Progress
                 </span>
                 <span className="font-mono text-cyan-400 font-bold">
-                  {completedCount} / {totalCount} completed ({progressPercent}%)
+                  {todayCompletedCount} / {todayTotalCount} completed ({todayProgressPercent}%)
                 </span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
-                    width: `${progressPercent}%`,
+                    width: `${todayProgressPercent}%`,
                     background: session.color || "#22d3ee",
                   }}
                 />
@@ -380,17 +454,30 @@ export function SessionTopicModal({
               <Loader2 className="h-7 w-7 animate-spin text-cyan-400 mb-2" />
               <span className="text-xs">Loading planned topics & items...</span>
             </div>
-          ) : totalCount > 0 ? (
+          ) : displayedItems.length > 0 ? (
             <div className="space-y-2">
               <div className="mb-2.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-white/40">
-                <span>Today&apos;s Planned Sub-topics</span>
-                <span className="font-mono text-[10px] text-cyan-400/80 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
-                  Ascending Order (1 &rarr; N)
-                </span>
+                <span>Today&apos;s Planned Sub-topics ({displayedItems.length})</span>
+                <div className="flex items-center gap-2">
+                  {pastCompletedItems.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowCompleted(!showCompleted)}
+                      className="font-mono text-[10px] text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 px-2 py-0.5 rounded border border-cyan-500/20 transition cursor-pointer"
+                    >
+                      {showCompleted ? "Hide Completed" : `Show Completed (${pastCompletedItems.length})`}
+                    </button>
+                  )}
+                  <span className="font-mono text-[10px] text-cyan-400/80 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                    Ascending Order (1 &rarr; N)
+                  </span>
+                </div>
               </div>
 
-              {topicDetails?.items.map((item, idx) => {
-                const isCompleted = item.status === "COMPLETED";
+              {displayedItems.map((item: TopicItem, idx: number) => {
+                const isCompleted =
+                  String(item.status || "").toUpperCase() === "COMPLETED" ||
+                  Boolean(item.completed_at);
 
                 return (
                   <div
@@ -482,6 +569,26 @@ export function SessionTopicModal({
                   </div>
                 );
               })}
+            </div>
+          ) : pastCompletedItems.length > 0 ? (
+            /* All items completed empty state */
+            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-6 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+                <CheckCircle2 size={24} />
+              </div>
+              <h4 className="text-base font-bold text-white mb-1">
+                All Topics Completed!
+              </h4>
+              <p className="text-xs text-white/60 max-w-md mx-auto mb-4">
+                All sub-topics under <strong className="text-emerald-400">{session.topic}</strong> have been completed.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowCompleted(true)}
+                className="inline-flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3.5 py-1.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20 transition cursor-pointer"
+              >
+                Show Completed Topics ({pastCompletedItems.length})
+              </button>
             </div>
           ) : (
             /* Single Topic Adhoc Card */
