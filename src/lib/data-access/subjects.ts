@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
+import { formatErrorMessage } from "@/lib/utils";
 import type {
   Subject,
   Topic,
@@ -89,56 +90,8 @@ function mapDbSubjectToAppSubject(dbSubject: DbSubjectWithHierarchy): Subject {
  * Fetch all active subjects and their nested topics and learning items for a user.
  */
 export async function fetchSubjectsForUser(userId: string): Promise<Subject[]> {
-  const { data, error } = await supabase
-    .from("subjects")
-    .select(`
-      *,
-      topics (
-        *,
-        learning_items (*)
-      )
-    `)
-    .eq("user_id", userId)
-    .eq("archived", false)
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error("Error fetching subjects:", error);
-    throw error;
-  }
-
-  const subjectsHierarchy = (data || []) as unknown as DbSubjectWithHierarchy[];
-
-  let needsReFetch = false;
-  for (const sub of subjectsHierarchy) {
-    const totalItems = (sub.topics || []).reduce(
-      (acc, t) => acc + (t.learning_items?.length || 0),
-      0
-    );
-
-    const nameLower = sub.name.toLowerCase().trim();
-    if (nameLower.includes("python") && (totalItems < 39 || (sub.topics || []).length < 9)) {
-      try {
-        await seedPythonCurriculumInDb(userId, sub.id);
-        needsReFetch = true;
-      } catch (err) {
-        console.error("Error auto-seeding Python curriculum in fetchSubjectsForUser:", err);
-      }
-    } else if (
-      (nameLower.includes("dbms") || nameLower.includes("database management systems")) &&
-      (totalItems < 140 || (sub.topics || []).length < 11)
-    ) {
-      try {
-        await seedDbmsCurriculumInDb(userId, sub.id);
-        needsReFetch = true;
-      } catch (err) {
-        console.error("Error auto-seeding DBMS curriculum in fetchSubjectsForUser:", err);
-      }
-    }
-  }
-
-  if (needsReFetch) {
-    const { data: refetched } = await supabase
+  try {
+    const { data, error } = await supabase
       .from("subjects")
       .select(`
         *,
@@ -151,12 +104,65 @@ export async function fetchSubjectsForUser(userId: string): Promise<Subject[]> {
       .eq("archived", false)
       .order("created_at", { ascending: true });
 
-    if (refetched) {
-      return (refetched as unknown as DbSubjectWithHierarchy[]).map(mapDbSubjectToAppSubject);
+    if (error) {
+      console.error("Error fetching subjects:", formatErrorMessage(error), error);
+      return [];
     }
-  }
 
-  return subjectsHierarchy.map(mapDbSubjectToAppSubject);
+    const subjectsHierarchy = (data || []) as unknown as DbSubjectWithHierarchy[];
+
+    let needsReFetch = false;
+    for (const sub of subjectsHierarchy) {
+      const totalItems = (sub.topics || []).reduce(
+        (acc, t) => acc + (t.learning_items?.length || 0),
+        0
+      );
+
+      const nameLower = sub.name.toLowerCase().trim();
+      if (nameLower.includes("python") && (totalItems < 39 || (sub.topics || []).length < 9)) {
+        try {
+          await seedPythonCurriculumInDb(userId, sub.id);
+          needsReFetch = true;
+        } catch (err) {
+          console.error("Error auto-seeding Python curriculum in fetchSubjectsForUser:", formatErrorMessage(err), err);
+        }
+      } else if (
+        (nameLower.includes("dbms") || nameLower.includes("database management systems")) &&
+        (totalItems < 140 || (sub.topics || []).length < 11)
+      ) {
+        try {
+          await seedDbmsCurriculumInDb(userId, sub.id);
+          needsReFetch = true;
+        } catch (err) {
+          console.error("Error auto-seeding DBMS curriculum in fetchSubjectsForUser:", formatErrorMessage(err), err);
+        }
+      }
+    }
+
+    if (needsReFetch) {
+      const { data: refetched } = await supabase
+        .from("subjects")
+        .select(`
+          *,
+          topics (
+            *,
+            learning_items (*)
+          )
+        `)
+        .eq("user_id", userId)
+        .eq("archived", false)
+        .order("created_at", { ascending: true });
+
+      if (refetched) {
+        return (refetched as unknown as DbSubjectWithHierarchy[]).map(mapDbSubjectToAppSubject);
+      }
+    }
+
+    return subjectsHierarchy.map(mapDbSubjectToAppSubject);
+  } catch (err) {
+    console.error("Unexpected error in fetchSubjectsForUser:", formatErrorMessage(err), err);
+    return [];
+  }
 }
 
 /**
@@ -177,8 +183,8 @@ export async function fetchSubjectById(userId: string, subjectId: string): Promi
     .maybeSingle();
 
   if (error) {
-    console.error("Error fetching subject by id:", error);
-    throw error;
+    console.error("Error fetching subject by id:", formatErrorMessage(error), error);
+    return null;
   }
 
   if (!data) return null;

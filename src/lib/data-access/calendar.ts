@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
+import { formatErrorMessage } from "@/lib/utils";
 import { getTodayDateString, getLocalYYYYMMDD } from "./planner";
 import { computeDynamicSessionStatus } from "./dashboard";
 import { formatMinutes } from "@/lib/planner-utils";
@@ -97,7 +98,7 @@ export async function fetchCalendarMonthData(
     .order("start_time", { ascending: true });
 
   if (plannedErr) {
-    console.error("Error fetching planned sessions for calendar:", plannedErr);
+    console.error("Error fetching planned sessions for calendar:", formatErrorMessage(plannedErr), plannedErr);
   }
 
   const rawPlanned = (plannedSessionsData || []) as unknown as RawPlannedSessionWithPlan[];

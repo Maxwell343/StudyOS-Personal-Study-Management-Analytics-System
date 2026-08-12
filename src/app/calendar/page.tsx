@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { formatErrorMessage } from "@/lib/utils";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { CalendarHeader } from "@/components/calendar/CalendarHeader";
@@ -90,7 +91,7 @@ export default function CalendarPage() {
           if (updatedDay) setSelectedDayData(updatedDay);
         }
       } catch (err) {
-        console.error("Error loading calendar data:", err);
+        console.error("Error loading calendar data:", formatErrorMessage(err), err);
       } finally {
         if (!isCancelled) setLoading(false);
       }

@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
+import { formatErrorMessage } from "@/lib/utils";
 import type { PlanSession, PlannedTask } from "@/types/planner";
 import type { Subject } from "@/types/subjects";
 import type { Database, Json } from "@/lib/supabase/database.types";
@@ -44,44 +45,55 @@ export async function fetchPlanForDate(
   userId: string,
   planDate: string
 ): Promise<PlanLoadResult> {
-  const { data: plan, error: planError } = await supabase
-    .from("study_plans")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("plan_date", planDate)
-    .maybeSingle();
+  try {
+    const { data: plan, error: planError } = await supabase
+      .from("study_plans")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("plan_date", planDate)
+      .maybeSingle();
 
-  if (planError) {
-    console.error("Error fetching study plan:", planError);
-    throw planError;
-  }
+    if (planError) {
+      console.error("Error fetching study plan:", formatErrorMessage(planError), planError);
+      return {
+        planId: null,
+        planDate,
+        isLocked: false,
+        sessions: [],
+      };
+    }
 
-  if (!plan) {
-    return {
-      planId: null,
-      planDate,
-      isLocked: false,
-      sessions: [],
-    };
-  }
+    if (!plan) {
+      return {
+        planId: null,
+        planDate,
+        isLocked: false,
+        sessions: [],
+      };
+    }
 
-  // Fetch planned sessions
-  const { data: sessionsData, error: sessionsError } = await supabase
-    .from("planned_sessions")
-    .select(`
-      *,
-      subjects:subject_id (name, color),
-      learning_items:learning_item_id (title, topics:topic_id (name))
-    `)
-    .eq("study_plan_id", plan.id)
-    .order("start_time", { ascending: true });
+    // Fetch planned sessions
+    const { data: sessionsData, error: sessionsError } = await supabase
+      .from("planned_sessions")
+      .select(`
+        *,
+        subjects:subject_id (name, color),
+        learning_items:learning_item_id (title, topics:topic_id (name))
+      `)
+      .eq("study_plan_id", plan.id)
+      .order("start_time", { ascending: true });
 
-  if (sessionsError) {
-    console.error("Error fetching planned sessions:", sessionsError);
-    throw sessionsError;
-  }
+    if (sessionsError) {
+      console.error("Error fetching planned sessions:", formatErrorMessage(sessionsError), sessionsError);
+      return {
+        planId: plan.id,
+        planDate,
+        isLocked: plan.status === "LOCKED",
+        sessions: [],
+      };
+    }
 
-  const rawSessions = (sessionsData || []) as unknown as PlannedSessionWithRelations[];
+    const rawSessions = (sessionsData || []) as unknown as PlannedSessionWithRelations[];
 
   const mappedSessions: PlanSession[] = rawSessions.map((row) => {
     const sub = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects;
@@ -102,12 +114,21 @@ export async function fetchPlanForDate(
     };
   });
 
-  return {
-    planId: plan.id,
-    planDate: plan.plan_date,
-    isLocked: plan.status === "LOCKED",
-    sessions: mappedSessions,
-  };
+    return {
+      planId: plan.id,
+      planDate: plan.plan_date,
+      isLocked: plan.status === "LOCKED",
+      sessions: mappedSessions,
+    };
+  } catch (err) {
+    console.error("Unexpected error in fetchPlanForDate:", formatErrorMessage(err), err);
+    return {
+      planId: null,
+      planDate,
+      isLocked: false,
+      sessions: [],
+    };
+  }
 }
 
 /**

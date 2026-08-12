@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
+import { formatErrorMessage } from "@/lib/utils";
 import type { Database } from "@/lib/supabase/database.types";
 import type { PlanSession } from "@/types/planner";
 import type {
@@ -99,7 +100,12 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
   const today = getTodayDateString();
 
   // 1. Fetch user's subjects (for subject progress and task pool)
-  const subjects: Subject[] = await fetchSubjectsForUser(userId);
+  let subjects: Subject[] = [];
+  try {
+    subjects = await fetchSubjectsForUser(userId);
+  } catch (err) {
+    console.error("Error fetching subjects for dashboard:", formatErrorMessage(err), err);
+  }
 
   // 2. Fetch today's study plan
   const { data: planData } = await supabase

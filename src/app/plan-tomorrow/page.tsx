@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { formatErrorMessage } from "@/lib/utils";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PlanHeader } from "@/components/planner/PlanHeader";
 import { PlanSummaryStats } from "@/components/planner/PlanSummaryStats";
@@ -64,7 +65,7 @@ export default function PlanTomorrowPage() {
         setIsLocked(planRes.isLocked);
         setSessions(planRes.sessions);
       } catch (err) {
-        console.error("Error loading plan:", err);
+        console.error("Error loading plan:", formatErrorMessage(err), err);
       } finally {
         if (!isCancelled) setLoading(false);
       }

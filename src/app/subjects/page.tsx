@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { formatErrorMessage } from "@/lib/utils";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { SubjectsHeader } from "@/components/subjects/SubjectsHeader";
 import { SubjectsSummaryStats } from "@/components/subjects/SubjectsSummaryStats";
@@ -102,7 +103,7 @@ export default function SubjectsPage() {
           setRecentActivities(formattedLogs);
         }
       } catch (err) {
-        console.error("Error loading subjects:", err);
+        console.error("Error loading subjects:", formatErrorMessage(err), err);
       } finally {
         if (!isCancelled) setLoading(false);
       }

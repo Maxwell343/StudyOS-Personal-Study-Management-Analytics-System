@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { formatErrorMessage } from "@/lib/utils";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { JarvisInsightBar } from "@/components/dashboard/JarvisInsightBar";
@@ -107,7 +108,7 @@ export default function DashboardPage() {
         }
       })
       .catch((err) => {
-        console.error("Error loading dashboard data:", err);
+        console.error("Error loading dashboard data:", formatErrorMessage(err), err);
         if (!isCancelled) setLoading(false);
       });
 
