@@ -14,6 +14,8 @@ const SUBJECT_COLORS: Record<string, string> = {
   Java: "#f97316",
   "Machine Learning": "#a78bfa",
   SQL: "#34d399",
+  "Object Oriented Programming": "#ec4899",
+  OOP: "#ec4899",
 };
 
 interface AddSessionDialogProps {

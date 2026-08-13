@@ -140,5 +140,19 @@ BEGIN
   -- Seed the complete 38-lecture SQL curriculum
   PERFORM public.seed_sql_curriculum(p_user_id, v_sub_sql);
 
+  -- ── 5. SUBJECT: Object Oriented Programming ──────────────────────────────────
+  INSERT INTO public.subjects (user_id, name, description, category, color, target_date)
+  VALUES (p_user_id, 'Object Oriented Programming', 'Object Oriented Programming principles, design patterns, generics & collections.', 'Software Architecture', '#ec4899', '2026-10-15')
+  RETURNING id INTO v_sub_sql;
+
+  PERFORM public.seed_oop_curriculum(p_user_id, v_sub_sql);
+
+  -- ── 6. SUBJECT: Operating Systems ─────────────────────────────────────────
+  INSERT INTO public.subjects (user_id, name, description, category, color, target_date)
+  VALUES (p_user_id, 'Operating Systems', 'Process management, CPU scheduling, deadlocks, memory management & disk scheduling.', 'Computer Science', '#3b82f6', '2026-11-30')
+  RETURNING id INTO v_sub_sql;
+
+  PERFORM public.seed_os_curriculum(p_user_id, v_sub_sql);
+
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

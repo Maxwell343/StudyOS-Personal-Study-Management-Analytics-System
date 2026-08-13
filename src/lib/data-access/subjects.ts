@@ -146,6 +146,26 @@ export async function fetchSubjectsForUser(userId: string): Promise<Subject[]> {
         } catch (err) {
           console.error("Error auto-seeding SQL curriculum in fetchSubjectsForUser:", formatErrorMessage(err), err);
         }
+      } else if (
+        (nameLower.includes("oop") || nameLower.includes("object oriented programming")) &&
+        (totalItems < 7 || (sub.topics || []).length < 7)
+      ) {
+        try {
+          await seedOopCurriculumInDb(userId, sub.id);
+          needsReFetch = true;
+        } catch (err) {
+          console.error("Error auto-seeding OOP curriculum in fetchSubjectsForUser:", formatErrorMessage(err), err);
+        }
+      } else if (
+        (nameLower.includes("operating system") || nameLower.includes("operating systems") || nameLower === "os") &&
+        (totalItems < 24 || (sub.topics || []).length < 5)
+      ) {
+        try {
+          await seedOsCurriculumInDb(userId, sub.id);
+          needsReFetch = true;
+        } catch (err) {
+          console.error("Error auto-seeding OS curriculum in fetchSubjectsForUser:", formatErrorMessage(err), err);
+        }
       }
     }
 
@@ -278,6 +298,56 @@ export async function fetchSubjectById(userId: string, subjectId: string): Promi
     } catch (err) {
       console.error("Error auto-seeding SQL in fetchSubjectById:", err);
     }
+  } else if (
+    (nameLower.includes("oop") || nameLower.includes("object oriented programming")) &&
+    (totalItems < 7 || (rawSub.topics || []).length < 7)
+  ) {
+    try {
+      await seedOopCurriculumInDb(userId, subjectId);
+      const { data: refetched } = await supabase
+        .from("subjects")
+        .select(`
+          *,
+          topics (
+            *,
+            learning_items (*)
+          )
+        `)
+        .eq("user_id", userId)
+        .eq("id", subjectId)
+        .maybeSingle();
+
+      if (refetched) {
+        return mapDbSubjectToAppSubject(refetched as unknown as DbSubjectWithHierarchy);
+      }
+    } catch (err) {
+      console.error("Error auto-seeding OOP in fetchSubjectById:", err);
+    }
+  } else if (
+    (nameLower.includes("operating system") || nameLower.includes("operating systems") || nameLower === "os") &&
+    (totalItems < 24 || (rawSub.topics || []).length < 5)
+  ) {
+    try {
+      await seedOsCurriculumInDb(userId, subjectId);
+      const { data: refetched } = await supabase
+        .from("subjects")
+        .select(`
+          *,
+          topics (
+            *,
+            learning_items (*)
+          )
+        `)
+        .eq("user_id", userId)
+        .eq("id", subjectId)
+        .maybeSingle();
+
+      if (refetched) {
+        return mapDbSubjectToAppSubject(refetched as unknown as DbSubjectWithHierarchy);
+      }
+    } catch (err) {
+      console.error("Error auto-seeding OS in fetchSubjectById:", err);
+    }
   }
 
   return mapDbSubjectToAppSubject(rawSub);
@@ -319,6 +389,18 @@ export async function createSubjectInDb(
         await seedSqlCurriculumInDb(userId, data.id);
       } catch (sErr) {
         console.error("Error auto-seeding SQL curriculum on subject creation:", sErr);
+      }
+    } else if (nLower.includes("oop") || nLower.includes("object oriented programming")) {
+      try {
+        await seedOopCurriculumInDb(userId, data.id);
+      } catch (sErr) {
+        console.error("Error auto-seeding OOP curriculum on subject creation:", sErr);
+      }
+    } else if (nLower.includes("operating system") || nLower.includes("operating systems") || nLower === "os") {
+      try {
+        await seedOsCurriculumInDb(userId, data.id);
+      } catch (sErr) {
+        console.error("Error auto-seeding OS curriculum on subject creation:", sErr);
       }
     }
   }
@@ -1038,6 +1120,335 @@ export async function seedSqlCurriculumInDb(
   await supabase
     .from("subjects")
     .update({ sql_seeded: true })
+    .eq("id", subjectId);
+}
+
+export const OOP_CURRICULUM_DATA = [
+  {
+    name: "MODULE 1 — Introduction & Concepts",
+    items: [
+      { title: "OOP 1 — Introduction & Concepts: Classes, Objects, Constructors, Keywords", minutes: 107, priority: "HIGH" },
+    ],
+  },
+  {
+    name: "MODULE 2 — Packages, Static & Singleton",
+    items: [
+      { title: "OOP 2 — Packages, Static, Singleton Class, In-built Methods", minutes: 84, priority: "HIGH" },
+    ],
+  },
+  {
+    name: "MODULE 3 — OOP Principles",
+    items: [
+      { title: "OOP 3 — Principles: Inheritance, Polymorphism, Encapsulation, Abstraction", minutes: 138, priority: "HIGH" },
+    ],
+  },
+  {
+    name: "MODULE 4 — Access Control & Object Class",
+    items: [
+      { title: "OOP 4 — Access Control, In-built Packages, Object Class", minutes: 56, priority: "MEDIUM" },
+    ],
+  },
+  {
+    name: "MODULE 5 — Abstract Classes & Interfaces",
+    items: [
+      { title: "OOP 5 — Abstract Classes, Interfaces, Annotations", minutes: 76, priority: "HIGH" },
+    ],
+  },
+  {
+    name: "MODULE 6 — Generics & Exception Handling",
+    items: [
+      { title: "OOP 6 — Generics, Custom ArrayList, Lambda Expressions, Exception Handling, Object Cloning", minutes: 97, priority: "HIGH" },
+    ],
+  },
+  {
+    name: "MODULE 7 — Collections Framework & Enums",
+    items: [
+      { title: "OOP 7 — Collections Framework, Vector Class, Enums in Java", minutes: 32, priority: "MEDIUM" },
+    ],
+  },
+];
+
+/**
+ * Seed the OOP curriculum into an existing OOP subject.
+ * Safe and idempotent: tries RPC first; falls back to client-side table queries.
+ */
+export async function seedOopCurriculumInDb(
+  userId: string,
+  subjectId: string
+): Promise<void> {
+  try {
+    const { error: rpcError } = await supabase.rpc("seed_oop_curriculum", {
+      p_user_id: userId,
+      p_subject_id: subjectId,
+    });
+
+    if (!rpcError) {
+      return;
+    }
+  } catch {
+    // Ignore and proceed to client-side fallback
+  }
+
+  const { data: existingTopics } = await supabase
+    .from("topics")
+    .select("*")
+    .eq("subject_id", subjectId);
+
+  const topicList = existingTopics || [];
+  const validModuleNames = new Set(OOP_CURRICULUM_DATA.map((m) => m.name.toLowerCase().trim()));
+
+  const outdatedTopics = topicList.filter(
+    (t) => !validModuleNames.has(t.name.toLowerCase().trim())
+  );
+  if (outdatedTopics.length > 0) {
+    const outdatedIds = outdatedTopics.map((t) => t.id);
+    await supabase.from("learning_items").delete().in("topic_id", outdatedIds);
+    await supabase.from("topics").delete().in("id", outdatedIds);
+  }
+
+  const topicIds = topicList.map((t) => t.id);
+  let existingItems: Database["public"]["Tables"]["learning_items"]["Row"][] = [];
+  if (topicIds.length > 0) {
+    const { data: itemsData } = await supabase
+      .from("learning_items")
+      .select("*")
+      .in("topic_id", topicIds);
+    existingItems = itemsData || [];
+  }
+
+  for (let topicIdx = 0; topicIdx < OOP_CURRICULUM_DATA.length; topicIdx++) {
+    const mod = OOP_CURRICULUM_DATA[topicIdx];
+
+    let topicId = "";
+    const matchedTopic = topicList.find(
+      (t) => t.name.toLowerCase().trim() === mod.name.toLowerCase().trim()
+    );
+
+    if (matchedTopic) {
+      topicId = matchedTopic.id;
+    } else {
+      const { data: newTopic, error: tErr } = await supabase
+        .from("topics")
+        .insert({
+          subject_id: subjectId,
+          name: mod.name,
+          display_order: topicIdx + 1,
+        })
+        .select()
+        .single();
+
+      if (tErr || !newTopic) {
+        console.error("Error creating OOP topic fallback:", mod.name, tErr);
+        continue;
+      }
+      topicId = newTopic.id;
+      topicList.push(newTopic);
+    }
+
+    const currentTopicItems = existingItems.filter((li) => li.topic_id === topicId);
+    const itemsToInsert = [];
+
+    for (let itemIdx = 0; itemIdx < mod.items.length; itemIdx++) {
+      const itemDef = mod.items[itemIdx];
+      const exists = currentTopicItems.some(
+        (li) => li.title.toLowerCase().trim() === itemDef.title.toLowerCase().trim()
+      );
+
+      if (!exists) {
+        itemsToInsert.push({
+          topic_id: topicId,
+          title: itemDef.title,
+          display_order: itemIdx + 1,
+          status: "NOT_STARTED" as const,
+          priority: (itemDef.priority || "MEDIUM") as "LOW" | "MEDIUM" | "HIGH",
+          estimated_minutes: itemDef.minutes,
+          resources: [] as unknown as Json,
+        });
+      }
+    }
+
+    if (itemsToInsert.length > 0) {
+      const { error: iErr } = await supabase
+        .from("learning_items")
+        .insert(itemsToInsert);
+
+      if (iErr) {
+        console.error("Error inserting OOP learning items for:", mod.name, iErr);
+      }
+    }
+  }
+
+  await supabase
+    .from("subjects")
+    .update({ oop_seeded: true })
+    .eq("id", subjectId);
+}
+
+export const OS_CURRICULUM_DATA = [
+  {
+    name: "MODULE 1 — OS Fundamentals & Process Basics",
+    items: [
+      { title: "Lec 1: Introduction", minutes: 6, priority: "MEDIUM" },
+      { title: "Lec 2: What is an Operating System & Types of OS", minutes: 7, priority: "HIGH" },
+      { title: "Lec 3: Process vs Threads vs Programs", minutes: 9, priority: "HIGH" },
+      { title: "Lec 4: Multiprogramming vs Multiprocess vs Multitasking vs Multithreading", minutes: 9, priority: "HIGH" },
+      { title: "Lec 5: Various States of a Process", minutes: 9, priority: "MEDIUM" },
+    ],
+  },
+  {
+    name: "MODULE 2 — CPU Scheduling & Process Concurrency",
+    items: [
+      { title: "Lec 6: CPU Scheduling Algorithms", minutes: 9, priority: "HIGH" },
+      { title: "Lec 7: Critical Section Problem", minutes: 8, priority: "HIGH" },
+      { title: "Lec 8: Process Synchronisation", minutes: 9, priority: "HIGH" },
+      { title: "Lec 9: Process Synchronisation Mechanisms", minutes: 8, priority: "MEDIUM" },
+    ],
+  },
+  {
+    name: "MODULE 3 — Deadlocks & System Isolation",
+    items: [
+      { title: "Lec 10: Deadlock", minutes: 9, priority: "HIGH" },
+      { title: "Lec 11: Deadlock Handling Techniques", minutes: 9, priority: "HIGH" },
+      { title: "Lec 22: Context Switching", minutes: 10, priority: "MEDIUM" },
+      { title: "Lec 23: Mutex vs Semaphore", minutes: 10, priority: "HIGH" },
+      { title: "Lec 24: User Mode vs Kernel Mode", minutes: 10, priority: "HIGH" },
+    ],
+  },
+  {
+    name: "MODULE 4 — Memory Management & Paging",
+    items: [
+      { title: "Lec 12: Memory Management", minutes: 7, priority: "HIGH" },
+      { title: "Lec 13: First-fit, Best-fit, Worst-fit Algorithms", minutes: 9, priority: "HIGH" },
+      { title: "Lec 14: Paging", minutes: 9, priority: "HIGH" },
+      { title: "Lec 15: Virtual Memory", minutes: 9, priority: "HIGH" },
+    ],
+  },
+  {
+    name: "MODULE 5 — Page Replacement & Storage Management",
+    items: [
+      { title: "Lec 16: Page Replacement Algorithms", minutes: 13, priority: "HIGH" },
+      { title: "Lec 17: Thrashing", minutes: 8, priority: "MEDIUM" },
+      { title: "Lec 18: Segmentation", minutes: 8, priority: "MEDIUM" },
+      { title: "Lec 19: Disk Management", minutes: 8, priority: "MEDIUM" },
+      { title: "Lec 20: Disk Scheduling Algorithms", minutes: 10, priority: "HIGH" },
+      { title: "Lec 21: Quick Revision", minutes: 5, priority: "LOW" },
+    ],
+  },
+];
+
+/**
+ * Seed the OS curriculum into an existing OS subject.
+ * Safe and idempotent: tries RPC first; falls back to client-side table queries.
+ */
+export async function seedOsCurriculumInDb(
+  userId: string,
+  subjectId: string
+): Promise<void> {
+  try {
+    const { error: rpcError } = await supabase.rpc("seed_os_curriculum", {
+      p_user_id: userId,
+      p_subject_id: subjectId,
+    });
+
+    if (!rpcError) {
+      return;
+    }
+  } catch {
+    // Ignore and proceed to client-side fallback
+  }
+
+  const { data: existingTopics } = await supabase
+    .from("topics")
+    .select("*")
+    .eq("subject_id", subjectId);
+
+  const topicList = existingTopics || [];
+  const validModuleNames = new Set(OS_CURRICULUM_DATA.map((m) => m.name.toLowerCase().trim()));
+
+  const outdatedTopics = topicList.filter(
+    (t) => !validModuleNames.has(t.name.toLowerCase().trim())
+  );
+  if (outdatedTopics.length > 0) {
+    const outdatedIds = outdatedTopics.map((t) => t.id);
+    await supabase.from("learning_items").delete().in("topic_id", outdatedIds);
+    await supabase.from("topics").delete().in("id", outdatedIds);
+  }
+
+  const topicIds = topicList.map((t) => t.id);
+  let existingItems: Database["public"]["Tables"]["learning_items"]["Row"][] = [];
+  if (topicIds.length > 0) {
+    const { data: itemsData } = await supabase
+      .from("learning_items")
+      .select("*")
+      .in("topic_id", topicIds);
+    existingItems = itemsData || [];
+  }
+
+  for (let topicIdx = 0; topicIdx < OS_CURRICULUM_DATA.length; topicIdx++) {
+    const mod = OS_CURRICULUM_DATA[topicIdx];
+
+    let topicId = "";
+    const matchedTopic = topicList.find(
+      (t) => t.name.toLowerCase().trim() === mod.name.toLowerCase().trim()
+    );
+
+    if (matchedTopic) {
+      topicId = matchedTopic.id;
+    } else {
+      const { data: newTopic, error: tErr } = await supabase
+        .from("topics")
+        .insert({
+          subject_id: subjectId,
+          name: mod.name,
+          display_order: topicIdx + 1,
+        })
+        .select()
+        .single();
+
+      if (tErr || !newTopic) {
+        console.error("Error creating OS topic fallback:", mod.name, tErr);
+        continue;
+      }
+      topicId = newTopic.id;
+      topicList.push(newTopic);
+    }
+
+    const currentTopicItems = existingItems.filter((li) => li.topic_id === topicId);
+    const itemsToInsert = [];
+
+    for (let itemIdx = 0; itemIdx < mod.items.length; itemIdx++) {
+      const itemDef = mod.items[itemIdx];
+      const exists = currentTopicItems.some(
+        (li) => li.title.toLowerCase().trim() === itemDef.title.toLowerCase().trim()
+      );
+
+      if (!exists) {
+        itemsToInsert.push({
+          topic_id: topicId,
+          title: itemDef.title,
+          display_order: itemIdx + 1,
+          status: "NOT_STARTED" as const,
+          priority: (itemDef.priority || "MEDIUM") as "LOW" | "MEDIUM" | "HIGH",
+          estimated_minutes: itemDef.minutes,
+          resources: [] as unknown as Json,
+        });
+      }
+    }
+
+    if (itemsToInsert.length > 0) {
+      const { error: iErr } = await supabase
+        .from("learning_items")
+        .insert(itemsToInsert);
+
+      if (iErr) {
+        console.error("Error inserting OS learning items for:", mod.name, iErr);
+      }
+    }
+  }
+
+  await supabase
+    .from("subjects")
+    .update({ os_seeded: true })
     .eq("id", subjectId);
 }
 

@@ -26,13 +26,17 @@ import {
   seedDbmsCurriculumInDb,
   seedPythonCurriculumInDb,
   seedSqlCurriculumInDb,
+  seedOopCurriculumInDb,
+  seedOsCurriculumInDb,
 } from "@/lib/data-access/subjects";
 import type { Subject, Topic, LearningItem, LearningItemStatus } from "@/types/subjects";
 
-// ── DBMS, Python & SQL subject name variants ─────────────────────────────────
+// ── DBMS, Python, SQL, OOP & OS subject name variants ────────────────────────
 const DBMS_NAME_PATTERNS = ["database management systems", "dbms"];
 const PYTHON_NAME_PATTERNS = ["python", "python basics", "python programming"];
 const SQL_NAME_PATTERNS = ["sql", "structured query language"];
+const OOP_NAME_PATTERNS = ["object oriented programming", "oop", "oop in java"];
+const OS_NAME_PATTERNS = ["operating system", "operating systems", "os"];
 
 function isDbmsSubject(name: string): boolean {
   const lower = name.toLowerCase().trim();
@@ -47,6 +51,16 @@ function isPythonSubject(name: string): boolean {
 function isSqlSubject(name: string): boolean {
   const lower = name.toLowerCase().trim();
   return SQL_NAME_PATTERNS.some((p) => lower.includes(p));
+}
+
+function isOopSubject(name: string): boolean {
+  const lower = name.toLowerCase().trim();
+  return OOP_NAME_PATTERNS.some((p) => lower.includes(p));
+}
+
+function isOsSubject(name: string): boolean {
+  const lower = name.toLowerCase().trim();
+  return OS_NAME_PATTERNS.some((p) => lower === p || lower.includes(p));
 }
 
 export default function SubjectDetailPage({
@@ -66,6 +80,8 @@ export default function SubjectDetailPage({
   const dbmsSeedAttemptedRef = useRef(false);
   const pythonSeedAttemptedRef = useRef(false);
   const sqlSeedAttemptedRef = useRef(false);
+  const oopSeedAttemptedRef = useRef(false);
+  const osSeedAttemptedRef = useRef(false);
 
   // Dialog States
   const [editSubjectOpen, setEditSubjectOpen] = useState(false);
@@ -145,6 +161,40 @@ export default function SubjectDetailPage({
               }
             } catch (sErr) {
               console.error("SQL curriculum seed error:", sErr);
+            }
+          }
+
+          // ── Safe OOP auto-seed ────────────────────────────────────────────
+          if (
+            data &&
+            isOopSubject(data.name) &&
+            !oopSeedAttemptedRef.current
+          ) {
+            oopSeedAttemptedRef.current = true;
+            try {
+              await seedOopCurriculumInDb(user.id, subjectId);
+              if (!isCancelled) {
+                setRefreshIndex((prev) => prev + 1);
+              }
+            } catch (oErr) {
+              console.error("OOP curriculum seed error:", oErr);
+            }
+          }
+
+          // ── Safe OS auto-seed ─────────────────────────────────────────────
+          if (
+            data &&
+            isOsSubject(data.name) &&
+            !osSeedAttemptedRef.current
+          ) {
+            osSeedAttemptedRef.current = true;
+            try {
+              await seedOsCurriculumInDb(user.id, subjectId);
+              if (!isCancelled) {
+                setRefreshIndex((prev) => prev + 1);
+              }
+            } catch (osErr) {
+              console.error("OS curriculum seed error:", osErr);
             }
           }
         }
