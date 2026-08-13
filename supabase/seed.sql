@@ -154,5 +154,12 @@ BEGIN
 
   PERFORM public.seed_os_curriculum(p_user_id, v_sub_sql);
 
+  -- ── 7. SUBJECT: Computer Networks ─────────────────────────────────────────
+  INSERT INTO public.subjects (user_id, name, description, category, color, target_date)
+  VALUES (p_user_id, 'Computer Networks', 'Network architectures, OSI & TCP/IP models, HTTP/DNS, transport layer & socket programming.', 'Computer Science', '#06b6d4', '2026-12-15')
+  RETURNING id INTO v_sub_sql;
+
+  PERFORM public.seed_cn_curriculum(p_user_id, v_sub_sql);
+
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

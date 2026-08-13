@@ -18,6 +18,8 @@ const SUBJECT_COLORS: Record<string, string> = {
   OOP: "#ec4899",
   "Operating Systems": "#3b82f6",
   OS: "#3b82f6",
+  "Computer Networks": "#06b6d4",
+  CN: "#06b6d4",
 };
 
 interface AddSessionDialogProps {

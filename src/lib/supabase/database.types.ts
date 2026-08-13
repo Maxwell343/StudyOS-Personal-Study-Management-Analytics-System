@@ -54,6 +54,7 @@ export interface Database {
           sql_seeded?: boolean;
           oop_seeded?: boolean;
           os_seeded?: boolean;
+          cn_seeded?: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -70,6 +71,7 @@ export interface Database {
           sql_seeded?: boolean;
           oop_seeded?: boolean;
           os_seeded?: boolean;
+          cn_seeded?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -86,6 +88,7 @@ export interface Database {
           sql_seeded?: boolean;
           oop_seeded?: boolean;
           os_seeded?: boolean;
+          cn_seeded?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -403,6 +406,13 @@ export interface Database {
         Returns: void;
       };
       seed_os_curriculum: {
+        Args: {
+          p_user_id: string;
+          p_subject_id: string;
+        };
+        Returns: void;
+      };
+      seed_cn_curriculum: {
         Args: {
           p_user_id: string;
           p_subject_id: string;

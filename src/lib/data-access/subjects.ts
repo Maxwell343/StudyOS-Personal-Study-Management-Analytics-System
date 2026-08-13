@@ -166,6 +166,16 @@ export async function fetchSubjectsForUser(userId: string): Promise<Subject[]> {
         } catch (err) {
           console.error("Error auto-seeding OS curriculum in fetchSubjectsForUser:", formatErrorMessage(err), err);
         }
+      } else if (
+        (nameLower.includes("computer network") || nameLower.includes("computer networking") || nameLower.includes("cn")) &&
+        (totalItems < 43 || (sub.topics || []).length < 6)
+      ) {
+        try {
+          await seedCnCurriculumInDb(userId, sub.id);
+          needsReFetch = true;
+        } catch (err) {
+          console.error("Error auto-seeding CN curriculum in fetchSubjectsForUser:", formatErrorMessage(err), err);
+        }
       }
     }
 
@@ -348,6 +358,31 @@ export async function fetchSubjectById(userId: string, subjectId: string): Promi
     } catch (err) {
       console.error("Error auto-seeding OS in fetchSubjectById:", err);
     }
+  } else if (
+    (nameLower.includes("computer network") || nameLower.includes("computer networking") || nameLower.includes("cn")) &&
+    (totalItems < 43 || (rawSub.topics || []).length < 6)
+  ) {
+    try {
+      await seedCnCurriculumInDb(userId, subjectId);
+      const { data: refetched } = await supabase
+        .from("subjects")
+        .select(`
+          *,
+          topics (
+            *,
+            learning_items (*)
+          )
+        `)
+        .eq("user_id", userId)
+        .eq("id", subjectId)
+        .maybeSingle();
+
+      if (refetched) {
+        return mapDbSubjectToAppSubject(refetched as unknown as DbSubjectWithHierarchy);
+      }
+    } catch (err) {
+      console.error("Error auto-seeding CN in fetchSubjectById:", err);
+    }
   }
 
   return mapDbSubjectToAppSubject(rawSub);
@@ -401,6 +436,12 @@ export async function createSubjectInDb(
         await seedOsCurriculumInDb(userId, data.id);
       } catch (sErr) {
         console.error("Error auto-seeding OS curriculum on subject creation:", sErr);
+      }
+    } else if (nLower.includes("computer network") || nLower.includes("computer networking") || nLower.includes("cn")) {
+      try {
+        await seedCnCurriculumInDb(userId, data.id);
+      } catch (sErr) {
+        console.error("Error auto-seeding CN curriculum on subject creation:", sErr);
       }
     }
   }
@@ -1449,6 +1490,198 @@ export async function seedOsCurriculumInDb(
   await supabase
     .from("subjects")
     .update({ os_seeded: true })
+    .eq("id", subjectId);
+}
+
+export const CN_CURRICULUM_DATA = [
+  {
+    name: "MODULE 1 — Network Fundamentals & Architectures",
+    items: [
+      { title: "Lec 1: Introduction", minutes: 10, priority: "HIGH" },
+      { title: "Lec 2: How it all started?", minutes: 18, priority: "MEDIUM" },
+      { title: "Lec 3: Client-Server Architecture", minutes: 9, priority: "HIGH" },
+      { title: "Lec 4: Protocols", minutes: 7, priority: "HIGH" },
+      { title: "Lec 5: How Data is Transferred? — IP Address", minutes: 15, priority: "HIGH" },
+      { title: "Lec 6: Port Numbers", minutes: 13, priority: "HIGH" },
+      { title: "Lec 7: Submarine Cables Map — Optical Fibre Cable", minutes: 11, priority: "MEDIUM" },
+      { title: "Lec 8: LAN, MAN, WAN", minutes: 9, priority: "MEDIUM" },
+      { title: "Lec 9: Modem, Router", minutes: 8, priority: "HIGH" },
+      { title: "Lec 10: Network Topologies — Bus, Ring, Star, Tree, Mesh", minutes: 11, priority: "HIGH" },
+      { title: "Lec 11: Structure of the Network", minutes: 10, priority: "MEDIUM" },
+    ],
+  },
+  {
+    name: "MODULE 2 — Reference Models & Hardware Devices",
+    items: [
+      { title: "Lec 12: OSI Model — 7 Layers", minutes: 27, priority: "HIGH" },
+      { title: "Lec 13: TCP/IP Model — 5 Layers", minutes: 14, priority: "HIGH" },
+      { title: "Lec 14: Client-Server Architecture (Detailed)", minutes: 7, priority: "MEDIUM" },
+      { title: "Lec 15: Peer-to-Peer Architecture", minutes: 8, priority: "MEDIUM" },
+      { title: "Lec 16: Networking Devices", minutes: 12, priority: "HIGH" },
+      { title: "Lec 17: Application Layer Protocols", minutes: 6, priority: "MEDIUM" },
+      { title: "Lec 18: Sockets", minutes: 7, priority: "HIGH" },
+      { title: "Lec 19: Ports", minutes: 12, priority: "HIGH" },
+    ],
+  },
+  {
+    name: "MODULE 3 — Application Layer & Web Protocols",
+    items: [
+      { title: "Lec 20: HTTP", minutes: 10, priority: "HIGH" },
+      { title: "Lec 21: HTTP Methods — GET, POST, PUT, DELETE", minutes: 7, priority: "HIGH" },
+      { title: "Lec 22: HTTP Error / Status Codes", minutes: 10, priority: "HIGH" },
+      { title: "Lec 23: Cookies", minutes: 13, priority: "MEDIUM" },
+      { title: "Lec 24: How Email Works", minutes: 18, priority: "MEDIUM" },
+      { title: "Lec 25: DNS — Domain Name System", minutes: 20, priority: "HIGH" },
+    ],
+  },
+  {
+    name: "MODULE 4 — Transport Layer & Reliable Transfer",
+    items: [
+      { title: "Lec 26: TCP/IP Model — Transport Layer", minutes: 6, priority: "HIGH" },
+      { title: "Lec 27: Checksum", minutes: 10, priority: "MEDIUM" },
+      { title: "Lec 28: Timers", minutes: 13, priority: "MEDIUM" },
+      { title: "Lec 29: UDP — User Datagram Protocol", minutes: 12, priority: "HIGH" },
+      { title: "Lec 30: TCP — Transmission Control Protocol", minutes: 10, priority: "HIGH" },
+      { title: "Lec 31: TCP 3-Way Handshake ⭐", minutes: 13, priority: "HIGH" },
+    ],
+  },
+  {
+    name: "MODULE 5 — Network Layer & Addressing",
+    items: [
+      { title: "Lec 32: TCP — Network Layer", minutes: 8, priority: "HIGH" },
+      { title: "Lec 33: Control Plane", minutes: 19, priority: "HIGH" },
+      { title: "Lec 34: IP — Internet Protocol", minutes: 8, priority: "HIGH" },
+      { title: "Lec 35: Packets", minutes: 13, priority: "MEDIUM" },
+      { title: "Lec 36: IPv4 vs IPv6 ⭐", minutes: 8, priority: "HIGH" },
+      { title: "Lec 37: Middle Boxes", minutes: 9, priority: "MEDIUM" },
+      { title: "Lec 38: NAT — Network Address Translation", minutes: 5, priority: "HIGH" },
+    ],
+  },
+  {
+    name: "MODULE 6 — Data Link Layer & Network Interview Essentials",
+    items: [
+      { title: "Lec 39: TCP — Data Link Layer", minutes: 10, priority: "HIGH" },
+      { title: "Lec 40: MAC Address vs IP Address ⭐", minutes: 10, priority: "HIGH" },
+      { title: "Lec 41: Hub vs Switch vs Router ⭐", minutes: 10, priority: "HIGH" },
+      { title: "Lec 42: HTTP vs HTTPS ⭐", minutes: 10, priority: "HIGH" },
+      { title: "Lec 43: What Happens When You Enter a URL in a Browser? ⭐⭐⭐", minutes: 15, priority: "HIGH" },
+    ],
+  },
+];
+
+/**
+ * Seed the CN curriculum into an existing CN subject.
+ * Safe and idempotent: tries RPC first; falls back to client-side table queries.
+ */
+export async function seedCnCurriculumInDb(
+  userId: string,
+  subjectId: string
+): Promise<void> {
+  try {
+    const { error: rpcError } = await supabase.rpc("seed_cn_curriculum", {
+      p_user_id: userId,
+      p_subject_id: subjectId,
+    });
+
+    if (!rpcError) {
+      return;
+    }
+  } catch {
+    // Ignore and proceed to client-side fallback
+  }
+
+  const { data: existingTopics } = await supabase
+    .from("topics")
+    .select("*")
+    .eq("subject_id", subjectId);
+
+  const topicList = existingTopics || [];
+  const validModuleNames = new Set(CN_CURRICULUM_DATA.map((m) => m.name.toLowerCase().trim()));
+
+  const outdatedTopics = topicList.filter(
+    (t) => !validModuleNames.has(t.name.toLowerCase().trim())
+  );
+  if (outdatedTopics.length > 0) {
+    const outdatedIds = outdatedTopics.map((t) => t.id);
+    await supabase.from("learning_items").delete().in("topic_id", outdatedIds);
+    await supabase.from("topics").delete().in("id", outdatedIds);
+  }
+
+  const topicIds = topicList.map((t) => t.id);
+  let existingItems: Database["public"]["Tables"]["learning_items"]["Row"][] = [];
+  if (topicIds.length > 0) {
+    const { data: itemsData } = await supabase
+      .from("learning_items")
+      .select("*")
+      .in("topic_id", topicIds);
+    existingItems = itemsData || [];
+  }
+
+  for (let topicIdx = 0; topicIdx < CN_CURRICULUM_DATA.length; topicIdx++) {
+    const mod = CN_CURRICULUM_DATA[topicIdx];
+
+    let topicId = "";
+    const matchedTopic = topicList.find(
+      (t) => t.name.toLowerCase().trim() === mod.name.toLowerCase().trim()
+    );
+
+    if (matchedTopic) {
+      topicId = matchedTopic.id;
+    } else {
+      const { data: newTopic, error: tErr } = await supabase
+        .from("topics")
+        .insert({
+          subject_id: subjectId,
+          name: mod.name,
+          display_order: topicIdx + 1,
+        })
+        .select()
+        .single();
+
+      if (tErr || !newTopic) {
+        console.error("Error creating CN topic fallback:", mod.name, tErr);
+        continue;
+      }
+      topicId = newTopic.id;
+      topicList.push(newTopic);
+    }
+
+    const currentTopicItems = existingItems.filter((li) => li.topic_id === topicId);
+    const itemsToInsert = [];
+
+    for (let itemIdx = 0; itemIdx < mod.items.length; itemIdx++) {
+      const itemDef = mod.items[itemIdx];
+      const exists = currentTopicItems.some(
+        (li) => li.title.toLowerCase().trim() === itemDef.title.toLowerCase().trim()
+      );
+
+      if (!exists) {
+        itemsToInsert.push({
+          topic_id: topicId,
+          title: itemDef.title,
+          display_order: itemIdx + 1,
+          status: "NOT_STARTED" as const,
+          priority: (itemDef.priority || "MEDIUM") as "LOW" | "MEDIUM" | "HIGH",
+          estimated_minutes: itemDef.minutes,
+          resources: [] as unknown as Json,
+        });
+      }
+    }
+
+    if (itemsToInsert.length > 0) {
+      const { error: iErr } = await supabase
+        .from("learning_items")
+        .insert(itemsToInsert);
+
+      if (iErr) {
+        console.error("Error inserting CN learning items for:", mod.name, iErr);
+      }
+    }
+  }
+
+  await supabase
+    .from("subjects")
+    .update({ cn_seeded: true })
     .eq("id", subjectId);
 }
 

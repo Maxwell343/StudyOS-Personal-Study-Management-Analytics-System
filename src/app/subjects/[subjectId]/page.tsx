@@ -28,15 +28,17 @@ import {
   seedSqlCurriculumInDb,
   seedOopCurriculumInDb,
   seedOsCurriculumInDb,
+  seedCnCurriculumInDb,
 } from "@/lib/data-access/subjects";
 import type { Subject, Topic, LearningItem, LearningItemStatus } from "@/types/subjects";
 
-// ── DBMS, Python, SQL, OOP & OS subject name variants ────────────────────────
+// ── DBMS, Python, SQL, OOP, OS & CN subject name variants ────────────────────
 const DBMS_NAME_PATTERNS = ["database management systems", "dbms"];
 const PYTHON_NAME_PATTERNS = ["python", "python basics", "python programming"];
 const SQL_NAME_PATTERNS = ["sql", "structured query language"];
 const OOP_NAME_PATTERNS = ["object oriented programming", "oop", "oop in java"];
 const OS_NAME_PATTERNS = ["operating system", "operating systems", "os"];
+const CN_NAME_PATTERNS = ["computer network", "computer networking", "cn", "networks"];
 
 function isDbmsSubject(name: string): boolean {
   const lower = name.toLowerCase().trim();
@@ -63,6 +65,11 @@ function isOsSubject(name: string): boolean {
   return OS_NAME_PATTERNS.some((p) => lower === p || lower.includes(p));
 }
 
+function isCnSubject(name: string): boolean {
+  const lower = name.toLowerCase().trim();
+  return CN_NAME_PATTERNS.some((p) => lower === p || lower.includes(p));
+}
+
 export default function SubjectDetailPage({
   params,
 }: {
@@ -82,6 +89,7 @@ export default function SubjectDetailPage({
   const sqlSeedAttemptedRef = useRef(false);
   const oopSeedAttemptedRef = useRef(false);
   const osSeedAttemptedRef = useRef(false);
+  const cnSeedAttemptedRef = useRef(false);
 
   // Dialog States
   const [editSubjectOpen, setEditSubjectOpen] = useState(false);
@@ -195,6 +203,23 @@ export default function SubjectDetailPage({
               }
             } catch (osErr) {
               console.error("OS curriculum seed error:", osErr);
+            }
+          }
+
+          // ── Safe CN auto-seed ─────────────────────────────────────────────
+          if (
+            data &&
+            isCnSubject(data.name) &&
+            !cnSeedAttemptedRef.current
+          ) {
+            cnSeedAttemptedRef.current = true;
+            try {
+              await seedCnCurriculumInDb(user.id, subjectId);
+              if (!isCancelled) {
+                setRefreshIndex((prev) => prev + 1);
+              }
+            } catch (cnErr) {
+              console.error("CN curriculum seed error:", cnErr);
             }
           }
         }
