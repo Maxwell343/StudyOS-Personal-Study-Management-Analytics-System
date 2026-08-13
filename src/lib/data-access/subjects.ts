@@ -136,6 +136,16 @@ export async function fetchSubjectsForUser(userId: string): Promise<Subject[]> {
         } catch (err) {
           console.error("Error auto-seeding DBMS curriculum in fetchSubjectsForUser:", formatErrorMessage(err), err);
         }
+      } else if (
+        (nameLower.includes("sql") || nameLower.includes("structured query language")) &&
+        (totalItems < 38 || (sub.topics || []).length < 7)
+      ) {
+        try {
+          await seedSqlCurriculumInDb(userId, sub.id);
+          needsReFetch = true;
+        } catch (err) {
+          console.error("Error auto-seeding SQL curriculum in fetchSubjectsForUser:", formatErrorMessage(err), err);
+        }
       }
     }
 
@@ -243,6 +253,31 @@ export async function fetchSubjectById(userId: string, subjectId: string): Promi
     } catch (err) {
       console.error("Error auto-seeding DBMS in fetchSubjectById:", err);
     }
+  } else if (
+    (nameLower.includes("sql") || nameLower.includes("structured query language")) &&
+    (totalItems < 38 || (rawSub.topics || []).length < 7)
+  ) {
+    try {
+      await seedSqlCurriculumInDb(userId, subjectId);
+      const { data: refetched } = await supabase
+        .from("subjects")
+        .select(`
+          *,
+          topics (
+            *,
+            learning_items (*)
+          )
+        `)
+        .eq("user_id", userId)
+        .eq("id", subjectId)
+        .maybeSingle();
+
+      if (refetched) {
+        return mapDbSubjectToAppSubject(refetched as unknown as DbSubjectWithHierarchy);
+      }
+    } catch (err) {
+      console.error("Error auto-seeding SQL in fetchSubjectById:", err);
+    }
   }
 
   return mapDbSubjectToAppSubject(rawSub);
@@ -271,11 +306,20 @@ export async function createSubjectInDb(
 
   if (error) throw error;
   
-  if (data && data.name.toLowerCase().trim().includes("python")) {
-    try {
-      await seedPythonCurriculumInDb(userId, data.id);
-    } catch (sErr) {
-      console.error("Error auto-seeding Python curriculum on subject creation:", sErr);
+  if (data) {
+    const nLower = data.name.toLowerCase().trim();
+    if (nLower.includes("python")) {
+      try {
+        await seedPythonCurriculumInDb(userId, data.id);
+      } catch (sErr) {
+        console.error("Error auto-seeding Python curriculum on subject creation:", sErr);
+      }
+    } else if (nLower.includes("sql") || nLower.includes("structured query language")) {
+      try {
+        await seedSqlCurriculumInDb(userId, data.id);
+      } catch (sErr) {
+        console.error("Error auto-seeding SQL curriculum on subject creation:", sErr);
+      }
     }
   }
 
@@ -802,6 +846,198 @@ export async function seedDbmsCurriculumInDb(
   await supabase
     .from("subjects")
     .update({ dbms_seeded: true })
+    .eq("id", subjectId);
+}
+
+export const SQL_CURRICULUM_DATA = [
+  {
+    name: "MODULE 1 — SQL & Database Fundamentals",
+    items: [
+      { title: "Lec 1: Introduction to SQL", minutes: 7, priority: "HIGH" },
+      { title: "Lec 2: What is Database?", minutes: 5, priority: "MEDIUM" },
+      { title: "Lec 3: Types of Databases", minutes: 7, priority: "MEDIUM" },
+      { title: "Lec 4: Installation of MySQL", minutes: 9, priority: "MEDIUM" },
+      { title: "Lec 5: Database Structure", minutes: 10, priority: "MEDIUM" },
+    ],
+  },
+  {
+    name: "MODULE 2 — Database & Table Basics",
+    items: [
+      { title: "Lec 6: What is Table?", minutes: 6, priority: "MEDIUM" },
+      { title: "Lec 7: Creating our First Database", minutes: 7, priority: "HIGH" },
+      { title: "Lec 8: Creating our First Table", minutes: 11, priority: "HIGH" },
+      { title: "Lec 9: SQL Datatypes", minutes: 12, priority: "HIGH" },
+      { title: "Lec 10: Types of SQL Commands", minutes: 8, priority: "MEDIUM" },
+    ],
+  },
+  {
+    name: "MODULE 3 — Queries & Data Manipulation",
+    items: [
+      { title: "Lec 11: Database Related Queries", minutes: 9, priority: "MEDIUM" },
+      { title: "Lec 12: Table Related Queries", minutes: 8, priority: "MEDIUM" },
+      { title: "Lec 13: SELECT Command", minutes: 6, priority: "HIGH" },
+      { title: "Lec 14: INSERT Command", minutes: 11, priority: "HIGH" },
+      { title: "Lec 15: Practice Questions", minutes: 10, priority: "HIGH" },
+    ],
+  },
+  {
+    name: "MODULE 4 — Keys, Constraints & Filtering",
+    items: [
+      { title: "Lec 16: Keys", minutes: 10, priority: "HIGH" },
+      { title: "Lec 17: Constraints", minutes: 17, priority: "HIGH" },
+      { title: "Lec 18: SELECT Command in Detail", minutes: 7, priority: "HIGH" },
+      { title: "Lec 19: WHERE Clause", minutes: 11, priority: "HIGH" },
+      { title: "Lec 20: Operators", minutes: 10, priority: "MEDIUM" },
+      { title: "Lec 21: LIMIT Clause", minutes: 9, priority: "MEDIUM" },
+      { title: "Lec 22: ORDER BY Clause", minutes: 6, priority: "MEDIUM" },
+    ],
+  },
+  {
+    name: "MODULE 5 — Aggregations & Grouping",
+    items: [
+      { title: "Lec 23: Aggregate Functions", minutes: 8, priority: "HIGH" },
+      { title: "Lec 24: GROUP BY Clause", minutes: 10, priority: "HIGH" },
+      { title: "Lec 25: Practice Questions", minutes: 11, priority: "HIGH" },
+      { title: "Lec 26: HAVING Clause", minutes: 9, priority: "HIGH" },
+      { title: "Lec 27: General Order of Commands", minutes: 8, priority: "MEDIUM" },
+    ],
+  },
+  {
+    name: "MODULE 6 — Data Modification & Schema Updates",
+    items: [
+      { title: "Lec 28: UPDATE Command", minutes: 11, priority: "HIGH" },
+      { title: "Lec 29: DELETE Command", minutes: 7, priority: "HIGH" },
+      { title: "Lec 30: Revisiting Foreign Keys", minutes: 13, priority: "HIGH" },
+      { title: "Lec 31: Cascading Foreign Keys", minutes: 11, priority: "HIGH" },
+      { title: "Lec 32: ALTER Command", minutes: 8, priority: "HIGH" },
+      { title: "Lec 33: CHANGE and MODIFY Commands", minutes: 10, priority: "MEDIUM" },
+      { title: "Lec 34: TRUNCATE Command", minutes: 8, priority: "MEDIUM" },
+    ],
+  },
+  {
+    name: "MODULE 7 — Joins, Subqueries & Views",
+    items: [
+      { title: "Lec 35: JOINS in SQL", minutes: 32, priority: "HIGH" },
+      { title: "Lec 36: UNION in SQL", minutes: 8, priority: "MEDIUM" },
+      { title: "Lec 37: SQL Sub Queries", minutes: 23, priority: "HIGH" },
+      { title: "Lec 38: MySQL Views", minutes: 23, priority: "HIGH" },
+    ],
+  },
+];
+
+/**
+ * Seed the SQL curriculum into an existing SQL subject.
+ * Safe and idempotent: tries RPC first; falls back to client-side table queries.
+ */
+export async function seedSqlCurriculumInDb(
+  userId: string,
+  subjectId: string
+): Promise<void> {
+  try {
+    const { error: rpcError } = await supabase.rpc("seed_sql_curriculum", {
+      p_user_id: userId,
+      p_subject_id: subjectId,
+    });
+
+    if (!rpcError) {
+      return;
+    }
+  } catch {
+    // Ignore and proceed to client-side fallback
+  }
+
+  const { data: existingTopics } = await supabase
+    .from("topics")
+    .select("*")
+    .eq("subject_id", subjectId);
+
+  const topicList = existingTopics || [];
+  const validModuleNames = new Set(SQL_CURRICULUM_DATA.map((m) => m.name.toLowerCase().trim()));
+
+  const outdatedTopics = topicList.filter(
+    (t) => !validModuleNames.has(t.name.toLowerCase().trim())
+  );
+  if (outdatedTopics.length > 0) {
+    const outdatedIds = outdatedTopics.map((t) => t.id);
+    await supabase.from("learning_items").delete().in("topic_id", outdatedIds);
+    await supabase.from("topics").delete().in("id", outdatedIds);
+  }
+
+  const topicIds = topicList.map((t) => t.id);
+  let existingItems: Database["public"]["Tables"]["learning_items"]["Row"][] = [];
+  if (topicIds.length > 0) {
+    const { data: itemsData } = await supabase
+      .from("learning_items")
+      .select("*")
+      .in("topic_id", topicIds);
+    existingItems = itemsData || [];
+  }
+
+  for (let topicIdx = 0; topicIdx < SQL_CURRICULUM_DATA.length; topicIdx++) {
+    const mod = SQL_CURRICULUM_DATA[topicIdx];
+
+    let topicId = "";
+    const matchedTopic = topicList.find(
+      (t) => t.name.toLowerCase().trim() === mod.name.toLowerCase().trim()
+    );
+
+    if (matchedTopic) {
+      topicId = matchedTopic.id;
+    } else {
+      const { data: newTopic, error: tErr } = await supabase
+        .from("topics")
+        .insert({
+          subject_id: subjectId,
+          name: mod.name,
+          display_order: topicIdx + 1,
+        })
+        .select()
+        .single();
+
+      if (tErr || !newTopic) {
+        console.error("Error creating SQL topic fallback:", mod.name, tErr);
+        continue;
+      }
+      topicId = newTopic.id;
+      topicList.push(newTopic);
+    }
+
+    const currentTopicItems = existingItems.filter((li) => li.topic_id === topicId);
+    const itemsToInsert = [];
+
+    for (let itemIdx = 0; itemIdx < mod.items.length; itemIdx++) {
+      const itemDef = mod.items[itemIdx];
+      const exists = currentTopicItems.some(
+        (li) => li.title.toLowerCase().trim() === itemDef.title.toLowerCase().trim()
+      );
+
+      if (!exists) {
+        itemsToInsert.push({
+          topic_id: topicId,
+          title: itemDef.title,
+          display_order: itemIdx + 1,
+          status: "NOT_STARTED" as const,
+          priority: (itemDef.priority || "MEDIUM") as "LOW" | "MEDIUM" | "HIGH",
+          estimated_minutes: itemDef.minutes,
+          resources: [] as unknown as Json,
+        });
+      }
+    }
+
+    if (itemsToInsert.length > 0) {
+      const { error: iErr } = await supabase
+        .from("learning_items")
+        .insert(itemsToInsert);
+
+      if (iErr) {
+        console.error("Error inserting SQL learning items for:", mod.name, iErr);
+      }
+    }
+  }
+
+  await supabase
+    .from("subjects")
+    .update({ sql_seeded: true })
     .eq("id", subjectId);
 }
 

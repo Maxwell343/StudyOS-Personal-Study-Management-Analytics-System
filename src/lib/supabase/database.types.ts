@@ -51,6 +51,7 @@ export interface Database {
           target_date: string | null;
           archived: boolean;
           dbms_seeded: boolean;
+          sql_seeded: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -64,6 +65,7 @@ export interface Database {
           target_date?: string | null;
           archived?: boolean;
           dbms_seeded?: boolean;
+          sql_seeded?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -77,6 +79,7 @@ export interface Database {
           target_date?: string | null;
           archived?: boolean;
           dbms_seeded?: boolean;
+          sql_seeded?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -373,6 +376,13 @@ export interface Database {
         Returns: void;
       };
       seed_dbms_curriculum: {
+        Args: {
+          p_user_id: string;
+          p_subject_id: string;
+        };
+        Returns: void;
+      };
+      seed_sql_curriculum: {
         Args: {
           p_user_id: string;
           p_subject_id: string;

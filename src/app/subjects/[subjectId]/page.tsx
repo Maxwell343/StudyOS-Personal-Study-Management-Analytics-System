@@ -25,12 +25,14 @@ import {
   bulkToggleLearningItemsInDb,
   seedDbmsCurriculumInDb,
   seedPythonCurriculumInDb,
+  seedSqlCurriculumInDb,
 } from "@/lib/data-access/subjects";
 import type { Subject, Topic, LearningItem, LearningItemStatus } from "@/types/subjects";
 
-// ── DBMS & Python subject name variants ──────────────────────────────────────
+// ── DBMS, Python & SQL subject name variants ─────────────────────────────────
 const DBMS_NAME_PATTERNS = ["database management systems", "dbms"];
 const PYTHON_NAME_PATTERNS = ["python", "python basics", "python programming"];
+const SQL_NAME_PATTERNS = ["sql", "structured query language"];
 
 function isDbmsSubject(name: string): boolean {
   const lower = name.toLowerCase().trim();
@@ -40,6 +42,11 @@ function isDbmsSubject(name: string): boolean {
 function isPythonSubject(name: string): boolean {
   const lower = name.toLowerCase().trim();
   return PYTHON_NAME_PATTERNS.some((p) => lower.includes(p));
+}
+
+function isSqlSubject(name: string): boolean {
+  const lower = name.toLowerCase().trim();
+  return SQL_NAME_PATTERNS.some((p) => lower.includes(p));
 }
 
 export default function SubjectDetailPage({
@@ -58,6 +65,7 @@ export default function SubjectDetailPage({
   // Track whether we have already attempted curriculum seeds for this session.
   const dbmsSeedAttemptedRef = useRef(false);
   const pythonSeedAttemptedRef = useRef(false);
+  const sqlSeedAttemptedRef = useRef(false);
 
   // Dialog States
   const [editSubjectOpen, setEditSubjectOpen] = useState(false);
@@ -120,6 +128,23 @@ export default function SubjectDetailPage({
               }
             } catch (pErr) {
               console.error("Python curriculum seed error:", pErr);
+            }
+          }
+
+          // ── Safe SQL auto-seed ────────────────────────────────────────────
+          if (
+            data &&
+            isSqlSubject(data.name) &&
+            !sqlSeedAttemptedRef.current
+          ) {
+            sqlSeedAttemptedRef.current = true;
+            try {
+              await seedSqlCurriculumInDb(user.id, subjectId);
+              if (!isCancelled) {
+                setRefreshIndex((prev) => prev + 1);
+              }
+            } catch (sErr) {
+              console.error("SQL curriculum seed error:", sErr);
             }
           }
         }

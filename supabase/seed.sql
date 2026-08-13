@@ -134,32 +134,11 @@ BEGIN
 
   -- ── 4. SUBJECT: SQL ────────────────────────────────────────────────────────
   INSERT INTO public.subjects (user_id, name, description, category, color, target_date)
-  VALUES (p_user_id, 'SQL', 'Relational database design, query optimization, indexing, and analytical window functions.', 'Database Systems', '#34d399', '2026-09-30')
+  VALUES (p_user_id, 'SQL', 'Complete Structured Query Language (SQL) 38-lecture mastery course.', 'Database Systems', '#34d399', '2026-09-30')
   RETURNING id INTO v_sub_sql;
 
-  -- SQL Topics
-  INSERT INTO public.topics (subject_id, name, description, display_order)
-  VALUES (v_sub_sql, 'Advanced Joins & Subqueries', 'Inner, left, right, full, cross, self joins, correlated subqueries, and CTEs.', 1)
-  RETURNING id INTO v_top_sql_joins;
-
-  INSERT INTO public.topics (subject_id, name, description, display_order)
-  VALUES (v_sub_sql, 'Indexing & Query Optimization', 'B-Trees, Hash indexes, composite indexes, EXPLAIN ANALYZE, and scan types.', 2)
-  RETURNING id INTO v_top_sql_indexing;
-
-  INSERT INTO public.topics (subject_id, name, description, display_order)
-  VALUES (v_sub_sql, 'Window Functions & Aggregation', 'ROW_NUMBER, RANK, DENSE_RANK, LEAD, LAG, running totals with PARTITION BY.', 3)
-  RETURNING id INTO v_top_sql_window;
-
-  -- SQL Learning Items
-  INSERT INTO public.learning_items (topic_id, title, description, display_order, status, priority, estimated_minutes, resources) VALUES
-  (v_top_sql_joins, 'Multi-table Joins with Common Table Expressions (CTEs)', 'WITH clauses for query readability, recursive CTEs, and execution order.', 1, 'NOT_STARTED', 'HIGH', 60, '[{"id":"rs-1","type":"practice","title":"LeetCode SQL 50"}]'::jsonb),
-  (v_top_sql_joins, 'Correlated Subqueries vs EXISTS', 'Semi-joins, anti-joins, performance implications, and query planner optimization.', 2, 'NOT_STARTED', 'MEDIUM', 45, '[{"id":"rs-2","type":"practice","title":"StrataScratch SQL"}]'::jsonb),
-
-  (v_top_sql_indexing, 'B-Tree Index Internals & Query Planning', 'Index seek vs scan, selectivity, leftmost prefix rule in composite indexes.', 1, 'NOT_STARTED', 'HIGH', 75, '[{"id":"rs-3","type":"notes","title":"Use The Index, Luke"}]'::jsonb),
-  (v_top_sql_indexing, 'Interpreting EXPLAIN (ANALYZE, BUFFERS)', 'Understanding actual vs estimated startup costs, sequential scans, and buffer hits.', 2, 'NOT_STARTED', 'HIGH', 60, '[{"id":"rs-4","type":"practice","title":"PostgreSQL Performance Lab"}]'::jsonb),
-
-  (v_top_sql_window, 'Running Totals & Moving Averages', 'SUM() OVER (PARTITION BY ... ORDER BY ... ROWS BETWEEN ...) window framing.', 1, 'NOT_STARTED', 'HIGH', 60, '[{"id":"rs-5","type":"practice","title":"LeetCode 185"}]'::jsonb),
-  (v_top_sql_window, 'DENSE_RANK vs RANK in Top-N Queries', 'Ranking gaps, handling ties, and pagination partitioning.', 2, 'NOT_STARTED', 'MEDIUM', 45, '[{"id":"rs-6","type":"practice","title":"SQL Window Functions Masterclass"}]'::jsonb);
+  -- Seed the complete 38-lecture SQL curriculum
+  PERFORM public.seed_sql_curriculum(p_user_id, v_sub_sql);
 
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
