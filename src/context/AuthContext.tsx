@@ -85,6 +85,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(data.session);
         setUser(data.user);
         await fetchProfile(data.user);
+        if (typeof window !== "undefined") {
+          window.location.href = "/";
+        }
       }
       return {};
     } catch (err) {
@@ -129,6 +132,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await seedCurriculumForUser(activeUser.id);
         } catch (seedErr) {
           console.warn("Curriculum auto-seed notice:", seedErr);
+        }
+
+        if (typeof window !== "undefined") {
+          window.location.href = "/";
         }
       }
 
