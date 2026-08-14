@@ -2,7 +2,6 @@ import { supabase } from "@/lib/supabase/client";
 import { formatErrorMessage } from "@/lib/utils";
 import { getTodayDateString, getLocalYYYYMMDD } from "./planner";
 import { computeDynamicSessionStatus } from "./dashboard";
-import { formatMinutes } from "@/lib/planner-utils";
 import type {
   CalendarDayData,
   CalendarSession,

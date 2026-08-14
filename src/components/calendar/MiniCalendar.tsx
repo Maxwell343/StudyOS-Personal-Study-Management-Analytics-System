@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getTodayDateString, getLocalYYYYMMDD } from "@/lib/data-access/planner";
 
@@ -29,10 +29,12 @@ export function MiniCalendar({
   const [navYear, setNavYear] = useState(currentYear);
   const [navMonth, setNavMonth] = useState(currentMonth);
 
-  useEffect(() => {
+  const [prevProps, setPrevProps] = useState({ currentYear, currentMonth });
+  if (prevProps.currentYear !== currentYear || prevProps.currentMonth !== currentMonth) {
+    setPrevProps({ currentYear, currentMonth });
     setNavYear(currentYear);
     setNavMonth(currentMonth);
-  }, [currentYear, currentMonth]);
+  }
 
   const handlePrev = () => {
     let m = navMonth - 1;

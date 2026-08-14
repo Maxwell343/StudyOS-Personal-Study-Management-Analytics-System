@@ -6,21 +6,16 @@ import {
   X,
   Play,
   CheckCircle2,
-  Circle,
   Clock,
   BookOpen,
   ChevronRight,
-  ExternalLink,
   Loader2,
   Sparkles,
-  AlertCircle,
   FileText,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
-import type { StudySession, SessionStatus } from "@/types/dashboard";
-import { formatMinutes } from "@/lib/planner-utils";
+import type { StudySession } from "@/types/dashboard";
 import { getTodayDateString } from "@/lib/data-access/planner";
-
 interface TopicItem {
   id: string;
   topic_id: string;
@@ -32,27 +27,6 @@ interface TopicItem {
   estimated_minutes: number;
   completed_at?: string | null;
   resources?: Array<{ title: string; url?: string; type?: string }> | null;
-}
-
-/**
- * Filters out items completed on past days, retaining ONLY items planned for today (active/uncompleted + completed today).
- */
-function filterItemsForTodayPlan(items: TopicItem[]): TopicItem[] {
-  const todayStr = getTodayDateString();
-
-  return items.filter((item) => {
-    const rawStatus = String(item.status || "").toUpperCase();
-    const isCompletedStatus = rawStatus === "COMPLETED" || Boolean(item.completed_at);
-
-    if (isCompletedStatus) {
-      if (!item.completed_at) return false; // Past or seeded completed item without today's date -> Exclude!
-      const completedDate = String(item.completed_at).slice(0, 10);
-      if (completedDate !== todayStr) {
-        return false; // Exclude items completed on past days!
-      }
-    }
-    return true;
-  });
 }
 
 function sortItemsAscending(items: TopicItem[]): TopicItem[] {
@@ -90,7 +64,6 @@ interface SessionTopicModalProps {
 
 export function SessionTopicModal({
   session,
-  userId,
   isOpen,
   onClose,
   onStartSession,
@@ -99,9 +72,11 @@ export function SessionTopicModal({
   const [topicDetails, setTopicDetails] = useState<TopicDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [togglingItemId, setTogglingItemId] = useState<string | null>(null);
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const fetchTopicDetails = useCallback(async () => {
     if (!session) return;
+    setShowCompleted(false);
     setLoading(true);
 
     try {
@@ -246,8 +221,6 @@ export function SessionTopicModal({
     }
   }, [session]);
 
-  const [showCompleted, setShowCompleted] = useState(false);
-
   // Active (uncompleted) sub-topics planned to study
   const activeUncompletedItems = useMemo(() => {
     if (!topicDetails?.items) return [];
@@ -256,7 +229,7 @@ export function SessionTopicModal({
       const isCompleted = rawStatus === "COMPLETED" || Boolean(item.completed_at);
       return !isCompleted;
     });
-  }, [topicDetails?.items]);
+  }, [topicDetails]);
 
   const pastCompletedItems = useMemo(() => {
     if (!topicDetails?.items) return [];
@@ -264,12 +237,12 @@ export function SessionTopicModal({
       const rawStatus = String(item.status || "").toUpperCase();
       return rawStatus === "COMPLETED" || Boolean(item.completed_at);
     });
-  }, [topicDetails?.items]);
+  }, [topicDetails]);
 
   const displayedItems = useMemo(() => {
     const list = showCompleted ? topicDetails?.items || [] : activeUncompletedItems;
     return sortItemsAscending(list);
-  }, [topicDetails?.items, activeUncompletedItems, showCompleted]);
+  }, [topicDetails, activeUncompletedItems, showCompleted]);
 
   const todayStr = getTodayDateString();
 
@@ -286,7 +259,7 @@ export function SessionTopicModal({
       }
       return false;
     });
-  }, [topicDetails?.items, todayStr]);
+  }, [topicDetails, todayStr]);
 
   const todayCompletedCount = useMemo(() => {
     return todayPlannedItems.filter((item: TopicItem) => {
@@ -309,10 +282,17 @@ export function SessionTopicModal({
 
   useEffect(() => {
     if (isOpen && session) {
-      setShowCompleted(false);
-      fetchTopicDetails();
+      let isMounted = true;
+      Promise.resolve().then(() => {
+        if (isMounted) {
+          fetchTopicDetails();
+        }
+      });
+      return () => {
+        isMounted = false;
+      };
     } else {
-      setTopicDetails(null);
+      Promise.resolve().then(() => setTopicDetails(null));
     }
   }, [isOpen, session, fetchTopicDetails]);
 

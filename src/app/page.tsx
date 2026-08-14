@@ -138,7 +138,7 @@ export default function DashboardPage() {
   const availableTasks: PlannedTask[] = useMemo(() => {
     if (!data?.rawSubjects) return [];
     return extractAvailableTasksFromSubjects(data.rawSubjects);
-  }, [data?.rawSubjects]);
+  }, [data]);
 
   const availableSubjectOptions = useMemo(() => {
     if (!data?.rawSubjects) return [];
@@ -146,7 +146,7 @@ export default function DashboardPage() {
       name: s.name,
       color: s.color,
     }));
-  }, [data?.rawSubjects]);
+  }, [data]);
 
   const handleDeleteSession = useCallback(
     async (sessionId: string) => {
@@ -228,7 +228,7 @@ export default function DashboardPage() {
         alert("Failed to add session to today's plan.");
       }
     },
-    [user, data?.rawSubjects]
+    [user, data]
   );
 
   const handleUpdateSessionStatus = useCallback(
@@ -247,7 +247,6 @@ export default function DashboardPage() {
   const activeSessions = data?.todaySessions || [];
   const nextSession = data?.nextSession || null;
   const metrics = data?.dailyMetrics || DEFAULT_METRICS;
-  const focusTasks = data?.focusTasks || [];
   const subjectProgress = data?.subjectProgress || [];
   const weeklyData = data?.weeklyData || DEFAULT_WEEKLY_DATA;
   const targetMinutes = data?.targetMinutesToday ?? 0;

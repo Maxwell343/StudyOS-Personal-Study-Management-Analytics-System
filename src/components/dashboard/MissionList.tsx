@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
-import { Play, AlertCircle, Calendar, Clock, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertCircle, Calendar, Clock, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import type { StudySession, SessionStatus } from "@/types/dashboard";
 import { formatMinutes } from "@/lib/planner-utils";
 import { MissionCard } from "./MissionCard";

@@ -5,6 +5,7 @@ import type { User, Session } from "@supabase/supabase-js";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 import { seedCurriculumForUser } from "@/lib/data-access/subjects";
+import { LoginForm } from "@/components/auth/LoginForm";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 
@@ -14,16 +15,12 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   refreshProfile: () => Promise<void>;
+  signIn: (email: string, pass: string) => Promise<{ error?: string }>;
+  signUp: (email: string, pass: string, name: string) => Promise<{ error?: string }>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Dedicated Single-User Personal Credentials
-const SINGLE_USER_EMAIL =
-  process.env.NEXT_PUBLIC_STUDYOS_USER_EMAIL || "maxwell.mathew@studyos.local";
-const SINGLE_USER_PASSWORD =
-  process.env.NEXT_PUBLIC_STUDYOS_USER_PASSWORD || "studyos_personal_maxwell_2026";
-const SINGLE_USER_NAME = "Maxwell";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -51,7 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Create profile if trigger didn't execute
         const newProfile: Database["public"]["Tables"]["profiles"]["Insert"] = {
           id: authUser.id,
-          name: SINGLE_USER_NAME,
+          name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || authUser.email?.split("@")[0] || "User",
           avatar_url: null,
         };
         const { data: created, error: createError } = await supabase
@@ -75,10 +72,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, fetchProfile]);
 
+  const signIn = useCallback(async (email: string, pass: string): Promise<{ error?: string }> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: pass,
+      });
+
+      if (error) return { error: error.message };
+
+      if (data.session && data.user) {
+        setSession(data.session);
+        setUser(data.user);
+        await fetchProfile(data.user);
+      }
+      return {};
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Sign in failed" };
+    }
+  }, [fetchProfile]);
+
+  const signUp = useCallback(async (email: string, pass: string, name: string): Promise<{ error?: string }> => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: pass,
+        options: {
+          data: {
+            full_name: name,
+          },
+        },
+      });
+
+      if (error) return { error: error.message };
+
+      let activeSession = data.session;
+      let activeUser = data.user;
+
+      if (!activeSession && activeUser) {
+        // Sign in immediately after registration
+        const res = await supabase.auth.signInWithPassword({
+          email,
+          password: pass,
+        });
+        activeSession = res.data?.session ?? null;
+        activeUser = res.data?.user ?? activeUser;
+      }
+
+      if (activeSession && activeUser) {
+        setSession(activeSession);
+        setUser(activeUser);
+        await fetchProfile(activeUser);
+
+        // Auto-seed curriculum for newly registered user workspace
+        try {
+          await seedCurriculumForUser(activeUser.id);
+        } catch (seedErr) {
+          console.warn("Curriculum auto-seed notice:", seedErr);
+        }
+      }
+
+      return {};
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Sign up failed" };
+    }
+  }, [fetchProfile]);
+
+  const signOut = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn("Sign out error:", err);
+    } finally {
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+    }
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
 
-    async function initSingleUserAuth() {
+    async function initAuth() {
       if (!isSupabaseConfigured) {
         if (isMounted) setLoading(false);
         return;
@@ -99,61 +174,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // 2. If no active session, authenticate single user silently in background
-        const { data: signInData, error: signInError } =
-          await supabase.auth.signInWithPassword({
-            email: SINGLE_USER_EMAIL,
-            password: SINGLE_USER_PASSWORD,
+        // 2. If explicit env credentials are supplied in .env.local for local testing
+        const envEmail = process.env.NEXT_PUBLIC_STUDYOS_USER_EMAIL;
+        const envPass = process.env.NEXT_PUBLIC_STUDYOS_USER_PASSWORD;
+
+        if (envEmail && envPass) {
+          const { data: signInData } = await supabase.auth.signInWithPassword({
+            email: envEmail,
+            password: envPass,
           });
 
-        if (signInData?.session && signInData?.user) {
-          if (!isMounted) return;
-          setSession(signInData.session);
-          setUser(signInData.user);
-          await fetchProfile(signInData.user);
-          if (isMounted) setLoading(false);
-          return;
-        }
-
-        // 3. If single user account does not exist yet, provision it automatically
-        if (signInError) {
-          const { data: signUpData, error: signUpError } =
-            await supabase.auth.signUp({
-              email: SINGLE_USER_EMAIL,
-              password: SINGLE_USER_PASSWORD,
-              options: {
-                data: {
-                  full_name: SINGLE_USER_NAME,
-                },
-              },
-            });
-
-          if (signUpData?.user) {
-            // Auto sign in if session was not returned by signup
-            let activeSession = signUpData.session;
-            if (!activeSession) {
-              const res = await supabase.auth.signInWithPassword({
-                email: SINGLE_USER_EMAIL,
-                password: SINGLE_USER_PASSWORD,
-              });
-              activeSession = res.data?.session ?? null;
-            }
-
-            if (!isMounted) return;
-            if (activeSession && signUpData.user) {
-              setSession(activeSession);
-              setUser(signUpData.user);
-              await fetchProfile(signUpData.user);
-
-              // Seed default curriculum for new personal workspace
-              try {
-                await seedCurriculumForUser(signUpData.user.id);
-              } catch (seedErr) {
-                console.warn("Curriculum auto-seed notice:", seedErr);
-              }
-            }
-          } else if (signUpError) {
-            console.error("Single user initialization notice:", signUpError.message);
+          if (signInData?.session && signInData?.user && isMounted) {
+            setSession(signInData.session);
+            setUser(signInData.user);
+            await fetchProfile(signInData.user);
           }
         }
       } catch (err) {
@@ -163,7 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    initSingleUserAuth();
+    initAuth();
 
     const {
       data: { subscription },
@@ -193,9 +227,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile,
         loading,
         refreshProfile,
+        signIn,
+        signUp,
+        signOut,
       }}
     >
-      {children}
+      {!session && !loading ? (
+        <LoginForm onSignIn={signIn} onSignUp={signUp} />
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 }

@@ -16,7 +16,6 @@ interface ScheduleSessionCardProps {
 
 export function ScheduleSessionCard({
   session,
-  task: _task,
   isLocked,
   hasConflict,
   onEdit,

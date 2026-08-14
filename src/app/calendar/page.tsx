@@ -114,7 +114,7 @@ export default function CalendarPage() {
     }
     setCurrentMonth(m);
     setCurrentYear(y);
-  }, [currentMonth, currentYear]);
+  }, [currentMonth, currentYear, setCurrentMonth, setCurrentYear]);
 
   const handleNextMonth = useCallback(() => {
     let m = currentMonth + 1;
@@ -125,7 +125,7 @@ export default function CalendarPage() {
     }
     setCurrentMonth(m);
     setCurrentYear(y);
-  }, [currentMonth, currentYear]);
+  }, [currentMonth, currentYear, setCurrentMonth, setCurrentYear]);
 
   const handleGoToday = useCallback(() => {
     const d = new Date();
@@ -140,7 +140,7 @@ export default function CalendarPage() {
         setDayDrawerOpen(true);
       }
     }
-  }, [todayStr, monthData]);
+  }, [todayStr, monthData, setCurrentYear, setCurrentMonth, setSelectedDateStr, setSelectedDayData, setDayDrawerOpen]);
 
   const handleSelectDay = useCallback((day: CalendarDayData) => {
     setSelectedDateStr(day.dateStr);

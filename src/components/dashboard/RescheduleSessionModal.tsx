@@ -35,10 +35,18 @@ export function RescheduleSessionModal({
 
   useEffect(() => {
     if (session) {
-      setTargetDate(tomorrow);
-      setStartTime(session.startTime || "09:00");
-      setEndTime(session.endTime || "10:00");
-      setTopic(session.topic || "");
+      let isMounted = true;
+      Promise.resolve().then(() => {
+        if (isMounted) {
+          setTargetDate(tomorrow);
+          setStartTime(session.startTime || "09:00");
+          setEndTime(session.endTime || "10:00");
+          setTopic(session.topic || "");
+        }
+      });
+      return () => {
+        isMounted = false;
+      };
     }
   }, [session, tomorrow]);
 

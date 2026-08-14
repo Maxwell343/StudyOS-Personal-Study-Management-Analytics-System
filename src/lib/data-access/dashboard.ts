@@ -444,7 +444,6 @@ export async function fetchDashboardData(userId: string): Promise<DashboardData>
 
   // 11. Daily Metrics Grid
   const hoursStudied = (actualMinutesToday / 60).toFixed(1);
-  const totalTargetHours = (targetMinutesToday / 60).toFixed(1);
   const efficiencyPercent =
     targetMinutesToday > 0
       ? Math.min(
@@ -803,7 +802,7 @@ export async function addPlannedSessionToToday(
   const today = getTodayDateString();
 
   // 1. Fetch or create today's study plan
-  let { data: todayPlan } = await supabase
+  const { data: todayPlan } = await supabase
     .from("study_plans")
     .select("id, target_minutes")
     .eq("user_id", userId)
