@@ -27,6 +27,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number }>> = {
   Calendar,
   BarChart3,
   Target,
+  Settings,
 };
 
 export function Sidebar() {
@@ -152,15 +153,24 @@ export function Sidebar() {
         className="p-2"
         style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
       >
-        <button
-          className="nav-item flex w-full items-center gap-2.5 rounded-md border-none bg-transparent px-2.5 py-[7.5px] text-left text-[12.5px] mb-px cursor-pointer"
-          style={{ color: "#6a6a7e" }}
+        <Link
+          href="/settings"
+          className={cn(
+            "nav-item flex w-full items-center gap-2.5 rounded-md border-none px-2.5 py-[7.5px] text-left text-[12.5px] mb-px no-underline cursor-pointer transition-all hover:bg-white/[0.04] hover:text-white"
+          )}
+          style={{
+            background: pathname === "/settings" ? "rgba(34,211,238,0.08)" : "transparent",
+            color: pathname === "/settings" ? "#22d3ee" : "#8a8a9e",
+          }}
         >
           <Settings size={14} />
           Settings
-        </button>
+        </Link>
 
-        <div className="flex items-center gap-2 px-2 pt-2 pb-1">
+        <Link
+          href="/settings"
+          className="flex items-center gap-2 rounded-md px-2 pt-2 pb-1 no-underline cursor-pointer hover:bg-white/[0.04] transition-colors"
+        >
           <div
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-black"
             style={{
@@ -177,7 +187,7 @@ export function Sidebar() {
               Personal Workspace
             </div>
           </div>
-        </div>
+        </Link>
       </div>
     </aside>
   );

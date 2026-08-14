@@ -82,4 +82,5 @@ export const NAV_ITEMS: NavItemConfig[] = [
   { id: "calendar", label: "Calendar", iconName: "Calendar", href: "/calendar" },
   { id: "analytics", label: "Analytics", iconName: "BarChart3" },
   { id: "goals", label: "Goals", iconName: "Target" },
+  { id: "settings", label: "Settings", iconName: "Settings", href: "/settings" },
 ];

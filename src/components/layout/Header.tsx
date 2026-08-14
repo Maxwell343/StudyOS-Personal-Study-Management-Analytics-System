@@ -1,10 +1,14 @@
 "use client";
 
 import { Bell } from "lucide-react";
+import Link from "next/link";
 import { useSessionTimer } from "@/context/TimerContext";
+import { useAuth } from "@/context/AuthContext";
 import { useState, useEffect } from "react";
 
 export function Header() {
+  const { profile } = useAuth();
+  const displayName = profile?.name || "Maxwell";
   const [currentTime, setCurrentTime] = useState<Date | null>(() => new Date());
 
   useEffect(() => {
@@ -53,7 +57,7 @@ export function Header() {
       <div>
         <div className="mb-[3px] flex items-center gap-2">
           <h1 className="m-0 text-2xl font-bold tracking-tight text-[#f0f0f4]">
-            {greeting}, Maxwell.
+            {greeting}, {displayName}.
           </h1>
           <span className="text-xl">{emoji}</span>
         </div>
@@ -148,16 +152,16 @@ export function Header() {
             style={{ background: "#22d3ee" }}
           />
         </button>
-        <div
-          className="flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-[7px] text-xs font-bold text-black"
+        <Link
+          href="/settings"
+          className="flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-[7px] text-xs font-bold text-black no-underline transition hover:opacity-90"
           style={{
             background: "linear-gradient(135deg, #22d3ee, #a78bfa)",
           }}
-          role="img"
-          aria-label="User avatar"
+          aria-label="User avatar settings"
         >
-          M
-        </div>
+          {displayName.charAt(0).toUpperCase()}
+        </Link>
       </div>
     </header>
   );
