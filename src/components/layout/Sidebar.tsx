@@ -155,20 +155,6 @@ export function Sidebar() {
       >
         <Link
           href="/settings"
-          className={cn(
-            "nav-item flex w-full items-center gap-2.5 rounded-md border-none px-2.5 py-[7.5px] text-left text-[12.5px] mb-px no-underline cursor-pointer transition-all hover:bg-white/[0.04] hover:text-white"
-          )}
-          style={{
-            background: pathname === "/settings" ? "rgba(34,211,238,0.08)" : "transparent",
-            color: pathname === "/settings" ? "#22d3ee" : "#8a8a9e",
-          }}
-        >
-          <Settings size={14} />
-          Settings
-        </Link>
-
-        <Link
-          href="/settings"
           className="flex items-center gap-2 rounded-md px-2 pt-2 pb-1 no-underline cursor-pointer hover:bg-white/[0.04] transition-colors"
         >
           <div
