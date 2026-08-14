@@ -195,6 +195,9 @@ export async function savePlanInDb(
         }
       }
 
+      const startTimeFormatted = s.startTime.length === 5 ? `${s.startTime}:00` : s.startTime;
+      const endTimeFormatted = s.endTime.length === 5 ? `${s.endTime}:00` : s.endTime;
+
       return {
         study_plan_id: planId,
         user_id: userId,
@@ -202,8 +205,8 @@ export async function savePlanInDb(
         topic_id: foundTopicId || null,
         learning_item_id: foundLearningItemId || null,
         title: s.topic,
-        start_time: `${s.startTime}:00`,
-        end_time: `${s.endTime}:00`,
+        start_time: startTimeFormatted,
+        end_time: endTimeFormatted,
         planned_minutes: s.durationMinutes,
         status: "PLANNED",
       };

@@ -7,7 +7,6 @@ import { SubjectsHeader } from "@/components/subjects/SubjectsHeader";
 import { SubjectsSummaryStats } from "@/components/subjects/SubjectsSummaryStats";
 import { ContinueLearningCard } from "@/components/subjects/ContinueLearningCard";
 import { SubjectCard } from "@/components/subjects/SubjectCard";
-import { RecentActivityList } from "@/components/subjects/RecentActivityList";
 import { SubjectsInsightBar } from "@/components/subjects/SubjectsInsightBar";
 import { AddSubjectDialog } from "@/components/subjects/AddSubjectDialog";
 import { useAuth } from "@/context/AuthContext";
@@ -18,16 +17,14 @@ import {
   seedCurriculumForUser,
 } from "@/lib/data-access/subjects";
 import { getGlobalLearningSummary } from "@/lib/learning-progress";
-import type { Subject, RecentActivityItem } from "@/types/subjects";
+import type { Subject } from "@/types/subjects";
 import { Database, Sparkles, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
 
 export default function SubjectsPage() {
   const { user, loading: authLoading } = useAuth();
 
   // ── State ──────────────────────────────────────────────────────────────────
   const [subjectsList, setSubjectsList] = useState<Subject[]>([]);
-  const [recentActivities, setRecentActivities] = useState<RecentActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -45,7 +42,6 @@ export default function SubjectsPage() {
       Promise.resolve().then(() => {
         if (!isCancelled) {
           setSubjectsList([]);
-          setRecentActivities([]);
           setLoading(false);
         }
       });
@@ -59,49 +55,6 @@ export default function SubjectsPage() {
         const data = await fetchSubjectsForUser(userId);
         if (isCancelled) return;
         setSubjectsList(data);
-
-        // Fetch recent activities from Supabase
-        const { data: logs } = await supabase
-          .from("activity_logs")
-          .select("*")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false })
-          .limit(5);
-
-        if (logs && !isCancelled) {
-          const formattedLogs: RecentActivityItem[] = logs.map((log) => {
-            const d = new Date(log.created_at);
-            const meta =
-              (log.metadata as {
-                title?: string;
-                subject?: string;
-                color?: string;
-                topic?: string;
-              }) || {};
-
-            return {
-              id: log.id,
-              type:
-                log.type === "ITEM_COMPLETED"
-                  ? "completed"
-                  : log.type === "ITEM_STARTED" ||
-                    log.type === "STUDY_SESSION_STARTED"
-                  ? "started"
-                  : "planned",
-              learningItemId: log.learning_item_id || "",
-              learningItemTitle: meta.title || "Curriculum Item",
-              subjectId: log.subject_id || "",
-              subjectName: meta.subject || "Curriculum",
-              subjectColor: meta.color || "#22d3ee",
-              topicName: meta.topic || "Active Track",
-              timestamp: d.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-            };
-          });
-          setRecentActivities(formattedLogs);
-        }
       } catch (err) {
         console.error("Error loading subjects:", formatErrorMessage(err), err);
       } finally {
@@ -270,9 +223,6 @@ export default function SubjectsPage() {
                   ))}
                 </div>
               )}
-
-              {/* Recent Activity Log */}
-              <RecentActivityList activities={recentActivities} />
             </>
           )}
         </div>

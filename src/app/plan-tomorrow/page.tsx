@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { formatErrorMessage } from "@/lib/utils";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PlanHeader } from "@/components/planner/PlanHeader";
@@ -35,6 +35,7 @@ export default function PlanTomorrowPage() {
   const [sessions, setSessions] = useState<PlanSession[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLocked, setIsLocked] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<PlanSession | null>(null);
@@ -64,6 +65,7 @@ export default function PlanTomorrowPage() {
         setSubjects(userSubjects);
         setIsLocked(planRes.isLocked);
         setSessions(planRes.sessions);
+        setIsDirty(false);
       } catch (err) {
         console.error("Error loading plan:", formatErrorMessage(err), err);
       } finally {
@@ -104,31 +106,21 @@ export default function PlanTomorrowPage() {
     [sessions, health]
   );
 
-  // ── Auto-save ────────────────────────────────────────────────────────────────
-  const hasLoadedRef = useRef(false);
-
+  // ── Auto-save (Only when user makes changes) ──────────────────────────────
   useEffect(() => {
-    if (loading || !user || !hasLoadedRef.current) return;
+    if (loading || !user || !isDirty) return;
 
     const timeout = setTimeout(async () => {
       try {
         await savePlanInDb(user.id, tomorrowDate, sessions, isLocked, subjects);
+        setIsDirty(false);
       } catch (err) {
         console.error("Auto-save error:", err);
       }
     }, 500); // debounce 500ms
 
     return () => clearTimeout(timeout);
-  }, [sessions, isLocked, user, tomorrowDate, subjects, loading]);
-
-  // Mark initial load as complete once loading finishes
-  useEffect(() => {
-    if (!loading) {
-      // Small delay so the auto-save effect doesn't fire for the initial data
-      const t = setTimeout(() => { hasLoadedRef.current = true; }, 100);
-      return () => clearTimeout(t);
-    }
-  }, [loading]);
+  }, [sessions, isLocked, user, tomorrowDate, subjects, loading, isDirty]);
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
@@ -136,6 +128,7 @@ export default function PlanTomorrowPage() {
     if (!user) return;
     try {
       await savePlanInDb(user.id, tomorrowDate, sessions, isLocked, subjects);
+      setIsDirty(false);
       setSaveMessage("Draft saved to cloud.");
       setTimeout(() => setSaveMessage(null), 3000);
     } catch (err: unknown) {
@@ -143,21 +136,23 @@ export default function PlanTomorrowPage() {
       const e = err as Error;
       alert(`Failed to save plan: ${e.message || "Unknown error"}`);
     }
-  }, [user, tomorrowDate, sessions, isLocked, subjects]);
+  }, [user, tomorrowDate, sessions, isLocked, subjects, setIsDirty]);
 
   const toggleLock = useCallback(async () => {
     const nextLocked = !isLocked;
     setIsLocked(nextLocked);
+    setIsDirty(true);
     if (user) {
       try {
         await savePlanInDb(user.id, tomorrowDate, sessions, nextLocked, subjects);
+        setIsDirty(false);
         setSaveMessage(nextLocked ? "Plan committed & locked." : "Plan unlocked.");
         setTimeout(() => setSaveMessage(null), 3000);
       } catch (err) {
         console.error("Error updating lock status:", err);
       }
     }
-  }, [user, tomorrowDate, sessions, isLocked, subjects]);
+  }, [user, tomorrowDate, sessions, isLocked, subjects, setIsDirty]);
 
   const handleAddSession = useCallback(() => {
     setEditingSession(null);
@@ -170,11 +165,13 @@ export default function PlanTomorrowPage() {
   }, []);
 
   const handleDeleteSession = useCallback((id: string) => {
+    setIsDirty(true);
     setSessions((prev) => prev.filter((s) => s.id !== id));
-  }, []);
+  }, [setIsDirty]);
 
   const handleSaveSession = useCallback(
     (savedSession: PlanSession) => {
+      setIsDirty(true);
       setSessions((prev) => {
         const idx = prev.findIndex((s) => s.id === savedSession.id);
         let next: PlanSession[];
@@ -189,7 +186,7 @@ export default function PlanTomorrowPage() {
       setDialogOpen(false);
       setEditingSession(null);
     },
-    []
+    [setIsDirty]
   );
 
   const handleCloseDialog = useCallback(() => {

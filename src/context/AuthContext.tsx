@@ -86,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(data.user);
         await fetchProfile(data.user);
         if (typeof window !== "undefined") {
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
           window.location.href = "/";
         }
       }
@@ -135,6 +136,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (typeof window !== "undefined") {
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
           window.location.href = "/";
         }
       }
