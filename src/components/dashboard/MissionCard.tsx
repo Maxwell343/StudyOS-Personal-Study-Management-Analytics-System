@@ -1,6 +1,6 @@
 "use client";
 
-import { Play, Trash2, Calendar, Clock } from "lucide-react";
+import { Play, Trash2, Calendar, Pencil } from "lucide-react";
 import type { StudySession, SessionStatus } from "@/types/dashboard";
 import { STATUS_CONFIG } from "@/lib/constants";
 
@@ -156,6 +156,27 @@ export function MissionCard({
         className="flex items-center gap-1.5"
         onClick={(e) => e.stopPropagation()}
       >
+        {!isCompleted && onReschedule && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onReschedule();
+            }}
+            title="Edit session schedule"
+            aria-label="Edit session schedule"
+            className="flex h-[27px] w-[27px] cursor-pointer items-center justify-center rounded-[5px]"
+            style={{
+              background: "rgba(245,158,11,0.08)",
+              border: "1px solid rgba(245,158,11,0.25)",
+              color: "#f59e0b",
+              transition: "all 0.12s ease",
+            }}
+          >
+            <Pencil size={11} />
+          </button>
+        )}
+
         {(isMissed || isBehind) && onMoveToTomorrow && (
           <button
             type="button"
@@ -171,28 +192,13 @@ export function MissionCard({
           </button>
         )}
 
-        {(isMissed || isBehind) && onReschedule && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onReschedule();
-            }}
-            title="Reschedule session"
-            className="flex cursor-pointer items-center gap-1 rounded-[5px] border border-amber-500/20 bg-amber-500/10 px-2.5 py-[5px] text-[11px] font-semibold text-amber-400 hover:bg-amber-500/20 transition"
-          >
-            <Clock size={10} />
-            Reschedule
-          </button>
-        )}
-
         {!isCompleted && (() => {
-          const isWorkable = isActive || isPaused || status === "starting-soon" || status === "behind-schedule";
+          const isWorkable = true;
           let tooltip = "Start session";
           if (status === "upcoming") {
-            tooltip = `Available during time slot (${session.startTime} - ${session.endTime})`;
+            tooltip = `Start session early (${session.startTime} - ${session.endTime})`;
           } else if (status === "missed") {
-            tooltip = "Time slot passed. Reschedule or move to tomorrow.";
+            tooltip = "Time slot passed. Start session or edit schedule.";
           }
 
           return (

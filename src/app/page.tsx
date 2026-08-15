@@ -129,6 +129,7 @@ export default function DashboardPage() {
         subjectName: session.subject,
         topicName: session.topic,
         title: `${session.subject}: ${session.topic}`,
+        startTime: session.startTime,
       });
       setRefreshCount((c) => c + 1);
     },

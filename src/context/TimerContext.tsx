@@ -38,6 +38,7 @@ interface TimerContextValue {
     subjectName?: string;
     topicName?: string;
     title?: string;
+    startTime?: string;
   }) => Promise<void>;
   pauseSession: () => Promise<void>;
   resumeSession: () => Promise<void>;
@@ -160,6 +161,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       subjectName?: string;
       topicName?: string;
       title?: string;
+      startTime?: string;
     }) => {
       if (!user) return;
 

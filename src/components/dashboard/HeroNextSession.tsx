@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { useSessionTimer } from "@/context/TimerContext";
-import { Play, Pause, CheckCircle2, RotateCcw, Clock, Calendar, Trash2 } from "lucide-react";
+import { Play, Pause, CheckCircle2, RotateCcw, Clock, Calendar, Trash2, Pencil } from "lucide-react";
 import type { StudySession } from "@/types/dashboard";
 
 interface HeroNextSessionProps {
@@ -83,6 +83,7 @@ export function HeroNextSession({
         subjectName: session.subject,
         topicName: session.topic,
         title: `${session.subject}: ${session.topic}`,
+        startTime: session.startTime,
       });
     } else {
       // Ad-hoc 25m focus session
@@ -359,6 +360,24 @@ export function HeroNextSession({
             </Link>
           ) : session ? (
             <div className="flex flex-wrap items-center gap-2">
+              {onOpenRescheduleModal && (
+                <button
+                  type="button"
+                  onClick={() => onOpenRescheduleModal(session)}
+                  title="Edit session schedule"
+                  aria-label="Edit session schedule"
+                  className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[7px]"
+                  style={{
+                    background: "rgba(245,158,11,0.08)",
+                    border: "1px solid rgba(245,158,11,0.25)",
+                    color: "#f59e0b",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <Pencil size={13} />
+                </button>
+              )}
+
               {session.status === "missed" && onMoveToTomorrow && (
                 <button
                   type="button"
@@ -369,23 +388,13 @@ export function HeroNextSession({
                 </button>
               )}
 
-              {session.status === "missed" && onOpenRescheduleModal && (
-                <button
-                  type="button"
-                  onClick={() => onOpenRescheduleModal(session)}
-                  className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[7px] border border-amber-500/35 bg-amber-500/10 px-4 py-2.5 text-[12.5px] font-semibold text-amber-300 hover:bg-amber-500/20 transition"
-                >
-                  <Clock size={13} /> Reschedule Today
-                </button>
-              )}
-
               {(() => {
-                const isWorkable = session.status === "starting-soon" || session.status === "behind-schedule";
+                const isWorkable = session.status !== "completed";
                 let tooltip = "Start session";
                 if (session.status === "upcoming") {
-                  tooltip = `Available during time slot (${session.timeRange})`;
+                  tooltip = `Start session early (${session.timeRange})`;
                 } else if (session.status === "missed") {
-                  tooltip = "Time slot passed. Reschedule or move to tomorrow.";
+                  tooltip = "Time slot passed. Start session or edit schedule.";
                 }
 
                 return (

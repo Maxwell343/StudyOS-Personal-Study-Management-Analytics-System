@@ -38,7 +38,7 @@ export function RescheduleSessionModal({
       let isMounted = true;
       Promise.resolve().then(() => {
         if (isMounted) {
-          setTargetDate(tomorrow);
+          setTargetDate(today);
           setStartTime(session.startTime || "09:00");
           setEndTime(session.endTime || "10:00");
           setTopic(session.topic || "");
@@ -48,7 +48,7 @@ export function RescheduleSessionModal({
         isMounted = false;
       };
     }
-  }, [session, tomorrow]);
+  }, [session, today]);
 
   if (!open || !session) return null;
 
@@ -98,7 +98,7 @@ export function RescheduleSessionModal({
       onClose();
     } catch (err) {
       console.error("Failed to reschedule session:", err);
-      alert("Failed to reschedule session. Please try again.");
+      alert("Failed to save session schedule. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -129,7 +129,7 @@ export function RescheduleSessionModal({
             </div>
             <div>
               <h3 className="m-0 text-base font-bold text-[#f0f0f4]">
-                Reschedule Session
+                Edit / Reschedule Session
               </h3>
               <p className="m-0 text-xs text-[#8a8a9e]">
                 {session.subject} — {session.topic}

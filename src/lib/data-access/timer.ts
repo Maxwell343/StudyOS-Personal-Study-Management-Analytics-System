@@ -166,6 +166,7 @@ export async function startStudySession(
     subjectName?: string;
     topicName?: string;
     title?: string;
+    startTime?: string;
   }
 ): Promise<ActiveSessionDetails> {
   // If there's an existing PAUSED session for this planned session, resume it instead of starting anew
@@ -198,7 +199,25 @@ export async function startStudySession(
     .eq("user_id", userId)
     .in("status", ["ACTIVE", "PAUSED"]);
 
-  const startedAt = new Date().toISOString();
+  const now = new Date();
+  let startedAtDate = now;
+
+  if (input.startTime) {
+    const parts = input.startTime.split(":");
+    if (parts.length >= 2) {
+      const sh = parseInt(parts[0], 10);
+      const sm = parseInt(parts[1], 10);
+      if (!isNaN(sh) && !isNaN(sm)) {
+        const scheduledDate = new Date();
+        scheduledDate.setHours(sh, sm, 0, 0);
+        if (scheduledDate.getTime() < now.getTime()) {
+          startedAtDate = scheduledDate;
+        }
+      }
+    }
+  }
+
+  const startedAt = startedAtDate.toISOString();
 
   const insertPayload: Database["public"]["Tables"]["study_sessions"]["Insert"] = {
     user_id: userId,
