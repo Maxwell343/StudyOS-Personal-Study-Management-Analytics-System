@@ -149,7 +149,7 @@ export default function AnalyticsPage() {
               </div>
               <h1 className="mt-1 flex items-center gap-2.5 text-2xl font-bold tracking-tight text-[#f0f0f4] md:text-3xl">
                 <Brain className="h-7 w-7 text-[#22d3ee]" />
-                JARVIS Intelligence
+                Jarvis Intelligence
               </h1>
               <p className="mt-0.5 text-xs text-[#9090a8]">
                 Understand your study behavior.
