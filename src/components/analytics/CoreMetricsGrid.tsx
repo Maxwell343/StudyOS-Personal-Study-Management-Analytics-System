@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Clock, CheckCircle2, CalendarCheck, Timer, Target, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Clock, CheckCircle2, CalendarCheck, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { CoreMetricsSummary, MetricValue } from "@/lib/analytics/types";
 
 interface CoreMetricsGridProps {
@@ -47,48 +47,29 @@ export const CoreMetricsGrid: React.FC<CoreMetricsGridProps> = ({ metrics, range
   const cards = [
     {
       id: "study_time",
-      title: "Total Study Time",
+      title: "Study Time",
       value: metrics.studyTime.formattedCurrent,
-      prevValue: metrics.studyTime.formattedPrevious,
       icon: Clock,
       badge: renderTrendBadge(metrics.studyTime),
     },
     {
       id: "completion_rate",
-      title: "Completion Rate",
+      title: "Completion",
       value: metrics.completionRate.formattedCurrent,
-      prevValue: metrics.completionRate.formattedPrevious,
       icon: CheckCircle2,
       badge: renderTrendBadge(metrics.completionRate, true),
     },
     {
       id: "session_completion",
-      title: "Session Completion",
+      title: "Sessions",
       value: metrics.sessionCompletion.formattedCurrent,
-      prevValue: metrics.sessionCompletion.formattedPrevious,
       icon: CalendarCheck,
       badge: renderTrendBadge(metrics.sessionCompletion),
-    },
-    {
-      id: "average_session",
-      title: "Average Session",
-      value: metrics.averageSessionDuration.formattedCurrent,
-      prevValue: metrics.averageSessionDuration.formattedPrevious,
-      icon: Timer,
-      badge: renderTrendBadge(metrics.averageSessionDuration),
-    },
-    {
-      id: "planned_adherence",
-      title: "Planned vs Actual",
-      value: metrics.scheduleAdherence.formattedCurrent,
-      prevValue: metrics.scheduleAdherence.formattedPrevious,
-      icon: Target,
-      badge: renderTrendBadge(metrics.scheduleAdherence, true),
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
       {cards.map((card) => {
         const Icon = card.icon;
         return (

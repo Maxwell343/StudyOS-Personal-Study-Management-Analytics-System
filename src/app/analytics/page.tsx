@@ -3,14 +3,21 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useAuth } from "@/context/AuthContext";
-import type { AnalyticsTimeRange, JarvisContext } from "@/lib/analytics/types";
+import type { AnalyticsTimeRange, JarvisContext, JarvisInsight } from "@/lib/analytics/types";
 import { computeJarvisAnalytics } from "@/lib/analytics/engine";
 import { JarvisBriefing } from "@/components/analytics/JarvisBriefing";
 import { CoreMetricsGrid } from "@/components/analytics/CoreMetricsGrid";
-import { JarvisInsights } from "@/components/analytics/JarvisInsights";
+import { JarvisPriorityCard } from "@/components/analytics/JarvisPriorityCard";
 import { SubjectIntelligence } from "@/components/analytics/SubjectIntelligence";
-import { BehaviorAnalysis } from "@/components/analytics/BehaviorAnalysis";
 import { JarvisRecommendations } from "@/components/analytics/JarvisRecommendations";
+import { BehaviorAnalysis } from "@/components/analytics/BehaviorAnalysis";
+import { EvidenceDrawer } from "@/components/analytics/EvidenceDrawer";
+import {
+  AllInsightsDrawer,
+  AllSubjectsDrawer,
+  AllRecommendationsDrawer,
+  DetailedBehaviorDrawer,
+} from "@/components/analytics/AnalyticsDrawers";
 import { JarvisLoadingState } from "@/components/analytics/JarvisLoadingState";
 import { InsufficientDataState } from "@/components/analytics/InsufficientDataState";
 import { AnalyticsErrorState } from "@/components/analytics/AnalyticsErrorState";
@@ -23,6 +30,13 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState<number>(0);
+
+  // Drawer States
+  const [selectedEvidence, setSelectedEvidence] = useState<JarvisInsight | null>(null);
+  const [showAllInsights, setShowAllInsights] = useState<boolean>(false);
+  const [showAllSubjects, setShowAllSubjects] = useState<boolean>(false);
+  const [showAllRecommendations, setShowAllRecommendations] = useState<boolean>(false);
+  const [showBehaviorDrawer, setShowBehaviorDrawer] = useState<boolean>(false);
 
   const userId = user?.id;
   const accessToken = session?.access_token;
@@ -182,6 +196,7 @@ export default function AnalyticsPage() {
             <InsufficientDataState />
           ) : (
             <div className="space-y-6">
+              {/* FIRST VIEWPORT: Intelligence-First Priority Area */}
               {/* 1. Executive Briefing */}
               <JarvisBriefing
                 briefing={data.briefing}
@@ -189,24 +204,85 @@ export default function AnalyticsPage() {
                 username={username}
               />
 
-              {/* 2. Core Metrics Summary */}
+              {/* 2. Core Metrics Summary (3 cards) */}
               <CoreMetricsGrid metrics={data.metrics} rangeLabel={getRangeLabel(range)} />
 
-              {/* 3. JARVIS Insights */}
-              <JarvisInsights insights={data.insights} />
+              {/* 3. JARVIS Priority (1 primary card + triggers) */}
+              <JarvisPriorityCard
+                insights={data.insights}
+                onSelectEvidence={(insight) => setSelectedEvidence(insight)}
+                onOpenAllInsights={() => setShowAllInsights(true)}
+              />
 
-              {/* 4. Subject Intelligence */}
-              <SubjectIntelligence subjects={data.subjects} />
+              {/* SECOND VIEWPORT & BELOW: Selective Focus Sections */}
+              {/* 4. Subject Focus (max 3 inline cards) */}
+              <SubjectIntelligence
+                subjects={data.subjects}
+                onOpenAllSubjects={() => setShowAllSubjects(true)}
+              />
 
-              {/* 5. Study Behavior Analysis */}
-              <BehaviorAnalysis behavior={data.behavior} />
+              {/* 5. JARVIS Recommends (max 2 inline cards) */}
+              <JarvisRecommendations
+                recommendations={data.recommendations}
+                onOpenAllRecommendations={() => setShowAllRecommendations(true)}
+              />
 
-              {/* 6. JARVIS Recommendations */}
-              <JarvisRecommendations recommendations={data.recommendations} />
+              {/* 6. Study Behavior Summary (compact 1-row summary) */}
+              <BehaviorAnalysis
+                behavior={data.behavior}
+                onExploreBehavior={() => setShowBehaviorDrawer(true)}
+              />
             </div>
           )}
         </div>
       </div>
+
+      {/* Progressive Disclosure Drawers */}
+      {/* Evidence Drawer */}
+      {selectedEvidence && (
+        <EvidenceDrawer
+          isOpen={Boolean(selectedEvidence)}
+          onClose={() => setSelectedEvidence(null)}
+          insight={selectedEvidence}
+        />
+      )}
+
+      {/* All Insights Drawer */}
+      {data && (
+        <AllInsightsDrawer
+          isOpen={showAllInsights}
+          onClose={() => setShowAllInsights(false)}
+          insights={data.insights}
+          onSelectEvidence={(insight) => setSelectedEvidence(insight)}
+        />
+      )}
+
+      {/* All Subjects Drawer */}
+      {data && (
+        <AllSubjectsDrawer
+          isOpen={showAllSubjects}
+          onClose={() => setShowAllSubjects(false)}
+          subjects={data.subjects}
+        />
+      )}
+
+      {/* All Recommendations Drawer */}
+      {data && (
+        <AllRecommendationsDrawer
+          isOpen={showAllRecommendations}
+          onClose={() => setShowAllRecommendations(false)}
+          recommendations={data.recommendations}
+        />
+      )}
+
+      {/* Detailed Behavior Drawer */}
+      {data && (
+        <DetailedBehaviorDrawer
+          isOpen={showBehaviorDrawer}
+          onClose={() => setShowBehaviorDrawer(false)}
+          behavior={data.behavior}
+        />
+      )}
     </div>
   );
 }

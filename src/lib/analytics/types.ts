@@ -6,6 +6,8 @@ export type InsightType = "POSITIVE" | "WARNING" | "BEHAVIORAL" | "TIME_BASED";
 
 export type SubjectRiskLevel = "HEALTHY" | "STABLE" | "AT_RISK" | "CRITICAL";
 
+export type SubjectActivityStatus = "ACTIVE" | "INSUFFICIENT_ACTIVITY";
+
 export type RecommendationPriority = "HIGH" | "MEDIUM" | "LOW";
 
 export type TrendDirection = "improving" | "declining" | "stable";
@@ -80,13 +82,14 @@ export interface SubjectIntelligenceData {
   name: string;
   color: string;
   studyTimeMinutes: number;
-  completionRate: number;
+  completionRate: number | null; // null if 0/0
   plannedProgressPercentage: number;
   actualProgressPercentage: number;
   trend: TrendDirection;
   missedSessionsCount: number;
   topicCompletionVelocity: number; // items per week
-  riskLevel: SubjectRiskLevel;
+  activityStatus: SubjectActivityStatus;
+  riskLevel: SubjectRiskLevel | null; // null if INSUFFICIENT_ACTIVITY
   jarvisCommentary: string;
 }
 
@@ -112,12 +115,20 @@ export interface DayOfWeekBehavior {
   studyTimeMinutes: number;
 }
 
+export interface BehavioralClaimPhrasing {
+  phrase: string;
+  tier: "HIGH_CONFIDENCE" | "MODERATE_CONFIDENCE" | "LOW_CONFIDENCE" | "INSUFFICIENT_DATA";
+}
+
 export interface BehaviorAnalysisData {
   timeWindows: TimeWindowBehavior[];
   bestStudyTimeWindow: TimeWindowBehavior | null;
+  bestStudyTimeClaim: BehavioralClaimPhrasing;
   durationBuckets: DurationBucketBehavior[];
   optimalSessionDuration: DurationBucketBehavior | null;
+  optimalDurationClaim: BehavioralClaimPhrasing;
   dayOfWeekPerformance: DayOfWeekBehavior[];
+  mostConsistentDay: DayOfWeekBehavior | null;
 }
 
 export interface JarvisRecommendation {

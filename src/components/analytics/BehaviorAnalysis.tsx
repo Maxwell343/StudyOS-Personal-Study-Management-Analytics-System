@@ -1,130 +1,114 @@
 "use client";
 
 import React from "react";
-import { Clock, Timer, Calendar } from "lucide-react";
+import { Clock, Sun, Calendar, ChevronRight } from "lucide-react";
 import type { BehaviorAnalysisData } from "@/lib/analytics/types";
 
 interface BehaviorAnalysisProps {
   behavior: BehaviorAnalysisData;
+  onExploreBehavior: () => void;
 }
 
-export const BehaviorAnalysis: React.FC<BehaviorAnalysisProps> = ({ behavior }) => {
-  const { bestStudyTimeWindow, optimalSessionDuration, dayOfWeekPerformance } = behavior;
+export const BehaviorAnalysis: React.FC<BehaviorAnalysisProps> = ({
+  behavior,
+  onExploreBehavior,
+}) => {
+  const bestDurationLabel = behavior.optimalSessionDuration
+    ? behavior.optimalSessionDuration.bucketLabel
+    : "30–45 min";
+
+  const bestWindowLabel = behavior.bestStudyTimeWindow
+    ? behavior.bestStudyTimeWindow.windowName.split(" ")[0]
+    : "Daytime";
+
+  const bestDayLabel = behavior.mostConsistentDay
+    ? behavior.mostConsistentDay.dayName
+    : "Weekdays";
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-[#d0d0e0]">
-          <Clock className="h-4 w-4 text-[#22d3ee]" />
-          Study Behavior Analysis
-        </h3>
-        <span className="text-xs text-[#6b6b80]">Pattern discovery across time & duration</span>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-[#9090a8]">
+          Study Behavior Summary
+        </h2>
+        <button
+          onClick={onExploreBehavior}
+          className="flex items-center gap-1 text-xs font-medium text-[#22d3ee] hover:underline"
+        >
+          Explore behavior
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        {/* 1. Best Study Time Window */}
-        <div
-          className="flex flex-col justify-between rounded-xl border p-4"
-          style={{
-            background: "rgba(18, 24, 38, 0.75)",
-            borderColor: "rgba(255, 255, 255, 0.08)",
-          }}
-        >
+      <div
+        className="grid grid-cols-1 gap-3 rounded-xl border p-4 sm:grid-cols-3 transition-all hover:border-[#22d3ee]/40"
+        style={{
+          background: "rgba(18, 24, 38, 0.7)",
+          borderColor: "rgba(255, 255, 255, 0.08)",
+        }}
+      >
+        {/* 1. Best session length */}
+        <div className="flex items-start gap-3 border-b sm:border-b-0 sm:border-r pb-3 sm:pb-0 pr-0 sm:pr-3" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+            style={{ background: "rgba(34, 211, 238, 0.08)", color: "#22d3ee" }}
+          >
+            <Clock className="h-4 w-4" />
+          </div>
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#22d3ee]">
-              <Clock className="h-4 w-4" />
-              <span>Best Study Window</span>
+            <div className="text-[10px] font-semibold uppercase text-[#9090a8]">
+              Optimal Session Length
             </div>
-
-            {bestStudyTimeWindow ? (
-              <div className="mt-3">
-                <div className="text-base font-bold text-[#f0f0f4]">
-                  {bestStudyTimeWindow.windowName}
-                </div>
-                <div className="mt-1 text-xs text-[#9090a8]">
-                  Completion Rate:{" "}
-                  <span className="font-semibold text-emerald-400">
-                    {bestStudyTimeWindow.completionRate}%
-                  </span>
-                </div>
-                <div className="mt-3 rounded-lg bg-[#22d3ee]/10 p-2.5 text-xs text-[#22d3ee] border border-[#22d3ee]/20">
-                  <span className="font-semibold">JARVIS: </span>
-                  &quot;Your strongest study window is {bestStudyTimeWindow.windowName.split(" ")[0]}.&quot;
-                </div>
-              </div>
-            ) : (
-              <p className="mt-3 text-xs text-[#6b6b80]">
-                Insufficient data to determine best time window yet.
-              </p>
-            )}
+            <div className="mt-0.5 text-base font-bold text-[#f0f0f4]">
+              {bestDurationLabel}
+            </div>
+            <p className="mt-1 text-xs text-[#a0a0b8]">
+              {behavior.optimalDurationClaim.phrase}
+            </p>
           </div>
         </div>
 
-        {/* 2. Optimal Session Duration */}
-        <div
-          className="flex flex-col justify-between rounded-xl border p-4"
-          style={{
-            background: "rgba(18, 24, 38, 0.75)",
-            borderColor: "rgba(255, 255, 255, 0.08)",
-          }}
-        >
+        {/* 2. Strongest study window */}
+        <div className="flex items-start gap-3 border-b sm:border-b-0 sm:border-r pb-3 sm:pb-0 pr-0 sm:pr-3" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+            style={{ background: "rgba(34, 211, 238, 0.08)", color: "#22d3ee" }}
+          >
+            <Sun className="h-4 w-4" />
+          </div>
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#22d3ee]">
-              <Timer className="h-4 w-4" />
-              <span>Optimal Session Duration</span>
+            <div className="text-[10px] font-semibold uppercase text-[#9090a8]">
+              Strongest Study Window
             </div>
-
-            {optimalSessionDuration ? (
-              <div className="mt-3">
-                <div className="text-base font-bold text-[#f0f0f4]">
-                  {optimalSessionDuration.bucketLabel}
-                </div>
-                <div className="mt-1 text-xs text-[#9090a8]">
-                  Completion Rate:{" "}
-                  <span className="font-semibold text-emerald-400">
-                    {optimalSessionDuration.completionRate}%
-                  </span>
-                </div>
-                <div className="mt-3 rounded-lg bg-[#22d3ee]/10 p-2.5 text-xs text-[#22d3ee] border border-[#22d3ee]/20">
-                  <span className="font-semibold">JARVIS: </span>
-                  &quot;Your most reliable sessions are {optimalSessionDuration.bucketLabel}.&quot;
-                </div>
-              </div>
-            ) : (
-              <p className="mt-3 text-xs text-[#6b6b80]">
-                Insufficient data to determine optimal duration bucket yet.
-              </p>
-            )}
+            <div className="mt-0.5 text-base font-bold text-[#f0f0f4]">
+              {bestWindowLabel}
+            </div>
+            <p className="mt-1 text-xs text-[#a0a0b8]">
+              {behavior.bestStudyTimeClaim.phrase}
+            </p>
           </div>
         </div>
 
-        {/* 3. Day of Week Performance */}
-        <div
-          className="flex flex-col justify-between rounded-xl border p-4"
-          style={{
-            background: "rgba(18, 24, 38, 0.75)",
-            borderColor: "rgba(255, 255, 255, 0.08)",
-          }}
-        >
+        {/* 3. Most consistent day */}
+        <div className="flex items-start gap-3">
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+            style={{ background: "rgba(34, 211, 238, 0.08)", color: "#22d3ee" }}
+          >
+            <Calendar className="h-4 w-4" />
+          </div>
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#22d3ee]">
-              <Calendar className="h-4 w-4" />
-              <span>Day-of-Week Trends</span>
+            <div className="text-[10px] font-semibold uppercase text-[#9090a8]">
+              Most Consistent Day
             </div>
-
-            <div className="mt-3 flex items-end justify-between gap-1.5 pt-2">
-              {dayOfWeekPerformance.map((day) => (
-                <div key={day.dayName} className="flex flex-col items-center gap-1">
-                  <div className="relative h-16 w-3.5 overflow-hidden rounded-full bg-white/10">
-                    <div
-                      className="absolute bottom-0 w-full rounded-full bg-[#22d3ee] transition-all"
-                      style={{ height: `${Math.max(5, day.completionRate)}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] font-medium text-[#6b6b80]">{day.dayName}</span>
-                </div>
-              ))}
+            <div className="mt-0.5 text-base font-bold text-[#f0f0f4]">
+              {bestDayLabel}
             </div>
+            <p className="mt-1 text-xs text-[#a0a0b8]">
+              {behavior.mostConsistentDay
+                ? `${behavior.mostConsistentDay.completionRate}% session completion rate.`
+                : "Active across regular study days."}
+            </p>
           </div>
         </div>
       </div>

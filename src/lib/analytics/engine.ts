@@ -11,6 +11,7 @@ import type {
   TimeWindowBehavior,
   DurationBucketBehavior,
   DayOfWeekBehavior,
+  BehavioralClaimPhrasing,
   ExecutiveBriefing,
   DataQualityState,
   TrendDirection,
@@ -74,8 +75,8 @@ function getTimeWindowLabel(hour: number): TimeWindowBehavior["windowName"] {
 function getDurationBucketLabel(minutes: number): DurationBucketBehavior["bucketLabel"] {
   if (minutes < 30) return "< 30 min";
   if (minutes <= 45) return "30–45 min";
-  if (minutes <= 60) return "46–60 min";
-  if (minutes <= 90) return "61–90 min";
+  if (minutes <= 60) return "45–60 min";
+  if (minutes <= 90) return "60–90 min";
   return "90+ min";
 }
 
@@ -230,7 +231,7 @@ export async function computeJarvisAnalytics(
   
   const dataQuality: DataQualityState = classifyDataQuality(currentPeriodCount);
 
-  // Progressive Revelation: Show the analytics dashboard as long as user has any data or subjects in StudyOS
+  // Progressive Revelation: Show analytics dashboard as long as user has any data or subjects in StudyOS
   const hasAnyData = totalUserActivityCount > 0 || currentPeriodCount > 0 || subjects.length > 0;
   const isSufficientData = hasAnyData;
 
@@ -353,7 +354,10 @@ export async function computeJarvisAnalytics(
     }
   });
 
-  // 2. Compute Subject Intelligence Data
+  // Track strongest subject callout so at most ONE subject is highlighted as strongest
+  let strongestSubjectId: string | null = null;
+
+  // 2. Compute Subject Intelligence Data (Enforcing 0/0 Activity Fix & Separate Activity Status)
   const subjectIntelList: SubjectIntelligenceData[] = subjects.map((sub) => {
     const subItems = itemsBySubjectId.get(sub.id) || [];
     const totalItems = subItems.length;
@@ -363,9 +367,6 @@ export async function computeJarvisAnalytics(
     const subPlanned = currentPlanned.filter((p) => p.subject_id === sub.id);
     const subPlannedTotal = subPlanned.length;
     const subPlannedComp = subPlanned.filter((p) => p.status === "COMPLETED").length;
-    const subCompRate = subPlannedTotal > 0 ? Math.round((subPlannedComp / subPlannedTotal) * 100) : 100;
-
-    const plannedProgPct = Math.min(100, Math.round(actualProgPct + (subPlannedTotal > 0 ? 10 : 0)));
 
     const subStudySessions = currentStudySessions.filter((s) => {
       if (s.learning_item_id) {
@@ -391,19 +392,46 @@ export async function computeJarvisAnalytics(
       return new Date(item.completed_at).getTime() >= currentStartMs;
     }).length;
 
+    // Check for zero-activity / insufficient activity case
+    const isInsufficientActivity =
+      subPlannedTotal === 0 && subStudySessions.length === 0 && actualProgPct === 0 && completedItems === 0;
+
+    if (isInsufficientActivity) {
+      return {
+        id: sub.id,
+        name: sub.name,
+        color: sub.color || "#22d3ee",
+        studyTimeMinutes: 0,
+        completionRate: null, // 0/0 -> null
+        plannedProgressPercentage: 0,
+        actualProgressPercentage: 0,
+        trend: "stable" as TrendDirection,
+        missedSessionsCount: 0,
+        topicCompletionVelocity: 0,
+        activityStatus: "INSUFFICIENT_ACTIVITY" as const,
+        riskLevel: null, // NO risk level assigned for zero activity
+        jarvisCommentary: "There isn't enough recent activity to evaluate this subject.",
+      };
+    }
+
+    // Active Subject
+    const subCompRate = subPlannedTotal > 0 ? Math.round((subPlannedComp / subPlannedTotal) * 100) : 100;
+    const plannedProgPct = Math.min(100, Math.round(actualProgPct + (subPlannedTotal > 0 ? 10 : 0)));
+
     const riskLevel = classifySubjectRisk(subCompRate, plannedProgPct, actualProgPct);
 
     let trend: TrendDirection = "stable";
     if (subCompRate >= 85) trend = "improving";
     else if (subCompRate < 70 || missedCount > 1) trend = "declining";
 
-    let commentary = `${sub.name} progress is on track with steady session completion.`;
+    let commentary = `${sub.name} progress is active with steady session completion.`;
     if (riskLevel === "CRITICAL") {
       commentary = `${sub.name} is critically behind planned schedule with low completion rate.`;
     } else if (riskLevel === "AT_RISK") {
       commentary = `${sub.name} is lagging behind planned progress by ${plannedProgPct - actualProgPct}%.`;
-    } else if (riskLevel === "HEALTHY") {
-      commentary = `${sub.name} is currently your strongest subject with high completion rate.`;
+    } else if (riskLevel === "HEALTHY" && actualProgPct > 0 && !strongestSubjectId) {
+      strongestSubjectId = sub.id;
+      commentary = `${sub.name} is currently your strongest active subject.`;
     }
 
     return {
@@ -417,12 +445,13 @@ export async function computeJarvisAnalytics(
       trend,
       missedSessionsCount: missedCount,
       topicCompletionVelocity: windowVelocity,
+      activityStatus: "ACTIVE" as const,
       riskLevel,
       jarvisCommentary: commentary,
     };
   });
 
-  // 3. Compute Behavior Analysis Data
+  // 3. Compute Behavior Analysis Data with Confidence-Aware Phrasing
   const windowBuckets: Record<TimeWindowBehavior["windowName"], { total: number; completed: number; durationSum: number }> = {
     "Morning (6 AM–12 PM)": { total: 0, completed: 0, durationSum: 0 },
     "Afternoon (12 PM–5 PM)": { total: 0, completed: 0, durationSum: 0 },
@@ -470,10 +499,33 @@ export async function computeJarvisAnalytics(
   );
 
   let bestStudyTimeWindow: TimeWindowBehavior | null = null;
+  let bestStudyTimeClaim: BehavioralClaimPhrasing = {
+    phrase: "JARVIS needs more session history to determine your optimal study window.",
+    tier: "INSUFFICIENT_DATA",
+  };
+
   const eligibleWindows = timeWindows.filter((w) => w.totalSessions >= 2);
   if (eligibleWindows.length > 0) {
     eligibleWindows.sort((a, b) => b.completionRate - a.completionRate);
     bestStudyTimeWindow = eligibleWindows[0];
+    const winShortName = bestStudyTimeWindow.windowName.split(" ")[0];
+
+    if (bestStudyTimeWindow.totalSessions >= 8) {
+      bestStudyTimeClaim = {
+        phrase: `Your strongest study window is ${winShortName}.`,
+        tier: "HIGH_CONFIDENCE",
+      };
+    } else if (bestStudyTimeWindow.totalSessions >= 4) {
+      bestStudyTimeClaim = {
+        phrase: `Your data suggests ${winShortName} sessions may work best for you.`,
+        tier: "MODERATE_CONFIDENCE",
+      };
+    } else {
+      bestStudyTimeClaim = {
+        phrase: `Early evidence points toward ${winShortName} sessions.`,
+        tier: "LOW_CONFIDENCE",
+      };
+    }
   }
 
   const durationBucketMap: Record<DurationBucketBehavior["bucketLabel"], { total: number; completed: number; durationSum: number }> = {
@@ -507,10 +559,32 @@ export async function computeJarvisAnalytics(
   });
 
   let optimalSessionDuration: DurationBucketBehavior | null = null;
+  let optimalDurationClaim: BehavioralClaimPhrasing = {
+    phrase: "JARVIS needs more session history to determine your optimal session length.",
+    tier: "INSUFFICIENT_DATA",
+  };
+
   const eligibleBuckets = durationBuckets.filter((b) => b.totalSessions >= 2);
   if (eligibleBuckets.length > 0) {
     eligibleBuckets.sort((a, b) => b.completionRate - a.completionRate);
     optimalSessionDuration = eligibleBuckets[0];
+
+    if (optimalSessionDuration.totalSessions >= 8) {
+      optimalDurationClaim = {
+        phrase: `Your strongest session duration is ${optimalSessionDuration.bucketLabel}.`,
+        tier: "HIGH_CONFIDENCE",
+      };
+    } else if (optimalSessionDuration.totalSessions >= 4) {
+      optimalDurationClaim = {
+        phrase: `Your data suggests ${optimalSessionDuration.bucketLabel} sessions work best.`,
+        tier: "MODERATE_CONFIDENCE",
+      };
+    } else {
+      optimalDurationClaim = {
+        phrase: `Early evidence points toward ${optimalSessionDuration.bucketLabel} sessions.`,
+        tier: "LOW_CONFIDENCE",
+      };
+    }
   }
 
   const daysArr: DayOfWeekBehavior["dayName"][] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -537,12 +611,22 @@ export async function computeJarvisAnalytics(
     studyTimeMinutes: d.studyTimeMinutes,
   }));
 
+  let mostConsistentDay: DayOfWeekBehavior | null = null;
+  const activeDays = dayOfWeekPerformance.filter((d) => d.totalSessions >= 1);
+  if (activeDays.length > 0) {
+    activeDays.sort((a, b) => b.completionRate - a.completionRate);
+    mostConsistentDay = activeDays[0];
+  }
+
   const behavior: BehaviorAnalysisData = {
     timeWindows,
     bestStudyTimeWindow,
+    bestStudyTimeClaim,
     durationBuckets,
     optimalSessionDuration,
+    optimalDurationClaim,
     dayOfWeekPerformance,
+    mostConsistentDay,
   };
 
   // 4. Pattern Detection (Multi-factor Confidence Scoring)
@@ -613,11 +697,12 @@ export async function computeJarvisAnalytics(
 
     // Pattern B: Subject Lag Warnings
     subjectIntelList.forEach((sub) => {
+      if (sub.activityStatus !== "ACTIVE") return;
       const lag = sub.plannedProgressPercentage - sub.actualProgressPercentage;
       if (lag >= 5 || sub.riskLevel === "CRITICAL" || sub.riskLevel === "AT_RISK") {
         const sampleSizeFactor = Math.min(1, Math.max(sub.studyTimeMinutes / 60, 1) / 3);
         const effectSizeFactor = Math.min(1, Math.max(lag, 10) / 30);
-        const consistencyFactor = sub.completionRate < 60 ? 0.85 : 0.65;
+        const consistencyFactor = sub.completionRate !== null && sub.completionRate < 60 ? 0.85 : 0.65;
 
         const confidence = Number(
           (

@@ -44,101 +44,75 @@ export class RuleBasedRecommendationGenerator implements RecommendationGenerator
     subjects: SubjectIntelligenceData[]
   ): JarvisRecommendation[] {
     const recommendations: JarvisRecommendation[] = [];
-    const seenTitles = new Set<string>();
+    const processedSubjectIds = new Set<string>();
 
-    // 1. Process warnings & behavioral patterns first
+    // 1. Process subject risks first, consolidating duplicate recommendations per subject
+    const activeRiskSubjects = subjects.filter(
+      (s) => s.activityStatus === "ACTIVE" && (s.riskLevel === "CRITICAL" || s.riskLevel === "AT_RISK")
+    );
+
+    for (const sub of activeRiskSubjects) {
+      if (processedSubjectIds.has(sub.id)) continue;
+      processedSubjectIds.add(sub.id);
+
+      const lag = sub.plannedProgressPercentage - sub.actualProgressPercentage;
+      const title = `Recover ${sub.name} pace this week`;
+      const reason = `${sub.name} is ${sub.riskLevel === "CRITICAL" ? "critically lagging" : "behind plan"} by ${Math.max(lag, 5)} percentage points.`;
+      const expectedBenefit = `Bring ${sub.name} back on track and reduce exam readiness backlog.`;
+
+      recommendations.push({
+        id: `rec_subject_recover_${sub.id}`,
+        title,
+        reason,
+        expectedBenefit,
+        priority: sub.riskLevel === "CRITICAL" ? "HIGH" : "MEDIUM",
+        relatedSubjectId: sub.id,
+        relatedSubjectName: sub.name,
+        actionable: true,
+      });
+    }
+
+    // 2. Process behavioral patterns if recommendation slots remain
     for (const pattern of patterns) {
       if (recommendations.length >= ANALYTICS_CONFIG.MAX_DISPLAYED_RECOMMENDATIONS) {
         break;
       }
 
-      if (pattern.id.startsWith("subject_behind_") && pattern.subjectName) {
-        const title = `Add recovery sessions for ${pattern.subjectName}`;
-        if (!seenTitles.has(title)) {
-          seenTitles.add(title);
+      if (pattern.id.startsWith("evening_drop_")) {
+        const title = "Schedule complex topics during daytime windows";
+        if (!recommendations.some((r) => r.id === `rec_${pattern.id}`)) {
           recommendations.push({
             id: `rec_${pattern.id}`,
             title,
-            reason: `${pattern.subjectName} is lagging behind planned progress by ${pattern.evidence.summary}.`,
-            expectedBenefit: `Brings ${pattern.subjectName} back on track and reduces exam readiness risk.`,
-            priority: pattern.severity === "HIGH" ? "HIGH" : "MEDIUM",
-            relatedSubjectId: pattern.subjectId,
-            relatedSubjectName: pattern.subjectName,
-            actionable: true,
-          });
-        }
-      } else if (pattern.id.startsWith("evening_drop_")) {
-        const title = "Schedule complex topics earlier in the day";
-        if (!seenTitles.has(title)) {
-          seenTitles.add(title);
-          recommendations.push({
-            id: `rec_${pattern.id}`,
-            title,
-            reason: `Your evening session completion rate is significantly lower than daytime sessions.`,
-            expectedBenefit: "Higher session completion and reduced missed session rate.",
+            reason: `Your evening session completion rate is lower than morning sessions.`,
+            expectedBenefit: "Increases overall session completion rate and minimizes missed study time.",
             priority: "MEDIUM",
             actionable: true,
           });
         }
       } else if (pattern.id.startsWith("optimal_duration_")) {
         const optimalLabel = pattern.evidence.primaryMetricName;
-        const title = `Set target study sessions to ${optimalLabel}`;
-        if (!seenTitles.has(title)) {
-          seenTitles.add(title);
+        const title = `Schedule study sessions around ${optimalLabel}`;
+        if (!recommendations.some((r) => r.id === `rec_${pattern.id}`)) {
           recommendations.push({
             id: `rec_${pattern.id}`,
             title,
-            reason: `Sessions in the ${optimalLabel} bucket yield your highest completion rate.`,
-            expectedBenefit: "Optimizes focus stamina and minimizes abandoned sessions.",
+            reason: `Sessions in the ${optimalLabel} bucket yield your highest completion performance.`,
+            expectedBenefit: "Sustains optimal focus stamina without cognitive fatigue.",
             priority: "LOW",
             actionable: true,
           });
         }
-      } else if (pattern.id.startsWith("streak_decline_")) {
-        const title = "Focus on short 30-minute daily micro-sessions";
-        if (!seenTitles.has(title)) {
-          seenTitles.add(title);
-          recommendations.push({
-            id: `rec_${pattern.id}`,
-            title,
-            reason: "Your recent session completion rate has dropped compared to the previous period.",
-            expectedBenefit: "Restores habit momentum without cognitive burnout.",
-            priority: "HIGH",
-            actionable: true,
-          });
-        }
       }
     }
 
-    // 2. If subject risks exist, ensure top critical subject has a recommendation
-    const criticalSubjects = subjects.filter((s) => s.riskLevel === "CRITICAL" || s.riskLevel === "AT_RISK");
-    for (const sub of criticalSubjects) {
-      if (recommendations.length >= ANALYTICS_CONFIG.MAX_DISPLAYED_RECOMMENDATIONS) {
-        break;
-      }
-      const title = `Rebalance weekly schedule toward ${sub.name}`;
-      if (!seenTitles.has(title)) {
-        seenTitles.add(title);
-        recommendations.push({
-          id: `rec_subject_risk_${sub.id}`,
-          title,
-          reason: `${sub.name} is currently flagged as ${sub.riskLevel} with ${sub.completionRate}% completion rate.`,
-          expectedBenefit: `Prevents backlog accumulation and improves topic velocity.`,
-          priority: sub.riskLevel === "CRITICAL" ? "HIGH" : "MEDIUM",
-          relatedSubjectId: sub.id,
-          relatedSubjectName: sub.name,
-          actionable: true,
-        });
-      }
-    }
-
-    // 3. Fallback healthy recommendation if empty
+    // 3. Default fallback recommendation if no urgent issues detected
     if (recommendations.length === 0) {
       recommendations.push({
         id: "rec_maintain_pace",
-        title: "Maintain current study momentum",
-        reason: "Your study patterns show solid consistency and steady completion rates across active subjects.",
-        expectedBenefit: "Sustains steady progress towards learning milestones.",
+        title: "Sustain your current study momentum",
+        reason: "Your active subjects and planned sessions are progressing steadily.",
+        expectedBenefit: "Maintains positive study momentum towards learning targets.",
         priority: "LOW",
         actionable: false,
       });
