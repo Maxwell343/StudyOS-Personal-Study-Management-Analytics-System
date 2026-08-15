@@ -43,6 +43,28 @@ export function getSupabaseClient(): SupabaseClient<Database> {
   return clientInstance;
 }
 
+/**
+ * Returns a Supabase client configured with the provided user access token.
+ * Passes the Authorization header so queries succeed under Row Level Security (RLS).
+ */
+export function getAuthenticatedSupabaseClient(accessToken?: string | null): SupabaseClient<Database> {
+  if (!accessToken || !supabaseUrl || !supabaseKey) {
+    return getSupabaseClient();
+  }
+
+  return createClient<Database>(supabaseUrl, supabaseKey, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
 export const isSupabaseConfigured = Boolean(
   supabaseUrl &&
     supabaseKey &&
@@ -50,4 +72,3 @@ export const isSupabaseConfigured = Boolean(
 );
 
 export const supabase = getSupabaseClient();
-

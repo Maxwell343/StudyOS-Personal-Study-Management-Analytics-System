@@ -1,0 +1,212 @@
+"use client";
+
+import React, { useState, useEffect, useCallback } from "react";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { useAuth } from "@/context/AuthContext";
+import type { AnalyticsTimeRange, JarvisContext } from "@/lib/analytics/types";
+import { computeJarvisAnalytics } from "@/lib/analytics/engine";
+import { JarvisBriefing } from "@/components/analytics/JarvisBriefing";
+import { CoreMetricsGrid } from "@/components/analytics/CoreMetricsGrid";
+import { JarvisInsights } from "@/components/analytics/JarvisInsights";
+import { SubjectIntelligence } from "@/components/analytics/SubjectIntelligence";
+import { BehaviorAnalysis } from "@/components/analytics/BehaviorAnalysis";
+import { JarvisRecommendations } from "@/components/analytics/JarvisRecommendations";
+import { JarvisLoadingState } from "@/components/analytics/JarvisLoadingState";
+import { InsufficientDataState } from "@/components/analytics/InsufficientDataState";
+import { AnalyticsErrorState } from "@/components/analytics/AnalyticsErrorState";
+import { Brain, RefreshCw } from "lucide-react";
+
+export default function AnalyticsPage() {
+  const { user, session, profile, loading: authLoading } = useAuth();
+  const [range, setRange] = useState<AnalyticsTimeRange>("7d");
+  const [data, setData] = useState<JarvisContext | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState<number>(0);
+
+  const userId = user?.id;
+  const accessToken = session?.access_token;
+
+  useEffect(() => {
+    let isSubscribed = true;
+
+    if (authLoading || !userId) {
+      return;
+    }
+
+    async function load() {
+      await Promise.resolve();
+      if (!isSubscribed) return;
+
+      try {
+        const headers: Record<string, string> = {
+          "x-user-id": userId!,
+        };
+        if (accessToken) {
+          headers["Authorization"] = `Bearer ${accessToken}`;
+        }
+
+        const res = await fetch(`/api/jarvis/analytics?range=${range}&userId=${userId}`, {
+          headers,
+        });
+
+        if (!isSubscribed) return;
+
+        if (res.ok) {
+          const json: JarvisContext = await res.json();
+          if (isSubscribed) {
+            setData(json);
+            setError(null);
+          }
+        } else {
+          const fallbackData = await computeJarvisAnalytics(userId!, range, accessToken);
+          if (isSubscribed) {
+            setData(fallbackData);
+            setError(null);
+          }
+        }
+      } catch (err) {
+        console.warn("API analytics fetch notice, falling back to direct computation:", err);
+        try {
+          const fallbackData = await computeJarvisAnalytics(userId!, range, accessToken);
+          if (isSubscribed) {
+            setData(fallbackData);
+            setError(null);
+          }
+        } catch {
+          if (isSubscribed) {
+            setError("Could not complete JARVIS analysis");
+          }
+        }
+      } finally {
+        if (isSubscribed) {
+          setLoading(false);
+        }
+      }
+    }
+
+    load();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [authLoading, userId, accessToken, range, refreshKey]);
+
+  const handleRangeChange = useCallback((newRange: AnalyticsTimeRange) => {
+    setLoading(true);
+    setRange(newRange);
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    setLoading(true);
+    setRefreshKey((prev) => prev + 1);
+  }, []);
+
+  const username = profile?.name || user?.email?.split("@")[0] || "Maxwell";
+
+  const getRangeLabel = (r: AnalyticsTimeRange) => {
+    switch (r) {
+      case "30d":
+        return "30 Days";
+      case "90d":
+        return "90 Days";
+      default:
+        return "7 Days";
+    }
+  };
+
+  const isPageLoading = authLoading || (userId && loading);
+
+  return (
+    <div className="flex min-h-screen bg-[#090d16] text-[#f0f0f4]">
+      {/* Sidebar */}
+      <Sidebar />
+
+      {/* Main Container */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8 space-y-6">
+          {/* Header */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-md bg-[#22d3ee]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#22d3ee] border border-[#22d3ee]/20">
+                  STUDYOS ANALYTICS ENGINE
+                </span>
+              </div>
+              <h1 className="mt-1 flex items-center gap-2.5 text-2xl font-bold tracking-tight text-[#f0f0f4] md:text-3xl">
+                <Brain className="h-7 w-7 text-[#22d3ee]" />
+                JARVIS Intelligence
+              </h1>
+              <p className="mt-0.5 text-xs text-[#9090a8]">
+                Understand your study behavior.
+              </p>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center gap-3">
+              {/* Time Range Selector */}
+              <div className="flex items-center rounded-lg border p-1" style={{ background: "rgba(18, 24, 38, 0.9)", borderColor: "rgba(255,255,255,0.1)" }}>
+                {(["7d", "30d", "90d"] as AnalyticsTimeRange[]).map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => handleRangeChange(r)}
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
+                      range === r
+                        ? "bg-[#22d3ee] text-black shadow-sm"
+                        : "text-[#9090a8] hover:text-white"
+                    }`}
+                  >
+                    {getRangeLabel(r)}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={handleRefresh}
+                disabled={Boolean(isPageLoading)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg border text-[#9090a8] hover:bg-white/10 hover:text-white transition-colors"
+                style={{ background: "rgba(18, 24, 38, 0.9)", borderColor: "rgba(255,255,255,0.1)" }}
+                title="Refresh analysis"
+              >
+                <RefreshCw className={`h-4 w-4 ${isPageLoading ? "animate-spin text-[#22d3ee]" : ""}`} />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Content Area */}
+          {isPageLoading ? (
+            <JarvisLoadingState />
+          ) : error ? (
+            <AnalyticsErrorState onRetry={handleRefresh} message={error} />
+          ) : !data || !data.meta.isSufficientData ? (
+            <InsufficientDataState />
+          ) : (
+            <div className="space-y-6">
+              {/* 1. Executive Briefing */}
+              <JarvisBriefing
+                briefing={data.briefing}
+                dataQuality={data.dataQuality}
+                username={username}
+              />
+
+              {/* 2. Core Metrics Summary */}
+              <CoreMetricsGrid metrics={data.metrics} rangeLabel={getRangeLabel(range)} />
+
+              {/* 3. JARVIS Insights */}
+              <JarvisInsights insights={data.insights} />
+
+              {/* 4. Subject Intelligence */}
+              <SubjectIntelligence subjects={data.subjects} />
+
+              {/* 5. Study Behavior Analysis */}
+              <BehaviorAnalysis behavior={data.behavior} />
+
+              {/* 6. JARVIS Recommendations */}
+              <JarvisRecommendations recommendations={data.recommendations} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
