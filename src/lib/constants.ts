@@ -77,10 +77,10 @@ export const NAV_ITEMS: NavItemConfig[] = [
     iconName: "BookOpen",
     href: "/subjects",
   },
-  { id: "tasks", label: "Tasks", iconName: "CheckSquare" },
+  { id: "tasks", label: "Tasks", iconName: "CheckSquare", href: "/tasks" },
   { id: "timer", label: "Study Timer", iconName: "Timer" },
   { id: "calendar", label: "Calendar", iconName: "Calendar", href: "/calendar" },
   { id: "analytics", label: "Analytics", iconName: "BarChart3", href: "/analytics" },
-  { id: "goals", label: "Goals", iconName: "Target" },
+  { id: "goals", label: "Goals", iconName: "Target", href: "/tasks" },
   { id: "settings", label: "Settings", iconName: "Settings", href: "/settings" },
 ];
