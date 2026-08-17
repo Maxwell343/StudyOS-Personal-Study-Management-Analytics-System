@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import { formatErrorMessage } from "@/lib/utils";
-import { getTodayDateString, getLocalYYYYMMDD } from "./planner";
+import { getTodayDateString, getLocalYYYYMMDD, autoRolloverMissedSessions } from "./planner";
 import { computeDynamicSessionStatus } from "./dashboard";
 import type {
   CalendarDayData,
@@ -63,6 +63,12 @@ export async function fetchCalendarMonthData(
   year: number,
   month: number // 1-indexed (1 = Jan, 8 = Aug)
 ): Promise<CalendarMonthResult> {
+  try {
+    await autoRolloverMissedSessions(userId);
+  } catch (err) {
+    console.error("Error performing auto-rollover in fetchCalendarMonthData:", formatErrorMessage(err), err);
+  }
+
   const todayStr = getTodayDateString();
   const nowDate = new Date();
 

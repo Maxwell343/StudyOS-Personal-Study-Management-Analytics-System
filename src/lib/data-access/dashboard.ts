@@ -14,7 +14,7 @@ import type {
 } from "@/types/dashboard";
 import type { Subject } from "@/types/subjects";
 import { fetchSubjectsForUser } from "./subjects";
-import { getTodayDateString, getLocalYYYYMMDD, getTomorrowDateString } from "./planner";
+import { getTodayDateString, getLocalYYYYMMDD, getTomorrowDateString, autoRolloverMissedSessions } from "./planner";
 import { formatMinutes } from "@/lib/planner-utils";
 
 export interface DashboardData {
@@ -98,6 +98,13 @@ export function computeDynamicSessionStatus(
 }
 
 export async function fetchDashboardData(userId: string): Promise<DashboardData> {
+  // Automatically rollover any missed uncompleted sessions from past days to today/next day
+  try {
+    await autoRolloverMissedSessions(userId);
+  } catch (err) {
+    console.error("Error performing auto-rollover in fetchDashboardData:", formatErrorMessage(err), err);
+  }
+
   const today = getTodayDateString();
 
   // 1. Fetch user's subjects (for subject progress and task pool)
