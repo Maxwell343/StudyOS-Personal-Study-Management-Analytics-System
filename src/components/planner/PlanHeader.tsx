@@ -1,18 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { Save, Lock, Unlock } from "lucide-react";
+import { Save, Lock, Unlock, Sparkles } from "lucide-react";
 
 interface PlanHeaderProps {
   isLocked: boolean;
   onSaveDraft: () => void;
   onToggleLock: () => void;
+  onOpenAutoPlanner?: () => void;
 }
 
 export function PlanHeader({
   isLocked,
   onSaveDraft,
   onToggleLock,
+  onOpenAutoPlanner,
 }: PlanHeaderProps) {
   const [formattedDate] = useState<string>(() => {
     const tomorrow = new Date();
@@ -58,12 +60,20 @@ export function PlanHeader({
         </p>
       </div>
       <div className="mt-0.5 flex items-center gap-2.5">
-        <span
-          className="font-mono text-[10.5px]"
-          style={{ color: "#4a4a5a" }}
-        >
-          Set your priorities, allocate your time, and lock your schedule.
-        </span>
+        {onOpenAutoPlanner && !isLocked && (
+          <button
+            onClick={onOpenAutoPlanner}
+            className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[7px] px-3.5 py-2 text-[12px] font-bold transition shadow-lg"
+            style={{
+              background: "linear-gradient(135deg, rgba(34,211,238,0.2), rgba(168,85,247,0.2))",
+              border: "1px solid rgba(34,211,238,0.4)",
+              color: "#22d3ee",
+            }}
+          >
+            <Sparkles size={13} className="text-[#22d3ee] animate-pulse" />
+            Auto Planner
+          </button>
+        )}
 
         {!isLocked && (
           <button

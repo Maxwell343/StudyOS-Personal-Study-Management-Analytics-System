@@ -7,6 +7,7 @@ import { PlanHeader } from "@/components/planner/PlanHeader";
 import { PlanSummaryStats } from "@/components/planner/PlanSummaryStats";
 import { ScheduleBuilder } from "@/components/planner/ScheduleBuilder";
 import { AddSessionDialog } from "@/components/planner/AddSessionDialog";
+import { AutoPlannerModal } from "@/components/planner/AutoPlannerModal";
 import { PlanHealth } from "@/components/planner/PlanHealth";
 import { PlanInsight } from "@/components/planner/PlanInsight";
 import { PlanLockState } from "@/components/planner/PlanLockState";
@@ -25,7 +26,7 @@ import {
   extractAvailableTasksFromSubjects,
 } from "@/lib/data-access/planner";
 import { fetchSubjectsForUser } from "@/lib/data-access/subjects";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, Sparkles } from "lucide-react";
 
 export default function PlanTomorrowPage() {
   const { user, loading: authLoading } = useAuth();
@@ -38,6 +39,7 @@ export default function PlanTomorrowPage() {
   const [isDirty, setIsDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [autoPlannerOpen, setAutoPlannerOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<PlanSession | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
@@ -189,6 +191,24 @@ export default function PlanTomorrowPage() {
     [setIsDirty]
   );
 
+  const handleApplyAutoPlan = useCallback(
+    async (newSessions: PlanSession[]) => {
+      setSessions(newSessions);
+      setIsDirty(true);
+      if (user) {
+        try {
+          await savePlanInDb(user.id, tomorrowDate, newSessions, isLocked, subjects);
+          setIsDirty(false);
+          setSaveMessage("✨ Auto Planner recommendation applied & saved.");
+          setTimeout(() => setSaveMessage(null), 3500);
+        } catch (err) {
+          console.error("Error applying auto plan:", err);
+        }
+      }
+    },
+    [user, tomorrowDate, isLocked, subjects]
+  );
+
   const handleCloseDialog = useCallback(() => {
     setDialogOpen(false);
     setEditingSession(null);
@@ -205,6 +225,7 @@ export default function PlanTomorrowPage() {
           isLocked={isLocked}
           onSaveDraft={saveDraft}
           onToggleLock={toggleLock}
+          onOpenAutoPlanner={() => setAutoPlannerOpen(true)}
         />
 
         <div className="flex-1 px-9 pt-5 pb-10">
@@ -230,6 +251,32 @@ export default function PlanTomorrowPage() {
             </div>
           ) : (
             <>
+              {/* Auto Planner Recommendation Banner */}
+              {!isLocked && sessions.length === 0 && (
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-cyan-500/30 bg-gradient-to-r from-cyan-500/10 via-purple-500/10 to-transparent p-4 text-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#22d3ee]/20 text-[#22d3ee]">
+                      <Sparkles size={18} className="animate-pulse" />
+                    </div>
+                    <div>
+                      <div className="font-bold text-white text-sm">
+                        Generate Balanced Study Plan with Auto Planner
+                      </div>
+                      <div className="text-[#a0a0b5] mt-0.5">
+                        Automatically recommends daily mandatory subjects (Python & DSA) and rotates DBMS, CN, OS & ML based on workload and deadlines.
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setAutoPlannerOpen(true)}
+                    className="flex cursor-pointer items-center gap-2 rounded-lg bg-gradient-to-r from-[#22d3ee] to-[#3b82f6] px-4 py-2 font-bold text-black shadow-md hover:opacity-95 transition"
+                  >
+                    <Sparkles size={14} />
+                    Generate Auto Plan
+                  </button>
+                </div>
+              )}
+
               {/* Lock state banner */}
               {isLocked && (
                 <div className="mb-5">
@@ -284,6 +331,17 @@ export default function PlanTomorrowPage() {
         onClose={handleCloseDialog}
         onSave={handleSaveSession}
       />
+
+      {/* ── Auto Planner Modal ─────────────────────────────────────── */}
+      <AutoPlannerModal
+        isOpen={autoPlannerOpen}
+        targetDate={tomorrowDate}
+        subjects={subjects}
+        onClose={() => setAutoPlannerOpen(false)}
+        onApplyPlan={handleApplyAutoPlan}
+      />
     </div>
   );
 }
+
+

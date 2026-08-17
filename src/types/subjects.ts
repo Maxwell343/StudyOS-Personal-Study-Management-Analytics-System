@@ -44,6 +44,9 @@ export interface Subject {
   category: string;
   targetDate?: string;
   archived?: boolean;
+  priority?: "HIGH" | "MEDIUM" | "LOW";
+  isMandatory?: boolean;
+  weeklyTargetDays?: number;
   topics: Topic[];
 }
 
