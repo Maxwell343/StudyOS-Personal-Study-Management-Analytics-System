@@ -132,12 +132,12 @@ export default function AnalyticsPage() {
   const isPageLoading = authLoading || (userId && loading);
 
   return (
-    <div className="flex min-h-screen bg-[#090d16] text-[#f0f0f4]">
+    <div className="flex h-screen w-full overflow-hidden bg-[#090d16] text-[#f0f0f4]">
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main Container */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex flex-1 flex-col overflow-y-auto">
         <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 md:py-8 space-y-6">
           {/* Header */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-5" style={{ borderColor: "rgba(255,255,255,0.08)" }}>

@@ -38,7 +38,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="flex h-screen w-[216px] shrink-0 flex-col border-r max-md:hidden"
+      className="sticky top-0 flex h-screen w-[216px] shrink-0 flex-col border-r max-md:hidden z-30"
       style={{
         background: "var(--sidebar)",
         borderColor: "var(--sidebar-border)",
@@ -46,7 +46,7 @@ export function Sidebar() {
     >
       {/* ── Logo ───────────────────────────────────────────────────────── */}
       <div
-        className="px-[18px] pt-[22px] pb-[18px]"
+        className="shrink-0 px-[18px] pt-[22px] pb-[18px]"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
       >
         <div className="flex items-center gap-2.5">
@@ -150,8 +150,11 @@ export function Sidebar() {
 
       {/* ── Bottom: Personal User Profile ──────────────────────────────── */}
       <div
-        className="p-2"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+        className="mt-auto shrink-0 p-2"
+        style={{
+          borderTop: "1px solid rgba(255,255,255,0.05)",
+          background: "var(--sidebar)",
+        }}
       >
         <Link
           href="/settings"

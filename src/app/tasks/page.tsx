@@ -199,7 +199,7 @@ export default function TasksAndGoalsPage() {
   };
 
   return (
-    <div className="flex h-screen bg-[#0c0c0f] text-[#f0f0f4]">
+    <div className="flex h-screen w-full overflow-hidden bg-[#0c0c0f] text-[#f0f0f4]">
       <Sidebar />
 
       <div className="flex flex-1 flex-col overflow-hidden">
