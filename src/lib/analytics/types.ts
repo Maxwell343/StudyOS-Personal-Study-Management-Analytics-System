@@ -159,6 +159,62 @@ export interface AnalyticsMeta {
   isSufficientData: boolean;
 }
 
+export interface DailyPerformancePoint {
+  date: string;
+  displayDate: string;
+  actualMinutes: number;
+  plannedMinutes: number;
+  actualHours: number;
+  plannedHours: number;
+  completedSessions: number;
+  missedSessions: number;
+  totalSessions: number;
+  completionRate: number;
+}
+
+export interface StudyHealthScore {
+  overallScore: number;
+  consistencyScore: number;
+  completionScore: number;
+  adherenceScore: number;
+  focusScore: number;
+  status: "Exceptional" | "Healthy" | "Attention Needed" | "Critical";
+}
+
+export interface PerformanceChangeIndicator {
+  id: string;
+  label: string;
+  value: string;
+  changeText: string;
+  trend: TrendDirection;
+  status: "positive" | "negative" | "neutral" | "warning";
+  category: "metric" | "subject";
+  explanation: string;
+}
+
+export interface SubjectAttentionItem {
+  subjectId: string;
+  subjectName: string;
+  color: string;
+  plannedProgress: number;
+  actualProgress: number;
+  lag: number;
+  riskLevel: SubjectRiskLevel | null;
+  studyTimeMinutes: number;
+  isInactive: boolean;
+}
+
+export interface StudyHeatmapDay {
+  date: string;
+  dayOfWeek: number;
+  dayName: string;
+  studyMinutes: number;
+  studyHours: number;
+  sessionCount: number;
+  completionRate: number;
+  intensity: 0 | 1 | 2 | 3 | 4;
+}
+
 /**
  * Primary domain object containing structured intelligence payload
  * Input layer for current rule engines & future LLM reasoning models.
@@ -172,6 +228,11 @@ export interface JarvisContext {
   subjects: SubjectIntelligenceData[];
   behavior: BehaviorAnalysisData;
   recommendations: JarvisRecommendation[];
+  dailyPerformance: DailyPerformancePoint[];
+  healthScore: StudyHealthScore;
+  whatChanged: PerformanceChangeIndicator[];
+  subjectAttention: SubjectAttentionItem[];
+  heatmap: StudyHeatmapDay[];
   meta: AnalyticsMeta;
 }
 

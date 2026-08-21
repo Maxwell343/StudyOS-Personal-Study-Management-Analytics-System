@@ -349,3 +349,132 @@ export const DetailedBehaviorDrawer: React.FC<DetailedBehaviorDrawerProps> = ({
     </div>
   );
 };
+
+// --- 5. Executive Briefing Drawer ---
+interface ExecutiveBriefingDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  briefing: {
+    message: string;
+    status: string;
+    overallConfidence: number;
+    detectedPatternsCount: number;
+    analyzedAt: string;
+  };
+  dataQuality: string;
+  username: string;
+  insights: JarvisInsight[];
+  onSelectEvidence: (insight: JarvisInsight) => void;
+}
+
+export const ExecutiveBriefingDrawer: React.FC<ExecutiveBriefingDrawerProps> = ({
+  isOpen,
+  onClose,
+  briefing,
+  dataQuality,
+  username,
+  insights,
+  onSelectEvidence,
+}) => {
+  if (!isOpen) return null;
+
+  const formattedTime = new Date(briefing.analyzedAt).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-black/70 backdrop-blur-sm">
+      <div className="flex h-full w-full max-w-xl flex-col bg-[#0d121e] border-l border-white/10 text-[#f0f0f4] shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-white/10 p-5">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#22d3ee]">
+              JARVIS INTELLIGENCE ANALYSIS
+            </span>
+            <h2 className="text-lg font-bold text-[#f0f0f4]">Executive Briefing & Reasoning</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-2 text-[#9090a8] hover:bg-white/10 hover:text-white"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* Main Statement */}
+          <div
+            className="rounded-2xl border p-5"
+            style={{
+              background: "linear-gradient(135deg, rgba(34, 211, 238, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%)",
+              borderColor: "rgba(34, 211, 238, 0.25)",
+            }}
+          >
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <span className="rounded bg-[#22d3ee]/20 px-2 py-0.5 text-[10px] font-bold text-[#22d3ee] uppercase">
+                Status: {briefing.status}
+              </span>
+              <span className="text-xs font-mono text-[#9090a8]">
+                Generated at {formattedTime}
+              </span>
+            </div>
+
+            <p className="text-sm font-medium leading-relaxed text-[#f0f0f4]">
+              &quot;Good day, <span className="text-[#22d3ee] font-semibold">{username}</span>. {briefing.message}&quot;
+            </p>
+          </div>
+
+          {/* Diagnostics summary */}
+          <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+              <span className="text-[#6b6b80] block text-[10px] uppercase">Confidence</span>
+              <span className="text-base font-bold text-[#22d3ee]">
+                {Math.round(briefing.overallConfidence * 100)}%
+              </span>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+              <span className="text-[#6b6b80] block text-[10px] uppercase">Data Quality</span>
+              <span className="text-base font-bold text-[#f0f0f4]">{dataQuality}</span>
+            </div>
+          </div>
+
+          {/* Contributing Pattern Evidence */}
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#9090a8] mb-3">
+              Contributing Pattern Evidence ({insights.length})
+            </h3>
+
+            <div className="space-y-3">
+              {insights.map((insight) => (
+                <div
+                  key={insight.id}
+                  className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5 transition-all hover:border-[#22d3ee]/40"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#f0f0f4]">{insight.title}</span>
+                    <span className="text-[10px] font-mono text-[#22d3ee]">
+                      {Math.round(insight.confidence * 100)}%
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-[#a0a0b8]">{insight.explanation}</p>
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onSelectEvidence(insight);
+                    }}
+                    className="mt-2 text-xs font-semibold text-[#22d3ee] hover:underline flex items-center gap-1"
+                  >
+                    View empirical evidence →
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+

@@ -15,6 +15,11 @@ import type {
   ExecutiveBriefing,
   DataQualityState,
   TrendDirection,
+  DailyPerformancePoint,
+  StudyHealthScore,
+  PerformanceChangeIndicator,
+  SubjectAttentionItem,
+  StudyHeatmapDay,
 } from "./types";
 import { ANALYTICS_CONFIG, classifyDataQuality, classifySubjectRisk } from "./analyticsConfig";
 import { RuleBasedInsightGenerator, RuleBasedRecommendationGenerator } from "./generators";
@@ -919,7 +924,213 @@ export async function computeJarvisAnalytics(
     analyzedAt: nowISO,
   };
 
-  // 7. Return complete structured JarvisContext
+  // 7. Compute Daily Performance Points & Heatmap for Selected Time Range
+  const dailyPerformance: DailyPerformancePoint[] = [];
+  const heatmap: StudyHeatmapDay[] = [];
+  const dayNamesShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  for (let i = rangeDays - 1; i >= 0; i--) {
+    const targetDate = new Date(currentEnd.getTime() - i * 24 * 60 * 60 * 1000);
+    const y = targetDate.getFullYear();
+    const m = String(targetDate.getMonth() + 1).padStart(2, "0");
+    const d = String(targetDate.getDate()).padStart(2, "0");
+    const dateStr = `${y}-${m}-${d}`;
+    const dayOfWeek = targetDate.getDay();
+    const dayName = dayNamesShort[dayOfWeek];
+
+    const displayDate =
+      rangeDays <= 7
+        ? targetDate.toLocaleDateString("en-US", { weekday: "short" })
+        : targetDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+    // Actual sessions on dateStr
+    const dayStudySessions = currentStudySessions.filter((s) => {
+      const sDate = s.started_at ? s.started_at.split("T")[0] : "";
+      return sDate === dateStr;
+    });
+    const actualMinutes = dayStudySessions.reduce(
+      (acc, s) => acc + (s.actual_minutes || s.planned_minutes || 0),
+      0
+    );
+
+    // Planned sessions on dateStr
+    const dayPlannedSessions = currentPlanned.filter((p) => {
+      const pDate = p.study_plans?.plan_date || (p.created_at ? p.created_at.split("T")[0] : "");
+      return pDate === dateStr;
+    });
+    const plannedMinutes = dayPlannedSessions.reduce((acc, p) => acc + (p.planned_minutes || 0), 0);
+
+    const completedPlanned = dayPlannedSessions.filter((p) => p.status === "COMPLETED").length;
+    const completedAdhoc = dayStudySessions.filter(
+      (s) => s.status === "COMPLETED" && !s.planned_session_id
+    ).length;
+    const completedSessions = completedPlanned + completedAdhoc;
+    const missedSessions = dayPlannedSessions.filter((p) => p.status === "MISSED").length;
+    const totalSessions = Math.max(dayPlannedSessions.length, dayStudySessions.length);
+    const completionRate = totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 100) : 0;
+
+    const actualHours = Math.round((actualMinutes / 60) * 10) / 10;
+    const plannedHours = Math.round((plannedMinutes / 60) * 10) / 10;
+
+    dailyPerformance.push({
+      date: dateStr,
+      displayDate,
+      actualMinutes,
+      plannedMinutes,
+      actualHours,
+      plannedHours,
+      completedSessions,
+      missedSessions,
+      totalSessions,
+      completionRate,
+    });
+
+    let intensity: 0 | 1 | 2 | 3 | 4 = 0;
+    if (actualMinutes >= 180) intensity = 4;
+    else if (actualMinutes >= 90) intensity = 3;
+    else if (actualMinutes >= 45) intensity = 2;
+    else if (actualMinutes > 0) intensity = 1;
+
+    heatmap.push({
+      date: dateStr,
+      dayOfWeek,
+      dayName,
+      studyMinutes: actualMinutes,
+      studyHours: actualHours,
+      sessionCount: completedSessions,
+      completionRate,
+      intensity,
+    });
+  }
+
+  // 8. Compute Deterministic Study Health Score (0-100)
+  const activeDaysCount = dailyPerformance.filter((d) => d.actualMinutes > 0 || d.completedSessions > 0).length;
+  const targetDays = Math.max(1, Math.round(rangeDays * 0.65));
+  const consistencyScore = Math.min(100, Math.round((activeDaysCount / targetDays) * 100));
+  const completionScore = curCompRate;
+  const adherenceScore = Math.min(100, Math.max(0, curAdherence));
+  const focusScore =
+    curCompletedStudySessions.length > 0
+      ? Math.min(100, Math.round((curCompletedStudySessions.length / Math.max(currentPeriodCount, 1)) * 100))
+      : curCompRate > 0
+      ? curCompRate
+      : 70;
+
+  const overallScore = Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round(
+        consistencyScore * 0.25 + completionScore * 0.35 + adherenceScore * 0.20 + focusScore * 0.20
+      )
+    )
+  );
+
+  let healthStatus: StudyHealthScore["status"] = "Healthy";
+  if (overallScore >= 85) healthStatus = "Exceptional";
+  else if (overallScore >= 70) healthStatus = "Healthy";
+  else if (overallScore >= 50) healthStatus = "Attention Needed";
+  else healthStatus = "Critical";
+
+  const healthScore: StudyHealthScore = {
+    overallScore,
+    consistencyScore,
+    completionScore,
+    adherenceScore,
+    focusScore,
+    status: healthStatus,
+  };
+
+  // 9. Compute "What Changed?" Indicators
+  const whatChanged: PerformanceChangeIndicator[] = [];
+
+  // Study Time delta
+  const studyTimeDiffPct = metrics.studyTime.percentageChange;
+  whatChanged.push({
+    id: "change_study_time",
+    label: "Study Time",
+    value: metrics.studyTime.formattedCurrent,
+    changeText: `${studyTimeDiffPct >= 0 ? "+" : ""}${studyTimeDiffPct}%`,
+    trend: metrics.studyTime.trend,
+    status: studyTimeDiffPct >= 0 ? "positive" : "negative",
+    category: "metric",
+    explanation: studyTimeDiffPct >= 0 ? "Increased logged focus time" : "Decreased focus hours",
+  });
+
+  // Completion rate delta
+  const compDiff = metrics.completionRate.difference;
+  whatChanged.push({
+    id: "change_completion_rate",
+    label: "Completion Rate",
+    value: metrics.completionRate.formattedCurrent,
+    changeText: `${compDiff >= 0 ? "+" : ""}${compDiff}%`,
+    trend: metrics.completionRate.trend,
+    status: compDiff >= 0 ? "positive" : "negative",
+    category: "metric",
+    explanation: compDiff >= 0 ? "Improved session follow-through" : "Session completion dropped",
+  });
+
+  // Sessions delta
+  const sessionDiff = metrics.sessionCompletion.difference;
+  whatChanged.push({
+    id: "change_sessions",
+    label: "Sessions Completed",
+    value: metrics.sessionCompletion.formattedCurrent,
+    changeText: `${sessionDiff >= 0 ? "+" : ""}${sessionDiff}`,
+    trend: metrics.sessionCompletion.trend,
+    status: sessionDiff >= 0 ? "positive" : "negative",
+    category: "metric",
+    explanation: `${curPlannedCompleted} of ${curPlannedTotal} planned sessions completed`,
+  });
+
+  // Subject-specific shifts
+  subjectIntelList.forEach((sub) => {
+    if (sub.activityStatus !== "ACTIVE") return;
+    const lag = sub.plannedProgressPercentage - sub.actualProgressPercentage;
+    if (sub.riskLevel === "CRITICAL" || lag >= 10) {
+      whatChanged.push({
+        id: `change_sub_${sub.id}`,
+        label: `${sub.name}`,
+        value: `${sub.actualProgressPercentage}% vs ${sub.plannedProgressPercentage}%`,
+        changeText: `${lag}% lag`,
+        trend: "declining",
+        status: "negative",
+        category: "subject",
+        explanation: `${sub.name} is ${lag}% behind planned schedule`,
+      });
+    } else if (sub.riskLevel === "HEALTHY" && sub.actualProgressPercentage > 0) {
+      whatChanged.push({
+        id: `change_sub_${sub.id}`,
+        label: `${sub.name}`,
+        value: `${sub.actualProgressPercentage}%`,
+        changeText: "On track",
+        trend: "improving",
+        status: "positive",
+        category: "subject",
+        explanation: `${sub.name} is on track with planned syllabus`,
+      });
+    }
+  });
+
+  // 10. Compute Subject Attention Ranking (Sorted by deviation / lag)
+  const subjectAttention: SubjectAttentionItem[] = subjectIntelList
+    .map((sub) => {
+      const lag = sub.plannedProgressPercentage - sub.actualProgressPercentage;
+      return {
+        subjectId: sub.id,
+        subjectName: sub.name,
+        color: sub.color,
+        plannedProgress: sub.plannedProgressPercentage,
+        actualProgress: sub.actualProgressPercentage,
+        lag: Math.max(0, lag),
+        riskLevel: sub.riskLevel,
+        studyTimeMinutes: sub.studyTimeMinutes,
+        isInactive: sub.activityStatus === "INSUFFICIENT_ACTIVITY",
+      };
+    })
+    .sort((a, b) => b.lag - a.lag);
+
+  // 11. Return complete structured JarvisContext
   return {
     range,
     dataQuality,
@@ -929,6 +1140,11 @@ export async function computeJarvisAnalytics(
     subjects: subjectIntelList,
     behavior,
     recommendations,
+    dailyPerformance,
+    healthScore,
+    whatChanged,
+    subjectAttention,
+    heatmap,
     meta: {
       analyzedAt: nowISO,
       dataQuality,

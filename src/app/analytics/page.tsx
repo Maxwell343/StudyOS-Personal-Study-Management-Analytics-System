@@ -3,20 +3,26 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useAuth } from "@/context/AuthContext";
-import type { AnalyticsTimeRange, JarvisContext, JarvisInsight } from "@/lib/analytics/types";
+import type { AnalyticsTimeRange, JarvisContext, JarvisInsight, SubjectIntelligenceData, JarvisRecommendation } from "@/lib/analytics/types";
 import { computeJarvisAnalytics } from "@/lib/analytics/engine";
-import { JarvisBriefing } from "@/components/analytics/JarvisBriefing";
-import { CoreMetricsGrid } from "@/components/analytics/CoreMetricsGrid";
-import { JarvisPriorityCard } from "@/components/analytics/JarvisPriorityCard";
-import { SubjectIntelligence } from "@/components/analytics/SubjectIntelligence";
-import { JarvisRecommendations } from "@/components/analytics/JarvisRecommendations";
-import { BehaviorAnalysis } from "@/components/analytics/BehaviorAnalysis";
+import { JarvisSnapshot } from "@/components/analytics/JarvisSnapshot";
+import { AnalyticsKpiRow } from "@/components/analytics/AnalyticsKpiRow";
+import { StudyPerformanceChart } from "@/components/analytics/StudyPerformanceChart";
+import { PlannedVsActualChart } from "@/components/analytics/PlannedVsActualChart";
+import { SubjectPerformanceDashboard } from "@/components/analytics/SubjectPerformanceDashboard";
+import { SubjectAttentionChart } from "@/components/analytics/SubjectAttentionChart";
+import { JarvisPriorityMatrix } from "@/components/analytics/JarvisPriorityMatrix";
+import { StudyHeatmap } from "@/components/analytics/StudyHeatmap";
+import { TopActionsSection } from "@/components/analytics/TopActionsSection";
+import { WhatChangedAndHighlights } from "@/components/analytics/WhatChangedAndHighlights";
+import { StudyHealthGauge } from "@/components/analytics/StudyHealthGauge";
 import { EvidenceDrawer } from "@/components/analytics/EvidenceDrawer";
 import {
   AllInsightsDrawer,
   AllSubjectsDrawer,
   AllRecommendationsDrawer,
   DetailedBehaviorDrawer,
+  ExecutiveBriefingDrawer,
 } from "@/components/analytics/AnalyticsDrawers";
 import { JarvisLoadingState } from "@/components/analytics/JarvisLoadingState";
 import { InsufficientDataState } from "@/components/analytics/InsufficientDataState";
@@ -31,8 +37,9 @@ export default function AnalyticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState<number>(0);
 
-  // Drawer States
+  // Progressive Disclosure Drawer States
   const [selectedEvidence, setSelectedEvidence] = useState<JarvisInsight | null>(null);
+  const [showBriefingDrawer, setShowBriefingDrawer] = useState<boolean>(false);
   const [showAllInsights, setShowAllInsights] = useState<boolean>(false);
   const [showAllSubjects, setShowAllSubjects] = useState<boolean>(false);
   const [showAllRecommendations, setShowAllRecommendations] = useState<boolean>(false);
@@ -152,7 +159,7 @@ export default function AnalyticsPage() {
                 Jarvis Intelligence
               </h1>
               <p className="mt-0.5 text-xs text-[#9090a8]">
-                Understand your study behavior.
+                Understand your study behavior at a glance.
               </p>
             </div>
 
@@ -196,49 +203,104 @@ export default function AnalyticsPage() {
             <InsufficientDataState />
           ) : (
             <div className="space-y-6">
-              {/* FIRST VIEWPORT: Intelligence-First Priority Area */}
-              {/* 1. Executive Briefing */}
-              <JarvisBriefing
+              {/* LEVEL 1: 5-SECOND GLANCE HERO */}
+              {/* 1. Compact JARVIS Snapshot */}
+              <JarvisSnapshot
                 briefing={data.briefing}
                 dataQuality={data.dataQuality}
-                username={username}
+                healthScore={data.healthScore}
+                onOpenAnalysis={() => setShowBriefingDrawer(true)}
               />
 
-              {/* 2. Core Metrics Summary (3 cards) */}
-              <CoreMetricsGrid metrics={data.metrics} rangeLabel={getRangeLabel(range)} />
+              {/* 2. Compact 5-card KPI row with sparklines & mini-meters */}
+              <AnalyticsKpiRow
+                metrics={data.metrics}
+                dailyPerformance={data.dailyPerformance}
+                healthScore={data.healthScore}
+                rangeLabel={getRangeLabel(range)}
+              />
 
-              {/* 3. JARVIS Priority (1 primary card + triggers) */}
-              <JarvisPriorityCard
+              {/* LEVEL 2: 30-SECOND VISUAL STORYTELLING */}
+              {/* 3. Primary Visual: Interactive Study Performance Chart */}
+              <StudyPerformanceChart
+                data={data.dailyPerformance}
+                rangeLabel={getRangeLabel(range)}
+              />
+
+              {/* 4. Planned vs Actual & Attention Ranking */}
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <PlannedVsActualChart
+                  subjects={data.subjects}
+                  onOpenSubjectDetails={() => setShowAllSubjects(true)}
+                />
+                <SubjectAttentionChart
+                  attentionItems={data.subjectAttention}
+                  onSelectSubject={() => setShowAllSubjects(true)}
+                />
+              </div>
+
+              {/* 5. Subject Performance Dashboard */}
+              <SubjectPerformanceDashboard
+                subjects={data.subjects}
+                onOpenAllSubjects={() => setShowAllSubjects(true)}
+              />
+
+              {/* 6. Overall Study Health Score & What Changed */}
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                <div className="lg:col-span-5">
+                  <StudyHealthGauge healthScore={data.healthScore} />
+                </div>
+                <div className="lg:col-span-7">
+                  <WhatChangedAndHighlights
+                    whatChanged={data.whatChanged}
+                    subjects={data.subjects}
+                    behavior={data.behavior}
+                    onExploreBehavior={() => setShowBehaviorDrawer(true)}
+                  />
+                </div>
+              </div>
+
+              {/* 7. Study Heatmap & Consistency Rhythm */}
+              <StudyHeatmap
+                heatmap={data.heatmap}
+                rangeLabel={getRangeLabel(range)}
+              />
+
+              {/* 8. JARVIS Priority Matrix (Impact × Urgency) */}
+              <JarvisPriorityMatrix
                 insights={data.insights}
                 onSelectEvidence={(insight) => setSelectedEvidence(insight)}
                 onOpenAllInsights={() => setShowAllInsights(true)}
               />
 
-              {/* SECOND VIEWPORT & BELOW: Selective Focus Sections */}
-              {/* 4. Subject Focus (max 3 inline cards) */}
-              <SubjectIntelligence
-                subjects={data.subjects}
-                onOpenAllSubjects={() => setShowAllSubjects(true)}
-              />
-
-              {/* 5. JARVIS Recommends (max 2 inline cards) */}
-              <JarvisRecommendations
+              {/* 9. Top Action Interventions */}
+              <TopActionsSection
                 recommendations={data.recommendations}
                 onOpenAllRecommendations={() => setShowAllRecommendations(true)}
-              />
-
-              {/* 6. Study Behavior Summary (compact 1-row summary) */}
-              <BehaviorAnalysis
-                behavior={data.behavior}
-                onExploreBehavior={() => setShowBehaviorDrawer(true)}
               />
             </div>
           )}
         </div>
       </div>
 
-      {/* Progressive Disclosure Drawers */}
-      {/* Evidence Drawer */}
+      {/* LEVEL 3: PROGRESSIVE DISCLOSURE DRAWERS */}
+      {/* 1. Executive Briefing Drawer */}
+      {data && (
+        <ExecutiveBriefingDrawer
+          isOpen={showBriefingDrawer}
+          onClose={() => setShowBriefingDrawer(false)}
+          briefing={data.briefing}
+          dataQuality={data.dataQuality}
+          username={username}
+          insights={data.insights}
+          onSelectEvidence={(insight) => {
+            setShowBriefingDrawer(false);
+            setSelectedEvidence(insight);
+          }}
+        />
+      )}
+
+      {/* 2. Evidence Drawer */}
       {selectedEvidence && (
         <EvidenceDrawer
           isOpen={Boolean(selectedEvidence)}
@@ -247,17 +309,20 @@ export default function AnalyticsPage() {
         />
       )}
 
-      {/* All Insights Drawer */}
+      {/* 3. All Insights Drawer */}
       {data && (
         <AllInsightsDrawer
           isOpen={showAllInsights}
           onClose={() => setShowAllInsights(false)}
           insights={data.insights}
-          onSelectEvidence={(insight) => setSelectedEvidence(insight)}
+          onSelectEvidence={(insight) => {
+            setShowAllInsights(false);
+            setSelectedEvidence(insight);
+          }}
         />
       )}
 
-      {/* All Subjects Drawer */}
+      {/* 4. All Subjects Drawer */}
       {data && (
         <AllSubjectsDrawer
           isOpen={showAllSubjects}
@@ -266,7 +331,7 @@ export default function AnalyticsPage() {
         />
       )}
 
-      {/* All Recommendations Drawer */}
+      {/* 5. All Recommendations Drawer */}
       {data && (
         <AllRecommendationsDrawer
           isOpen={showAllRecommendations}
@@ -275,7 +340,7 @@ export default function AnalyticsPage() {
         />
       )}
 
-      {/* Detailed Behavior Drawer */}
+      {/* 6. Detailed Behavior Drawer */}
       {data && (
         <DetailedBehaviorDrawer
           isOpen={showBehaviorDrawer}
@@ -286,3 +351,4 @@ export default function AnalyticsPage() {
     </div>
   );
 }
+
