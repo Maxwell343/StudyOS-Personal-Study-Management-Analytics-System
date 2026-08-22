@@ -263,7 +263,7 @@ export default function DashboardPage() {
       <main className="flex flex-1 flex-col overflow-y-auto">
         <Header />
 
-        <div className="flex-1 px-9 pt-5 pb-10">
+        <div className="flex-1 px-4 sm:px-6 lg:px-9 pt-4 pb-12 max-w-7xl w-full mx-auto">
           {loading && !data ? (
             <div className="mt-20 flex flex-col items-center justify-center gap-3">
               <Loader2 size={28} className="animate-spin text-[#22d3ee]" />
@@ -353,11 +353,10 @@ export default function DashboardPage() {
 
               {/* Main Grid: Mission | Subjects */}
               <div
-                className="mb-4 grid gap-4 items-stretch max-lg:grid-cols-1"
-                style={{ gridTemplateColumns: "1fr 320px" }}
+                className="mb-4 grid gap-4 items-stretch grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_340px]"
               >
                 {/* Left column: Execution Timeline */}
-                <div className="flex flex-col h-full">
+                <div className="flex flex-col h-full min-w-0">
                   <MissionList
                     sessions={activeSessions}
                     onSelectSession={(session) => setSelectedTopicSession(session)}
@@ -372,7 +371,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Right column: Quick Actions & Curriculum Context */}
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 min-w-0">
                   <QuickActionsWidget onAddSession={() => setAddSessionDialogOpen(true)} />
                   <SubjectProgress subjects={subjectProgress} />
                 </div>
