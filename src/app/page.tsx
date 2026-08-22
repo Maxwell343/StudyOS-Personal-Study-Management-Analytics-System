@@ -11,6 +11,7 @@ import { CurrentFocusCard } from "@/components/dashboard/CurrentFocusCard";
 import { HeroNextSession } from "@/components/dashboard/HeroNextSession";
 import { MissionList } from "@/components/dashboard/MissionList";
 import { SubjectProgress } from "@/components/dashboard/SubjectProgress";
+import { QuickActionsWidget } from "@/components/dashboard/QuickActionsWidget";
 import { RescheduleSessionModal } from "@/components/dashboard/RescheduleSessionModal";
 import { SessionTopicModal } from "@/components/dashboard/SessionTopicModal";
 import { AddSessionDialog } from "@/components/planner/AddSessionDialog";
@@ -370,8 +371,9 @@ export default function DashboardPage() {
                   />
                 </div>
 
-                {/* Right column: Subject Progress / Context */}
-                <div className="flex flex-col h-full">
+                {/* Right column: Quick Actions & Curriculum Context */}
+                <div className="flex flex-col gap-4">
+                  <QuickActionsWidget onAddSession={() => setAddSessionDialogOpen(true)} />
                   <SubjectProgress subjects={subjectProgress} />
                 </div>
               </div>
