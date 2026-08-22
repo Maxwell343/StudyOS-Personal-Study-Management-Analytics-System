@@ -1,8 +1,7 @@
 "use client";
 
-import { Play, Trash2, Calendar, Pencil } from "lucide-react";
+import { Play, Trash2, Calendar, Pencil, CheckCircle2, AlertTriangle, Clock, ArrowRight } from "lucide-react";
 import type { StudySession, SessionStatus } from "@/types/dashboard";
-import { STATUS_CONFIG } from "@/lib/constants";
 
 interface MissionCardProps {
   session: StudySession;
@@ -14,30 +13,6 @@ interface MissionCardProps {
   onDelete?: () => void;
   onMoveToTomorrow?: () => void;
   onReschedule?: () => void;
-}
-
-function StatusBadge({ status }: { status: SessionStatus }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.upcoming;
-
-  return (
-    <div
-      className="inline-flex items-center gap-1 rounded-[3px] px-1.5 py-0.5"
-      style={{ background: cfg.bg }}
-    >
-      {cfg.dot && (
-        <div
-          className="pulse-dot h-1 w-1 rounded-full"
-          style={{ background: cfg.dot }}
-        />
-      )}
-      <span
-        className="font-mono text-[9px] font-bold tracking-[0.5px]"
-        style={{ color: cfg.color }}
-      >
-        {cfg.label}
-      </span>
-    </div>
-  );
 }
 
 export function MissionCard({
@@ -56,104 +31,144 @@ export function MissionCard({
   const isPaused = status === "paused";
   const isMissed = status === "missed";
   const isBehind = status === "behind-schedule";
+  const isStartingSoon = status === "starting-soon";
 
-  let borderColor = "rgba(255,255,255,0.04)";
-  let bgColor = "transparent";
+  // Visual status configurations
+  let statusBadge = (
+    <span className="inline-flex items-center gap-1 font-mono text-[9px] font-semibold text-[#71717a]">
+      ○ UPCOMING
+    </span>
+  );
 
   if (isCompleted) {
-    borderColor = "rgba(255,255,255,0.03)";
+    statusBadge = (
+      <span className="inline-flex items-center gap-1 font-mono text-[9px] font-semibold text-[#22c55e]">
+        ✓ COMPLETED
+      </span>
+    );
+  } else if (isActive) {
+    statusBadge = (
+      <span className="inline-flex items-center gap-1 font-mono text-[9px] font-bold text-[#22c55e]">
+        <span className="h-1.5 w-1.5 rounded-full bg-[#22c55e] animate-pulse" />
+        ACTIVE
+      </span>
+    );
+  } else if (isPaused) {
+    statusBadge = (
+      <span className="inline-flex items-center gap-1 font-mono text-[9px] font-bold text-[#f97316]">
+        <span className="h-1.5 w-1.5 rounded-full bg-[#f97316]" />
+        PAUSED
+      </span>
+    );
   } else if (isMissed) {
-    borderColor = "rgba(239,68,68,0.25)";
-    bgColor = "rgba(239,68,68,0.03)";
+    statusBadge = (
+      <span className="inline-flex items-center gap-1 font-mono text-[9px] font-bold text-[#ef4444]">
+        <AlertTriangle size={10} />
+        MISSED
+      </span>
+    );
   } else if (isBehind) {
-    borderColor = "rgba(245,158,11,0.25)";
-    bgColor = "rgba(245,158,11,0.03)";
-  } else if (isNext) {
-    borderColor = "rgba(34,211,238,0.14)";
-    bgColor = "rgba(34,211,238,0.03)";
+    statusBadge = (
+      <span className="inline-flex items-center gap-1 font-mono text-[9px] font-bold text-[#f59e0b]">
+        BEHIND
+      </span>
+    );
+  } else if (isStartingSoon) {
+    statusBadge = (
+      <span className="inline-flex items-center gap-1 font-mono text-[9px] font-bold text-[#22d3ee]">
+        SOON
+      </span>
+    );
   }
-
-  const handleAction = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onStartSession) {
-      onStartSession();
-    } else {
-      onCycle();
-    }
-  };
 
   return (
     <div
       onClick={() => onSelectSession?.(session)}
-      title="Click to view planned topics & curriculum items"
-      className="session-card group relative grid cursor-pointer items-center gap-3.5 rounded-[7px] px-3 py-2.5 transition-all duration-150 hover:border-cyan-400/30 hover:bg-white/[0.02]"
-      style={{
-        gridTemplateColumns: "90px 1fr auto",
-        border: `1px solid ${borderColor}`,
-        background: bgColor,
-        opacity: isCompleted ? 0.55 : 1,
-      }}
+      title="Click to view curriculum topics"
+      className={`group relative flex items-center justify-between gap-3 rounded-[9px] px-3.5 py-3 transition-all duration-150 cursor-pointer ${
+        isCompleted
+          ? "border border-white/[0.03] bg-white/[0.01] opacity-60"
+          : isActive || isPaused
+            ? "border border-emerald-500/30 bg-emerald-500/[0.04] shadow-[0_0_15px_rgba(34,197,94,0.05)]"
+            : isMissed
+              ? "border border-red-500/25 bg-red-500/[0.02]"
+              : isNext
+                ? "border border-cyan-500/30 bg-cyan-500/[0.03]"
+                : "border border-white/[0.05] bg-white/[0.015] hover:border-white/[0.12] hover:bg-white/[0.025]"
+      }`}
     >
-      {/* Left accent */}
+      {/* Accent left indicator bar */}
       <div
-        className="absolute left-0 top-[20%] bottom-[20%] w-0.5 rounded-r-sm transition-all group-hover:w-1"
+        className="absolute left-0 top-[18%] bottom-[18%] w-[3px] rounded-r-full transition-all group-hover:w-[4px]"
         style={{
-          background: isMissed ? "#ef4444" : isBehind ? "#f59e0b" : session.color,
-          opacity: isNext || isMissed || isBehind ? 0.9 : 0.4,
+          background: isCompleted
+            ? "#22c55e"
+            : isMissed
+              ? "#ef4444"
+              : isBehind
+                ? "#f59e0b"
+                : isActive
+                  ? "#22c55e"
+                  : session.color || "#22d3ee",
         }}
       />
 
-      {/* Time column */}
-      <div className="pl-1.5">
-        <div
-          className="mb-1 whitespace-nowrap font-mono text-[10.5px]"
-          style={{ color: isMissed ? "#f87171" : isNext ? "#c0c0d0" : "#6b6b80" }}
-        >
-          {session.startTime} — {session.endTime}
-        </div>
-        <StatusBadge status={status} />
-      </div>
-
-      {/* Subject + topic */}
-      <div className="min-w-0">
-        <div className="mb-0.5 flex items-center gap-[7px]">
-          <div
-            className="h-1.5 w-1.5 shrink-0 rounded-full"
-            style={{ background: session.color }}
-          />
+      {/* Left info: Time & Subject/Topic */}
+      <div className="flex items-center gap-4 min-w-0 flex-1 pl-1">
+        {/* Time slot column */}
+        <div className="w-24 shrink-0 flex flex-col">
           <span
-            className="text-[13px] font-semibold tracking-tight group-hover:text-cyan-300 transition"
+            className="font-mono text-xs font-semibold"
             style={{
-              color: isCompleted ? "#6b6b80" : "#f0f0f4",
-              textDecoration: isCompleted ? "line-through" : "none",
+              color: isCompleted
+                ? "#71717a"
+                : isMissed
+                  ? "#f87171"
+                  : isNext || isActive
+                    ? "#f4f4f5"
+                    : "#a1a1aa",
             }}
           >
-            {session.subject}
+            {session.startTime}
           </span>
-          <span className="text-[11px]" style={{ color: "#3a3a4a" }}>
-            ·
-          </span>
-          <span
-            className="text-xs truncate font-medium group-hover:text-white transition"
-            style={{ color: isCompleted ? "#4a4a5a" : "#8a8a9e" }}
-          >
-            {session.topic}
-          </span>
+          <div className="mt-0.5">{statusBadge}</div>
         </div>
-        <div
-          className="pl-[13px] font-mono text-[10.5px] flex items-center gap-2"
-          style={{ color: isMissed ? "#ef4444" : "#4a4a5a" }}
-        >
-          <span>{session.duration} {isMissed && "· Time slot passed"}</span>
-          <span className="opacity-0 group-hover:opacity-100 text-cyan-400 font-sans text-[10px] transition">
-            Click to view topics &rarr;
-          </span>
+
+        {/* Subject & Topic Details */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className="text-xs font-bold tracking-tight text-[#f4f4f5] group-hover:text-cyan-300 transition"
+              style={{
+                textDecoration: isCompleted ? "line-through" : "none",
+              }}
+            >
+              {session.subject}
+            </span>
+            <span className="text-xs text-[#52525b]">/</span>
+            <span
+              className="text-xs text-[#d4d4d8] font-medium truncate group-hover:text-white transition"
+              style={{
+                textDecoration: isCompleted ? "line-through" : "none",
+              }}
+            >
+              {session.topic}
+            </span>
+          </div>
+
+          <div className="mt-0.5 flex items-center gap-2 text-[11px] font-mono text-[#71717a]">
+            <span>{session.duration || "50m"}</span>
+            {isMissed && <span className="text-[#ef4444]">· Time slot passed</span>}
+            <span className="text-cyan-400/0 group-hover:text-cyan-400 transition font-sans text-[10.5px]">
+              View topics &rarr;
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Action buttons */}
+      {/* Right controls */}
       <div
-        className="flex items-center gap-1.5"
+        className="flex items-center gap-1.5 shrink-0"
         onClick={(e) => e.stopPropagation()}
       >
         {!isCompleted && onReschedule && (
@@ -163,15 +178,9 @@ export function MissionCard({
               e.stopPropagation();
               onReschedule();
             }}
-            title="Edit session schedule"
-            aria-label="Edit session schedule"
-            className="flex h-[27px] w-[27px] cursor-pointer items-center justify-center rounded-[5px]"
-            style={{
-              background: "rgba(245,158,11,0.08)",
-              border: "1px solid rgba(245,158,11,0.25)",
-              color: "#f59e0b",
-              transition: "all 0.12s ease",
-            }}
+            title="Edit schedule"
+            aria-label="Edit schedule"
+            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-[6px] text-[#f59e0b] hover:bg-amber-500/10 transition border border-amber-500/20"
           >
             <Pencil size={11} />
           </button>
@@ -184,59 +193,27 @@ export function MissionCard({
               e.stopPropagation();
               onMoveToTomorrow();
             }}
-            title="Move to Tomorrow's Plan"
-            className="flex cursor-pointer items-center gap-1 rounded-[5px] border border-[#22d3ee]/20 bg-[#22d3ee]/10 px-2.5 py-[5px] text-[11px] font-semibold text-[#22d3ee] hover:bg-[#22d3ee]/20 transition"
+            title="Move to tomorrow"
+            className="flex cursor-pointer items-center gap-1 rounded-[6px] border border-[#22d3ee]/25 bg-[#22d3ee]/10 px-2 py-1 text-[10.5px] font-semibold text-[#22d3ee] hover:bg-[#22d3ee]/20 transition"
           >
-            <Calendar size={10} />
-            Tomorrow
+            <Calendar size={10} /> Tomorrow
           </button>
         )}
 
-        {!isCompleted && (() => {
-          const isWorkable = true;
-          let tooltip = "Start session";
-          if (status === "upcoming") {
-            tooltip = `Start session early (${session.startTime} - ${session.endTime})`;
-          } else if (status === "missed") {
-            tooltip = "Time slot passed. Start session or edit schedule.";
-          }
+        {!isCompleted && onStartSession && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onStartSession();
+            }}
+            title={isActive ? "Active in timer" : "Start session timer"}
+            className="flex cursor-pointer items-center gap-1 rounded-[6px] border border-[#22d3ee]/35 bg-[#22d3ee]/15 px-2.5 py-1 text-xs font-bold text-[#22d3ee] hover:bg-[#22d3ee]/25 transition active:scale-95"
+          >
+            <Play size={10} className="fill-[#22d3ee]" /> Start
+          </button>
+        )}
 
-          return (
-            <button
-              onClick={handleAction}
-              disabled={!isWorkable}
-              title={tooltip}
-              className={`flex items-center gap-[5px] whitespace-nowrap rounded-[5px] px-3 py-[5px] text-[11px] font-semibold transition-all duration-150 ${
-                !isWorkable ? "cursor-not-allowed opacity-35" : "cursor-pointer"
-              }`}
-              style={{
-                border: isWorkable
-                  ? "1px solid rgba(34,211,238,0.3)"
-                  : "1px solid rgba(255,255,255,0.06)",
-                background: isActive
-                  ? "rgba(34,211,238,0.08)"
-                  : "transparent",
-                color: isWorkable ? "#22d3ee" : "#5a5a6a",
-              }}
-            >
-              {isActive ? (
-                <>
-                  <span className="text-[8px]">⏸</span> Pause
-                </>
-              ) : isPaused ? (
-                <>
-                  <Play size={9} />
-                  Resume
-                </>
-              ) : (
-                <>
-                  <Play size={9} />
-                  Start
-                </>
-              )}
-            </button>
-          );
-        })()}
         {onDelete && (
           <button
             type="button"
@@ -244,15 +221,9 @@ export function MissionCard({
               e.stopPropagation();
               onDelete();
             }}
-            title="Delete mission"
-            aria-label="Delete mission"
-            className="flex h-[27px] w-[27px] cursor-pointer items-center justify-center rounded-[5px]"
-            style={{
-              background: "rgba(239,68,68,0.05)",
-              border: "1px solid rgba(239,68,68,0.15)",
-              color: "#ef4444",
-              transition: "all 0.12s ease",
-            }}
+            title="Remove session"
+            aria-label="Remove session"
+            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-[6px] text-[#71717a] hover:text-red-400 hover:bg-red-500/10 transition border border-transparent hover:border-red-500/20"
           >
             <Trash2 size={11} />
           </button>
@@ -261,3 +232,4 @@ export function MissionCard({
     </div>
   );
 }
+
