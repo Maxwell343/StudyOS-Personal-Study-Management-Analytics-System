@@ -1,6 +1,18 @@
 import Link from "next/link";
 import { useSessionTimer } from "@/context/TimerContext";
-import { Play, Pause, CheckCircle2, RotateCcw, Clock, Calendar, Trash2, Pencil } from "lucide-react";
+import {
+  Play,
+  Pause,
+  CheckCircle2,
+  RotateCcw,
+  Clock,
+  Calendar,
+  Trash2,
+  Pencil,
+  Sparkles,
+  ArrowRight,
+  TrendingUp,
+} from "lucide-react";
 import type { StudySession } from "@/types/dashboard";
 
 interface HeroNextSessionProps {
@@ -54,23 +66,28 @@ export function HeroNextSession({
 
   const isRunning = isActive || isPaused;
   const isDayComplete = !isRunning && !session && totalSessions > 0;
+  const hasNoPlan = !isRunning && !session && totalSessions === 0;
 
   const currentSubject = isRunning
     ? activeSession?.subjectName || session?.subject || "Focus Session"
     : isDayComplete
-      ? "Done for the Day! 🎉"
-      : session?.subject || "No Active Schedule";
+      ? "Day Complete"
+      : hasNoPlan
+        ? "No Plan for Today"
+        : session?.subject || "Next Session";
 
   const rawTopic = isRunning
     ? activeSession?.topicName ||
       activeSession?.title ||
       session?.topic ||
-      "Deep Work"
+      "Deep Focus Execution"
     : isDayComplete
-      ? "All planned missions for today are completed."
-      : session?.topic || "Plan your day to start structured tracking";
+      ? `All ${totalSessions} planned sessions completed`
+      : hasNoPlan
+        ? "Create a schedule in Plan Tomorrow to start structured tracking."
+        : session?.topic || "Ready to execute";
 
-  const currentTopic = isDayComplete
+  const currentTopic = isDayComplete || hasNoPlan
     ? rawTopic
     : cleanTopicTitle(rawTopic, currentSubject);
 
@@ -86,11 +103,11 @@ export function HeroNextSession({
         startTime: session.startTime,
       });
     } else {
-      // Ad-hoc 25m focus session
+      // Ad-hoc 30m focus session
       await startSession({
-        plannedMinutes: 25,
+        plannedMinutes: 30,
         subjectName: "General Study",
-        topicName: "Deep Focus",
+        topicName: "Deep Focus Session",
         title: "General Study: Deep Focus",
       });
     }
@@ -111,7 +128,7 @@ export function HeroNextSession({
   };
 
   const handleAbandon = async () => {
-    if (window.confirm("Are you sure you want to abandon this session? Progress will be saved but it will be marked as abandoned.")) {
+    if (window.confirm("Are you sure you want to abandon this session? Progress will be saved but marked as abandoned.")) {
       await abandonSession();
       if (onSessionUpdated) onSessionUpdated();
     }
@@ -119,166 +136,232 @@ export function HeroNextSession({
 
   return (
     <div
-      className="relative mb-5 overflow-hidden rounded-[10px] px-6 py-5"
+      className="relative mb-5 overflow-hidden rounded-[12px] p-6 transition-all duration-200"
       style={{
-        background: "#13131a",
+        background: isRunning
+          ? "linear-gradient(135deg, #13131c 0%, #171824 100%)"
+          : isDayComplete
+            ? "linear-gradient(135deg, #101918 0%, #131d1a 100%)"
+            : "#13131a",
         border: `1px solid ${
           isRunning
             ? isPaused
-              ? "rgba(249,115,22,0.3)"
-              : "rgba(34,197,94,0.3)"
-            : "rgba(34,211,238,0.18)"
+              ? "rgba(249,115,22,0.35)"
+              : "rgba(34,197,94,0.35)"
+            : isDayComplete
+              ? "rgba(34,197,94,0.25)"
+              : "rgba(34,211,238,0.2)"
         }`,
+        boxShadow: isRunning
+          ? isPaused
+            ? "0 4px 20px -2px rgba(249,115,22,0.12)"
+            : "0 4px 20px -2px rgba(34,197,94,0.12)"
+          : "none",
       }}
     >
-      {/* Top glow line */}
+      {/* Top ambient glow line */}
       <div
-        className="absolute top-0 right-0 left-0 h-px"
+        className="absolute top-0 right-0 left-0 h-[2px]"
         style={{
           background: isRunning
             ? isPaused
-              ? "linear-gradient(90deg, transparent, rgba(249,115,22,0.6), transparent)"
-              : "linear-gradient(90deg, transparent, rgba(34,197,94,0.7), transparent)"
-            : "linear-gradient(90deg, transparent, rgba(34,211,238,0.4), transparent)",
+              ? "linear-gradient(90deg, transparent, rgba(249,115,22,0.8), transparent)"
+              : "linear-gradient(90deg, transparent, rgba(34,197,94,0.8), transparent)"
+            : isDayComplete
+              ? "linear-gradient(90deg, transparent, rgba(34,197,94,0.6), transparent)"
+              : "linear-gradient(90deg, transparent, rgba(34,211,238,0.5), transparent)",
         }}
       />
 
-      <div className="flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
-        {/* Left: session info */}
-        <div className="flex-1">
+      <div className="flex items-center justify-between gap-5 max-md:flex-col max-md:items-start">
+        {/* Left: Session metadata & state */}
+        <div className="flex-1 min-w-0">
+          {/* Status Badge */}
           <div className="mb-2.5 flex items-center gap-2">
             <div
-              className="rounded px-2 py-[3px]"
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-[3px]"
               style={{
                 background: isRunning
                   ? isPaused
                     ? "rgba(249,115,22,0.12)"
                     : "rgba(34,197,94,0.12)"
-                  : "rgba(34,211,238,0.1)",
+                  : isDayComplete
+                    ? "rgba(34,197,94,0.12)"
+                    : hasNoPlan
+                      ? "rgba(107,114,128,0.12)"
+                      : session?.status === "missed"
+                        ? "rgba(239,68,68,0.12)"
+                        : "rgba(34,211,238,0.12)",
                 border: `1px solid ${
                   isRunning
                     ? isPaused
-                      ? "rgba(249,115,22,0.25)"
-                      : "rgba(34,197,94,0.25)"
-                    : "rgba(34,211,238,0.2)"
+                      ? "rgba(249,115,22,0.3)"
+                      : "rgba(34,197,94,0.3)"
+                    : isDayComplete
+                      ? "rgba(34,197,94,0.3)"
+                      : hasNoPlan
+                        ? "rgba(107,114,128,0.2)"
+                        : session?.status === "missed"
+                          ? "rgba(239,68,68,0.3)"
+                          : "rgba(34,211,238,0.25)"
                 }`,
               }}
             >
+              <div
+                className="h-1.5 w-1.5 rounded-full animate-pulse"
+                style={{
+                  background: isRunning
+                    ? isPaused
+                      ? "#f97316"
+                      : "#22c55e"
+                    : isDayComplete
+                      ? "#22c55e"
+                      : hasNoPlan
+                        ? "#6b7280"
+                        : session?.status === "missed"
+                          ? "#ef4444"
+                          : "#22d3ee",
+                }}
+              />
               <span
-                className="font-mono text-[9.5px] font-bold uppercase tracking-[1px]"
+                className="font-mono text-[10px] font-bold uppercase tracking-[1px]"
                 style={{
                   color: isRunning
                     ? isPaused
                       ? "#f97316"
                       : isOvertime
-                        ? "#f87171" // Red for overtime
+                        ? "#f87171"
                         : "#22c55e"
                     : isDayComplete
                       ? "#22c55e"
-                      : "#22d3ee",
+                      : hasNoPlan
+                        ? "#9ca3af"
+                        : session?.status === "missed"
+                          ? "#ef4444"
+                          : "#22d3ee",
                 }}
               >
                 {isRunning
                   ? isPaused
-                    ? "⏸ PAUSED"
+                    ? "PAUSED"
                     : showTargetReachedToast
-                      ? "● TIME REACHED"
+                      ? "TARGET REACHED"
                       : isOvertime
-                        ? "● OVERTIME"
-                        : "● ACTIVE TIMER"
+                        ? "OVERTIME"
+                        : "IN PROGRESS"
                   : isDayComplete
-                    ? "✓ DAY COMPLETE 🎉"
-                    : session?.status === "missed"
-                      ? "⚠ MISSED SESSION"
-                      : session
-                        ? "NEXT SESSION"
-                        : "STUDY OS"}
+                    ? "DAY COMPLETE"
+                    : hasNoPlan
+                      ? "NO SCHEDULE"
+                      : session?.status === "missed"
+                        ? "MISSED SESSION"
+                        : session?.status === "behind-schedule"
+                          ? "BEHIND SCHEDULE"
+                          : session?.status === "starting-soon"
+                            ? "STARTING SOON"
+                            : "NEXT UP"}
               </span>
             </div>
+
             {totalSessions > 0 && (
               <span
                 className="font-mono text-[11px]"
-                style={{ color: "#4a4a5a" }}
+                style={{ color: "#6b6b80" }}
               >
-                · {isDayComplete ? `${totalSessions} of ${totalSessions} completed` : `Session ${sessionIndex + 1} of ${totalSessions}`}
+                {isDayComplete
+                  ? `· ${totalSessions} / ${totalSessions} sessions finished`
+                  : `· Session ${sessionIndex + 1} of ${totalSessions}`}
               </span>
             )}
           </div>
 
+          {/* Title & Topic */}
           <div
             onClick={() => session && onSelectSession?.(session)}
-            title={session ? "Click to view planned topics & curriculum items" : undefined}
-            className={`mb-1.5 flex items-baseline gap-3 group transition ${session ? "cursor-pointer" : ""}`}
+            title={session ? "Click to view planned topic items" : undefined}
+            className={`mb-2 flex flex-wrap items-baseline gap-2.5 transition ${
+              session ? "cursor-pointer group" : ""
+            }`}
           >
-            <h2 className="m-0 text-[22px] font-bold tracking-tight text-[#f0f0f4] group-hover:text-cyan-300 transition">
+            <h2 className="m-0 text-xl font-bold tracking-tight text-[#f0f0f4] group-hover:text-cyan-300 transition">
               {currentSubject}
             </h2>
-            <span className="text-sm" style={{ color: "#8a8a9e" }}>
-              ·
-            </span>
-            <span className="text-[15px] group-hover:text-white transition" style={{ color: "#b0b0c8" }}>
-              {currentTopic}
-            </span>
+            {currentTopic && (
+              <>
+                <span className="text-sm text-[#4a4a5a] font-normal">/</span>
+                <span
+                  className="text-[15px] font-medium text-[#c0c0d8] group-hover:text-white transition line-clamp-1"
+                >
+                  {currentTopic}
+                </span>
+              </>
+            )}
             {session && (
-              <span className="opacity-0 group-hover:opacity-100 text-cyan-400 font-sans text-xs transition">
-                &rarr; View Topics
+              <span className="text-xs text-cyan-400 opacity-0 group-hover:opacity-100 transition inline-flex items-center gap-0.5">
+                View curriculum <ArrowRight size={11} />
               </span>
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <div
-              className="flex items-center gap-[5px]"
-              style={{ color: "#6b6b80" }}
-            >
-              <Clock size={12} />
+          {/* Time & Duration Micro-metrics */}
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5 text-[#8a8a9e]">
+              <Clock size={13} className="text-[#6b6b80]" />
               <span
-                className="font-mono text-xs font-semibold"
-                style={{ color: isRunning || isDayComplete ? "#22c55e" : session?.status === "missed" ? "#ef4444" : "#a0a0b8" }}
+                className="font-mono font-semibold"
+                style={{
+                  color: isRunning || isDayComplete
+                    ? "#22c55e"
+                    : session?.status === "missed"
+                      ? "#ef4444"
+                      : "#a0a0b8",
+                }}
               >
                 {isRunning
                   ? formattedElapsed
                   : isDayComplete
-                    ? "Complete"
+                    ? "Completed"
                     : session
                       ? session.timeRange
-                      : "00:00"}
+                      : "No slot"}
               </span>
             </div>
-            <span className="text-[11px]" style={{ color: "#3a3a4a" }}>
-              ·
+
+            <span className="text-[#3a3a4a]">·</span>
+
+            <span className="font-mono text-[#8a8a9e]">
+              {isRunning
+                ? `${activeSession?.plannedMinutes || 60}m target`
+                : isDayComplete
+                  ? `${totalSessions} sessions completed`
+                  : session
+                    ? `${session.duration || "50m"} planned`
+                    : "0m planned"}
             </span>
+
+            <span className="text-[#3a3a4a]">·</span>
+
             <span
-              className="font-mono text-xs"
-              style={{ color: "#6b6b80" }}
+              className="text-[11.5px]"
+              style={{
+                color: session?.status === "missed" ? "#f87171" : "#71717a",
+              }}
             >
               {isRunning
-                ? `${activeSession?.plannedMinutes || 60}m planned`
-                : isDayComplete
-                  ? `${totalSessions} session${totalSessions !== 1 ? "s" : ""} done`
-                  : session
-                    ? `${session.duration || "1h 00m"} planned`
-                    : "0m planned today"}
-            </span>
-            <span className="text-[11px]" style={{ color: "#3a3a4a" }}>
-              ·
-            </span>
-            <span className="text-xs" style={{ color: session?.status === "missed" ? "#ef4444" : "#6b6b80" }}>
-              {isRunning
                 ? isOvertime
-                  ? `Over target duration by ${formattedRemaining}`
+                  ? `Overtime by ${formattedRemaining}`
                   : `${formattedRemaining} remaining (${progressPercent}%)`
                 : isDayComplete
-                  ? "All daily planned sessions finished 🎉"
+                  ? "Great job on completing your plan!"
                   : session?.status === "missed"
-                    ? "Scheduled time slot passed. Reschedule or move to tomorrow."
+                    ? "Scheduled slot passed. Reschedule or start now."
                     : session
                       ? "Ready to start"
-                      : "Use Plan Tomorrow to lock your schedule"}
+                      : "Use Plan Tomorrow to create your schedule."}
             </span>
           </div>
 
-          {/* Progress bar when running */}
+          {/* Running Progress Bar */}
           {isRunning && (
             <div className="mt-3.5 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-white/5">
               <div
@@ -296,82 +379,91 @@ export function HeroNextSession({
           )}
         </div>
 
-        {/* Right: Actions */}
-        <div className="flex shrink-0 items-center gap-2">
+        {/* Right: Dynamic CTAs */}
+        <div className="flex shrink-0 items-center gap-2 max-sm:w-full max-sm:justify-end">
           {isRunning ? (
             <>
               <button
+                type="button"
                 onClick={handleTogglePause}
-                className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[7px] px-4 py-2.5 text-[12.5px] font-semibold tracking-[0.2px]"
+                className="flex cursor-pointer items-center gap-1.5 rounded-[8px] px-4 py-2.5 text-xs font-semibold tracking-wide transition active:scale-95"
                 style={{
                   border: `1px solid ${
                     isPaused ? "rgba(34,197,94,0.35)" : "rgba(249,115,22,0.35)"
                   }`,
                   background: isPaused
-                    ? "rgba(34,197,94,0.1)"
-                    : "rgba(249,115,22,0.1)",
+                    ? "rgba(34,197,94,0.12)"
+                    : "rgba(249,115,22,0.12)",
                   color: isPaused ? "#22c55e" : "#f97316",
-                  transition: "all 0.15s ease",
                 }}
               >
-                {isPaused ? <Play size={12} /> : <Pause size={12} />}
+                {isPaused ? <Play size={13} /> : <Pause size={13} />}
                 <span>{isPaused ? "Resume" : "Pause"}</span>
               </button>
 
               <button
+                type="button"
                 onClick={handleComplete}
-                className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[7px] px-5 py-2.5 text-[12.5px] font-semibold tracking-[0.2px]"
+                className="flex cursor-pointer items-center gap-1.5 rounded-[8px] px-5 py-2.5 text-xs font-semibold tracking-wide transition active:scale-95"
                 style={{
-                  border: "1px solid rgba(34,197,94,0.4)",
-                  background: "rgba(34,197,94,0.15)",
+                  border: "1px solid rgba(34,197,94,0.45)",
+                  background: "rgba(34,197,94,0.18)",
                   color: "#22c55e",
-                  transition: "all 0.15s ease",
                 }}
               >
-                <CheckCircle2 size={13} />
-                <span>Complete</span>
+                <CheckCircle2 size={14} />
+                <span>Finish</span>
               </button>
 
               <button
+                type="button"
                 onClick={handleAbandon}
-                title="Discard session"
-                className="flex cursor-pointer items-center justify-center rounded-[7px] p-2 text-xs"
+                title="Abandon session"
+                className="flex cursor-pointer items-center justify-center rounded-[8px] p-2.5 text-xs text-[#71717a] hover:text-red-400 transition"
                 style={{
                   border: "1px solid rgba(255,255,255,0.06)",
-                  background: "transparent",
-                  color: "#6b6b80",
+                  background: "rgba(255,255,255,0.02)",
                 }}
               >
-                <RotateCcw size={12} />
+                <RotateCcw size={13} />
               </button>
             </>
           ) : isDayComplete ? (
-            <Link
-              href="/plan-tomorrow"
-              className="flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-[7px] px-5 py-2.5 text-[12.5px] font-semibold tracking-[0.2px]"
-              style={{
-                border: "1px solid rgba(34,197,94,0.35)",
-                background: "rgba(34,197,94,0.1)",
-                color: "#22c55e",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <Calendar size={13} /> Plan Tomorrow&apos;s Schedule
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/analytics"
+                className="flex items-center gap-1.5 rounded-[8px] px-4 py-2.5 text-xs font-medium text-[#c0c0d8] hover:text-white transition"
+                style={{
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(255,255,255,0.03)",
+                }}
+              >
+                <TrendingUp size={13} /> View Analytics
+              </Link>
+              <Link
+                href="/plan-tomorrow"
+                className="flex items-center gap-1.5 rounded-[8px] px-5 py-2.5 text-xs font-semibold text-[#22c55e] transition"
+                style={{
+                  border: "1px solid rgba(34,197,94,0.35)",
+                  background: "rgba(34,197,94,0.12)",
+                }}
+              >
+                <Calendar size={13} /> Plan Tomorrow
+              </Link>
+            </div>
           ) : session ? (
             <div className="flex flex-wrap items-center gap-2">
               {onOpenRescheduleModal && (
                 <button
                   type="button"
                   onClick={() => onOpenRescheduleModal(session)}
-                  title="Edit session schedule"
-                  aria-label="Edit session schedule"
-                  className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[7px]"
+                  title="Reschedule session"
+                  aria-label="Reschedule session"
+                  className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[8px] transition active:scale-95"
                   style={{
                     background: "rgba(245,158,11,0.08)",
                     border: "1px solid rgba(245,158,11,0.25)",
                     color: "#f59e0b",
-                    transition: "all 0.15s ease",
                   }}
                 >
                   <Pencil size={13} />
@@ -382,54 +474,35 @@ export function HeroNextSession({
                 <button
                   type="button"
                   onClick={() => onMoveToTomorrow(session.id)}
-                  className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-[7px] border border-[#22d3ee]/35 bg-[#22d3ee]/10 px-4 py-2.5 text-[12.5px] font-semibold text-[#22d3ee] hover:bg-[#22d3ee]/20 transition"
+                  className="flex cursor-pointer items-center gap-1.5 rounded-[8px] border border-[#22d3ee]/35 bg-[#22d3ee]/10 px-4 py-2.5 text-xs font-semibold text-[#22d3ee] hover:bg-[#22d3ee]/20 transition"
                 >
-                  <Calendar size={13} /> Move to Tomorrow
+                  <Calendar size={13} /> Move Tomorrow
                 </button>
               )}
 
-              {(() => {
-                const isWorkable = session.status !== "completed";
-                let tooltip = "Start session";
-                if (session.status === "upcoming") {
-                  tooltip = `Start session early (${session.timeRange})`;
-                } else if (session.status === "missed") {
-                  tooltip = "Time slot passed. Start session or edit schedule.";
-                }
+              <button
+                type="button"
+                onClick={handleStart}
+                className="flex cursor-pointer items-center gap-2 rounded-[8px] px-5 py-2.5 text-xs font-bold tracking-wide transition active:scale-95"
+                style={{
+                  border: "1px solid rgba(34,211,238,0.45)",
+                  background: "rgba(34,211,238,0.15)",
+                  color: "#22d3ee",
+                }}
+              >
+                <Play size={13} className="fill-[#22d3ee]" /> Start Session
+              </button>
 
-                return (
-                  <button
-                    onClick={handleStart}
-                    disabled={!isWorkable}
-                    title={tooltip}
-                    className={`flex items-center gap-2 whitespace-nowrap rounded-[7px] px-5 py-2.5 text-[13px] font-semibold tracking-[0.2px] transition-all duration-150 ${
-                      !isWorkable ? "cursor-not-allowed opacity-35" : "cursor-pointer"
-                    }`}
-                    style={{
-                      border: isWorkable
-                        ? "1px solid rgba(34,211,238,0.35)"
-                        : "1px solid rgba(255,255,255,0.06)",
-                      background: isWorkable
-                        ? "rgba(34,211,238,0.1)"
-                        : "transparent",
-                      color: isWorkable ? "#22d3ee" : "#5a5a6a",
-                    }}
-                  >
-                    <Play size={11} /> Start Session
-                  </button>
-                );
-              })()}
               {onDeleteSession && (
                 <button
+                  type="button"
                   onClick={() => onDeleteSession(session.id)}
-                  title="Delete mission"
-                  aria-label="Delete mission"
-                  className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[7px]"
+                  title="Delete session"
+                  aria-label="Delete session"
+                  className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[8px] text-[#71717a] hover:text-red-400 transition"
                   style={{
-                    background: "rgba(239,68,68,0.05)",
-                    border: "1px solid rgba(239,68,68,0.2)",
-                    color: "#ef4444",
-                    transition: "all 0.15s ease",
+                    background: "rgba(239,68,68,0.04)",
+                    border: "1px solid rgba(239,68,68,0.15)",
                   }}
                 >
                   <Trash2 size={13} />
@@ -439,15 +512,13 @@ export function HeroNextSession({
           ) : (
             <Link
               href="/plan-tomorrow"
-              className="flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-[7px] px-5 py-2.5 text-[12.5px] font-semibold tracking-[0.2px]"
+              className="flex items-center gap-2 rounded-[8px] px-5 py-2.5 text-xs font-bold text-[#22d3ee] transition active:scale-95"
               style={{
-                border: "1px solid rgba(34,211,238,0.35)",
-                background: "rgba(34,211,238,0.1)",
-                color: "#22d3ee",
-                transition: "all 0.15s ease",
+                border: "1px solid rgba(34,211,238,0.4)",
+                background: "rgba(34,211,238,0.12)",
               }}
             >
-              <Calendar size={13} /> Plan Today&apos;s Schedule
+              <Sparkles size={13} /> Plan Today&apos;s Schedule
             </Link>
           )}
         </div>
@@ -455,3 +526,4 @@ export function HeroNextSession({
     </div>
   );
 }
+
