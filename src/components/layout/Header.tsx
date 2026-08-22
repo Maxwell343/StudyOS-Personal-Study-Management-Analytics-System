@@ -61,8 +61,8 @@ export function Header() {
           </h1>
           <span className="text-xl">{emoji}</span>
         </div>
-        <p className="m-0 text-[13px]" style={{ color: "#6b6b80" }}>
-          I&apos;ve prepared your study plan for today.
+        <p className="m-0 text-[13px]" style={{ color: "#71717a" }}>
+          Here&apos;s your focus for today.
         </p>
       </div>
       <div className="mt-0.5 flex items-center gap-4">
