@@ -5,12 +5,10 @@ import { formatErrorMessage } from "@/lib/utils";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { JarvisInsightBar } from "@/components/dashboard/JarvisInsightBar";
-import { DailyMetricsGrid } from "@/components/dashboard/DailyMetricsGrid";
 import { DailyProgressCard } from "@/components/dashboard/DailyProgressCard";
 import { HeroNextSession } from "@/components/dashboard/HeroNextSession";
 import { MissionList } from "@/components/dashboard/MissionList";
 import { SubjectProgress } from "@/components/dashboard/SubjectProgress";
-import { WeeklyAnalytics } from "@/components/dashboard/WeeklyAnalytics";
 import { RescheduleSessionModal } from "@/components/dashboard/RescheduleSessionModal";
 import { SessionTopicModal } from "@/components/dashboard/SessionTopicModal";
 import { AddSessionDialog } from "@/components/planner/AddSessionDialog";
@@ -273,7 +271,7 @@ export default function DashboardPage() {
               {/* JARVIS Insight */}
               <JarvisInsightBar message={data?.jarvisInsight.message} />
 
-              {/* Hero: Next Session */}
+              {/* Hero: Next Session / Current Focus */}
               <HeroNextSession
                 session={nextSession}
                 sessionIndex={0}
@@ -285,10 +283,7 @@ export default function DashboardPage() {
                 onOpenRescheduleModal={handleOpenRescheduleModal}
               />
 
-              {/* Daily Metrics */}
-              <DailyMetricsGrid metrics={metrics} />
-
-              {/* Daily Progress */}
+              {/* Today's Progress */}
               <DailyProgressCard
                 targetMinutes={targetMinutes}
                 actualMinutes={actualMinutes}
@@ -299,7 +294,7 @@ export default function DashboardPage() {
                 className="mb-4 grid gap-4 items-stretch max-lg:grid-cols-1"
                 style={{ gridTemplateColumns: "1fr 320px" }}
               >
-                {/* Left column */}
+                {/* Left column: Execution Timeline */}
                 <div className="flex flex-col h-full">
                   <MissionList
                     sessions={activeSessions}
@@ -314,14 +309,11 @@ export default function DashboardPage() {
                   />
                 </div>
 
-                {/* Right column */}
+                {/* Right column: Subject Progress / Context */}
                 <div className="flex flex-col h-full">
                   <SubjectProgress subjects={subjectProgress} />
                 </div>
               </div>
-
-              {/* Weekly Analytics */}
-              <WeeklyAnalytics data={weeklyData} />
             </>
           )}
         </div>
