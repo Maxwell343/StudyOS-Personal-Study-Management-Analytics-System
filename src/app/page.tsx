@@ -5,6 +5,7 @@ import { formatErrorMessage } from "@/lib/utils";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { JarvisInsightBar } from "@/components/dashboard/JarvisInsightBar";
+import { NeedsAttentionSection } from "@/components/dashboard/NeedsAttentionSection";
 import { DailyProgressCard } from "@/components/dashboard/DailyProgressCard";
 import { CurrentFocusCard } from "@/components/dashboard/CurrentFocusCard";
 import { HeroNextSession } from "@/components/dashboard/HeroNextSession";
@@ -269,8 +270,56 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              {/* JARVIS Insight */}
-              <JarvisInsightBar message={data?.jarvisInsight.message} />
+              {/* Dynamic JARVIS Insight with Actionable Context */}
+              {(() => {
+                const missed = activeSessions.filter((s) => s.status === "missed");
+                const isAllDone = activeSessions.length > 0 && activeSessions.every((s) => s.status === "completed");
+
+                let jMessage = data?.jarvisInsight?.message;
+                let jType: "info" | "warning" | "success" | "action" = "info";
+                let jActionLabel: string | undefined = undefined;
+                let jActionHref: string | undefined = undefined;
+                let jOnAction: (() => void) | undefined = undefined;
+
+                if (missed.length > 0) {
+                  jMessage = `You have ${missed.length} missed session${missed.length !== 1 ? "s" : ""}. Reschedule or move to tomorrow to stay on target.`;
+                  jType = "warning";
+                  jActionLabel = "Reschedule";
+                  jOnAction = () => handleOpenRescheduleModal(missed[0]);
+                } else if (isAllDone) {
+                  jMessage = "All planned sessions for today are complete! Review your analytics or prepare tomorrow's schedule.";
+                  jType = "success";
+                  jActionLabel = "Plan Tomorrow";
+                  jActionHref = "/plan-tomorrow";
+                } else if (nextSession) {
+                  jType = "action";
+                  jActionLabel = `Start ${nextSession.subject}`;
+                  jOnAction = () => handleStartSession(nextSession);
+                } else if (activeSessions.length === 0) {
+                  jMessage = "No study schedule created for today. Structure your day to start live tracking.";
+                  jActionLabel = "Plan Schedule";
+                  jActionHref = "/plan-tomorrow";
+                }
+
+                return (
+                  <JarvisInsightBar
+                    message={jMessage}
+                    type={jType}
+                    actionLabel={jActionLabel}
+                    actionHref={jActionHref}
+                    onAction={jOnAction}
+                  />
+                );
+              })()}
+
+              {/* Needs Attention Section (when action items exist) */}
+              {activeSessions.some((s) => s.status === "missed") && (
+                <NeedsAttentionSection
+                  missedSessions={activeSessions.filter((s) => s.status === "missed")}
+                  onRescheduleSession={handleOpenRescheduleModal}
+                  onMoveToTomorrow={handleMoveToTomorrow}
+                />
+              )}
 
               {/* Hero: Next Session / Current Focus */}
               <HeroNextSession
