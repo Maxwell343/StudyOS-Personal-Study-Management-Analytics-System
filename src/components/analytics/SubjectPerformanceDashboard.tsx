@@ -81,14 +81,8 @@ export const SubjectPerformanceDashboard: React.FC<SubjectPerformanceDashboardPr
   };
 
   return (
-    <div
-      className="rounded-2xl border p-5 transition-all"
-      style={{
-        background: "rgba(18, 24, 38, 0.7)",
-        borderColor: "rgba(255, 255, 255, 0.08)",
-      }}
-    >
-      <div className="flex items-center justify-between border-b border-white/[0.06] pb-4 mb-4">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
         <div>
           <h2 className="text-sm font-bold uppercase tracking-wider text-[#f0f0f4]">
             Subject Performance Dashboard
@@ -98,10 +92,10 @@ export const SubjectPerformanceDashboard: React.FC<SubjectPerformanceDashboardPr
           </p>
         </div>
 
-        {subjects.length > 0 && (
+        {subjects.length > 3 && (
           <button
             onClick={onOpenAllSubjects}
-            className="flex items-center gap-1 text-xs font-semibold text-[#22d3ee] hover:underline shrink-0"
+            className="flex items-center gap-1 text-xs font-semibold text-[#22d3ee] hover:underline"
           >
             View all ({subjects.length})
             <ArrowUpRight className="h-3.5 w-3.5" />
@@ -109,7 +103,7 @@ export const SubjectPerformanceDashboard: React.FC<SubjectPerformanceDashboardPr
         )}
       </div>
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
         {subjects.slice(0, 6).map((sub) => {
           const badge = getStatusBadge(sub);
           const BadgeIcon = badge.icon;
@@ -126,11 +120,15 @@ export const SubjectPerformanceDashboard: React.FC<SubjectPerformanceDashboardPr
             <div
               key={sub.id}
               onClick={() => onSelectSubject?.(sub) || onOpenAllSubjects()}
-              className="group relative flex flex-col justify-between rounded-xl border border-white/[0.04] bg-white/[0.015] p-3.5 cursor-pointer transition-all duration-200 hover:border-[#22d3ee]/40 hover:bg-[#121826]/90"
+              className="group relative flex flex-col justify-between rounded-2xl border p-4.5 cursor-pointer transition-all duration-200 hover:border-[#22d3ee]/40 hover:bg-[#121826]/90"
+              style={{
+                background: "rgba(18, 24, 38, 0.7)",
+                borderColor: "rgba(255, 255, 255, 0.08)",
+              }}
             >
               {/* Top Row: Name & Status */}
               <div>
-                <div className="flex items-center justify-between gap-2 mb-2.5">
+                <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
                     <span
                       className="h-2.5 w-2.5 rounded-full"
@@ -157,7 +155,7 @@ export const SubjectPerformanceDashboard: React.FC<SubjectPerformanceDashboardPr
                 {/* Progress Circle & Metrics Grid */}
                 <div className="flex items-center gap-4 py-2 border-y border-white/[0.05]">
                   {/* Radial Progress */}
-                  <div className="relative h-12 w-12 shrink-0 flex items-center justify-center">
+                  <div className="relative h-14 w-14 shrink-0 flex items-center justify-center">
                     <svg className="h-full w-full -rotate-90" viewBox="0 0 60 60">
                       <circle
                         cx="30"
@@ -210,7 +208,7 @@ export const SubjectPerformanceDashboard: React.FC<SubjectPerformanceDashboardPr
               </div>
 
               {/* Bottom Footer: Study Time & Trend */}
-              <div className="mt-2.5 flex items-center justify-between text-xs text-[#717188]">
+              <div className="mt-3 flex items-center justify-between text-xs text-[#717188]">
                 <div className="flex items-center gap-1.5 font-mono">
                   <Clock className="h-3 w-3 text-[#22d3ee]" />
                   <span className="text-[#a0a0b8]">

@@ -9,7 +9,6 @@ import { JarvisSnapshot } from "@/components/analytics/JarvisSnapshot";
 import { AnalyticsKpiRow } from "@/components/analytics/AnalyticsKpiRow";
 import { StudyPerformanceChart } from "@/components/analytics/StudyPerformanceChart";
 import { SubjectPerformanceDashboard } from "@/components/analytics/SubjectPerformanceDashboard";
-import { SubjectAttentionChart } from "@/components/analytics/SubjectAttentionChart";
 import { JarvisPriorityMatrix } from "@/components/analytics/JarvisPriorityMatrix";
 import { StudyHeatmap } from "@/components/analytics/StudyHeatmap";
 import { TopActionsSection } from "@/components/analytics/TopActionsSection";
@@ -226,17 +225,11 @@ export default function AnalyticsPage() {
                 rangeLabel={getRangeLabel(range)}
               />
 
-              {/* 4. Subject Performance & Attention Ranking */}
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <SubjectPerformanceDashboard
-                  subjects={data.subjects}
-                  onOpenAllSubjects={() => setShowAllSubjects(true)}
-                />
-                <SubjectAttentionChart
-                  attentionItems={data.subjectAttention}
-                  onSelectSubject={() => setShowAllSubjects(true)}
-                />
-              </div>
+              {/* 4. Subject Performance Dashboard */}
+              <SubjectPerformanceDashboard
+                subjects={data.subjects}
+                onOpenAllSubjects={() => setShowAllSubjects(true)}
+              />
 
               {/* 6. Overall Study Health Score & What Changed */}
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
