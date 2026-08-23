@@ -10,7 +10,6 @@ import { AnalyticsKpiRow } from "@/components/analytics/AnalyticsKpiRow";
 import { StudyPerformanceChart } from "@/components/analytics/StudyPerformanceChart";
 import { SubjectPerformanceDashboard } from "@/components/analytics/SubjectPerformanceDashboard";
 import { JarvisPriorityMatrix } from "@/components/analytics/JarvisPriorityMatrix";
-import { StudyHeatmap } from "@/components/analytics/StudyHeatmap";
 import { TopActionsSection } from "@/components/analytics/TopActionsSection";
 import { WhatChangedAndHighlights } from "@/components/analytics/WhatChangedAndHighlights";
 import { StudyHealthGauge } from "@/components/analytics/StudyHealthGauge";
@@ -245,12 +244,6 @@ export default function AnalyticsPage() {
                   />
                 </div>
               </div>
-
-              {/* 7. Study Heatmap & Consistency Rhythm */}
-              <StudyHeatmap
-                heatmap={data.heatmap}
-                rangeLabel={getRangeLabel(range)}
-              />
 
               {/* 8. JARVIS Priority Matrix (Impact × Urgency) */}
               <JarvisPriorityMatrix
