@@ -6,7 +6,6 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { JarvisInsightBar } from "@/components/dashboard/JarvisInsightBar";
 import { DailyProgressCard } from "@/components/dashboard/DailyProgressCard";
-import { CurrentFocusCard } from "@/components/dashboard/CurrentFocusCard";
 import { HeroNextSession } from "@/components/dashboard/HeroNextSession";
 import { MissionList } from "@/components/dashboard/MissionList";
 import { SubjectProgress } from "@/components/dashboard/SubjectProgress";
@@ -331,14 +330,6 @@ export default function DashboardPage() {
                 completedSessions={activeSessions.filter((s) => s.status === "completed").length}
                 totalSessions={activeSessions.length}
                 hasMissedSessions={activeSessions.some((s) => s.status === "missed")}
-              />
-
-              {/* Current Focus */}
-              <CurrentFocusCard
-                activeSession={activeSessions.find((s) => s.status === "active" || s.status === "paused") || null}
-                nextSession={nextSession}
-                focusTasks={data?.focusTasks || []}
-                onSelectSession={(session) => setSelectedTopicSession(session)}
               />
 
               {/* Main Grid: Mission | Subjects */}
