@@ -5,7 +5,6 @@ import { formatErrorMessage } from "@/lib/utils";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { JarvisInsightBar } from "@/components/dashboard/JarvisInsightBar";
-import { NeedsAttentionSection } from "@/components/dashboard/NeedsAttentionSection";
 import { DailyProgressCard } from "@/components/dashboard/DailyProgressCard";
 import { CurrentFocusCard } from "@/components/dashboard/CurrentFocusCard";
 import { HeroNextSession } from "@/components/dashboard/HeroNextSession";
@@ -312,15 +311,6 @@ export default function DashboardPage() {
                   />
                 );
               })()}
-
-              {/* Needs Attention Section (when action items exist) */}
-              {activeSessions.some((s) => s.status === "missed") && (
-                <NeedsAttentionSection
-                  missedSessions={activeSessions.filter((s) => s.status === "missed")}
-                  onRescheduleSession={handleOpenRescheduleModal}
-                  onMoveToTomorrow={handleMoveToTomorrow}
-                />
-              )}
 
               {/* Hero: Next Session / Current Focus */}
               <HeroNextSession
