@@ -8,7 +8,6 @@ import { computeJarvisAnalytics } from "@/lib/analytics/engine";
 import { JarvisSnapshot } from "@/components/analytics/JarvisSnapshot";
 import { AnalyticsKpiRow } from "@/components/analytics/AnalyticsKpiRow";
 import { StudyPerformanceChart } from "@/components/analytics/StudyPerformanceChart";
-import { PlannedVsActualChart } from "@/components/analytics/PlannedVsActualChart";
 import { SubjectPerformanceDashboard } from "@/components/analytics/SubjectPerformanceDashboard";
 import { SubjectAttentionChart } from "@/components/analytics/SubjectAttentionChart";
 import { JarvisPriorityMatrix } from "@/components/analytics/JarvisPriorityMatrix";
@@ -227,17 +226,11 @@ export default function AnalyticsPage() {
                 rangeLabel={getRangeLabel(range)}
               />
 
-              {/* 4. Planned vs Actual & Attention Ranking */}
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <PlannedVsActualChart
-                  subjects={data.subjects}
-                  onOpenSubjectDetails={() => setShowAllSubjects(true)}
-                />
-                <SubjectAttentionChart
-                  attentionItems={data.subjectAttention}
-                  onSelectSubject={() => setShowAllSubjects(true)}
-                />
-              </div>
+              {/* 4. Attention Ranking */}
+              <SubjectAttentionChart
+                attentionItems={data.subjectAttention}
+                onSelectSubject={() => setShowAllSubjects(true)}
+              />
 
               {/* 5. Subject Performance Dashboard */}
               <SubjectPerformanceDashboard
