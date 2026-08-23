@@ -226,17 +226,17 @@ export default function AnalyticsPage() {
                 rangeLabel={getRangeLabel(range)}
               />
 
-              {/* 4. Attention Ranking */}
-              <SubjectAttentionChart
-                attentionItems={data.subjectAttention}
-                onSelectSubject={() => setShowAllSubjects(true)}
-              />
-
-              {/* 5. Subject Performance Dashboard */}
-              <SubjectPerformanceDashboard
-                subjects={data.subjects}
-                onOpenAllSubjects={() => setShowAllSubjects(true)}
-              />
+              {/* 4. Subject Performance & Attention Ranking */}
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <SubjectPerformanceDashboard
+                  subjects={data.subjects}
+                  onOpenAllSubjects={() => setShowAllSubjects(true)}
+                />
+                <SubjectAttentionChart
+                  attentionItems={data.subjectAttention}
+                  onSelectSubject={() => setShowAllSubjects(true)}
+                />
+              </div>
 
               {/* 6. Overall Study Health Score & What Changed */}
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
