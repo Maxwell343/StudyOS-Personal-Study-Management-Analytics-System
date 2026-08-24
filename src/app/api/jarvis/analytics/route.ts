@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Fallback check: Session check via Supabase client auth getSession or matching userIdHeader if dev
-    if (!authenticatedUserId && userIdHeader) {
+    if (!authenticatedUserId && userIdHeader && process.env.NODE_ENV !== "production") {
       authenticatedUserId = userIdHeader;
     }
 
