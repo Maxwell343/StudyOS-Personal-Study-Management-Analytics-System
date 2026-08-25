@@ -34,3 +34,16 @@ export function formatErrorMessage(error: unknown): string {
   return String(error);
 }
 
+export function sanitizeResourceUrl(url?: string | null): string | null {
+  if (!url || typeof url !== "string") return null;
+  const trimmed = url.trim();
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return trimmed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}

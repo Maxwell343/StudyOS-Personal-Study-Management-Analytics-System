@@ -3,6 +3,7 @@
 import { Check, Clock, Pencil, Trash2, BookOpen, Video, Code, ExternalLink } from "lucide-react";
 import type { LearningItem } from "@/types/subjects";
 import { formatMinutes } from "@/lib/learning-progress";
+import { sanitizeResourceUrl } from "@/lib/utils";
 
 interface LearningItemRowProps {
   item: LearningItem;
@@ -118,6 +119,28 @@ export function LearningItemRow({
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
               {item.resources.map((res) => {
                 const Icon = RESOURCE_ICONS[res.type] || BookOpen;
+                const safeUrl = sanitizeResourceUrl(res.url);
+
+                if (safeUrl) {
+                  return (
+                    <a
+                      key={res.id}
+                      href={safeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] hover:text-white transition-colors"
+                      style={{
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        color: "#9090a8",
+                      }}
+                    >
+                      <Icon size={9} />
+                      <span>{res.title}</span>
+                    </a>
+                  );
+                }
+
                 return (
                   <div
                     key={res.id}

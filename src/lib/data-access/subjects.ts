@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase/client";
+import { supabase, getAuthenticatedSupabaseClient } from "@/lib/supabase/client";
 import { formatErrorMessage } from "@/lib/utils";
 import type {
   Subject,
@@ -89,9 +89,10 @@ function mapDbSubjectToAppSubject(dbSubject: DbSubjectWithHierarchy): Subject {
 /**
  * Fetch all active subjects and their nested topics and learning items for a user.
  */
-export async function fetchSubjectsForUser(userId: string): Promise<Subject[]> {
+export async function fetchSubjectsForUser(userId: string, accessToken?: string | null): Promise<Subject[]> {
   try {
-    const { data, error } = await supabase
+    const client = accessToken ? getAuthenticatedSupabaseClient(accessToken) : supabase;
+    const { data, error } = await client
       .from("subjects")
       .select(`
         *,

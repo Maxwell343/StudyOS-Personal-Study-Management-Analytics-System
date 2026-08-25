@@ -236,7 +236,12 @@ export async function startStudySession(
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    const existing = await fetchActiveSession(userId);
+    if (existing) return existing;
+    throw error;
+  }
+  const createdSession = data;
 
   // Update learning item status to IN_PROGRESS
   if (input.learningItemId) {

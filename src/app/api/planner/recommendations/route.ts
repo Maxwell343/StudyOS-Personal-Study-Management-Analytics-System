@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     const authenticatedClient = getAuthenticatedSupabaseClient(token);
 
     // 3. Fetch user subjects with topics and learning items
-    const subjects = await fetchSubjectsForUser(userId);
+    const subjects = await fetchSubjectsForUser(userId, token);
 
     // 4. Fetch past 30 days study history for neglect/frequency calculation
     const thirtyDaysAgo = new Date();
