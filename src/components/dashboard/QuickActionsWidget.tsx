@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Calendar, CheckSquare, BookOpen, BarChart3, Clock } from "lucide-react";
+import { Plus, Calendar, CheckSquare, BookOpen, BarChart3, CalendarDays } from "lucide-react";
 
 interface QuickActionsWidgetProps {
   onAddSession?: () => void;
@@ -27,6 +27,7 @@ export function QuickActionsWidget({ onAddSession }: QuickActionsWidgetProps) {
             type="button"
             onClick={onAddSession}
             className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-cyan-500/25 bg-cyan-500/10 px-3 py-2.5 text-xs font-semibold text-[#22d3ee] hover:bg-cyan-500/20 transition active:scale-95 text-left"
+            aria-label="Add study session"
           >
             <Plus size={13} className="shrink-0" />
             <span className="truncate">Add Session</span>
@@ -36,6 +37,7 @@ export function QuickActionsWidget({ onAddSession }: QuickActionsWidgetProps) {
         <Link
           href="/plan-tomorrow"
           className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-xs font-medium text-[#d4d4d8] hover:border-white/[0.15] hover:text-white transition active:scale-95"
+          aria-label="Plan tomorrow's study schedule"
         >
           <Calendar size={13} className="shrink-0 text-[#a78bfa]" />
           <span className="truncate">Plan Tomorrow</span>
@@ -44,6 +46,7 @@ export function QuickActionsWidget({ onAddSession }: QuickActionsWidgetProps) {
         <Link
           href="/tasks"
           className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-xs font-medium text-[#d4d4d8] hover:border-white/[0.15] hover:text-white transition active:scale-95"
+          aria-label="View tasks and goals"
         >
           <CheckSquare size={13} className="shrink-0 text-[#34d399]" />
           <span className="truncate">Tasks & Goals</span>
@@ -52,11 +55,31 @@ export function QuickActionsWidget({ onAddSession }: QuickActionsWidgetProps) {
         <Link
           href="/subjects"
           className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-xs font-medium text-[#d4d4d8] hover:border-white/[0.15] hover:text-white transition active:scale-95"
+          aria-label="View subject curricula"
         >
           <BookOpen size={13} className="shrink-0 text-[#f59e0b]" />
           <span className="truncate">Curricula</span>
+        </Link>
+
+        <Link
+          href="/calendar"
+          className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-xs font-medium text-[#d4d4d8] hover:border-white/[0.15] hover:text-white transition active:scale-95"
+          aria-label="Open study calendar"
+        >
+          <CalendarDays size={13} className="shrink-0 text-[#38bdf8]" />
+          <span className="truncate">Calendar</span>
+        </Link>
+
+        <Link
+          href="/analytics"
+          className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-xs font-medium text-[#d4d4d8] hover:border-white/[0.15] hover:text-white transition active:scale-95"
+          aria-label="Open study analytics"
+        >
+          <BarChart3 size={13} className="shrink-0 text-[#ec4899]" />
+          <span className="truncate">Analytics</span>
         </Link>
       </div>
     </div>
   );
 }
+
