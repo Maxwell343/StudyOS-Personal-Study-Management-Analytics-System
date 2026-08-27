@@ -35,10 +35,32 @@ export function calculateDuration(start: string, end: string): number {
   return timeToMinutes(end) - timeToMinutes(start);
 }
 
-/** Format "HH:MM" for display (24h format) */
-export function formatTime(time: string): string {
+/** Format "HH:MM" (24h) to "h:mm AM/PM" (12h format) */
+export function formatTime12Hour(time: string): string {
+  if (!time || !time.includes(":")) return time || "--:--";
+  const [hStr, mStr] = time.split(":");
+  const h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  if (isNaN(h) || isNaN(m)) return time;
+  const period = h >= 12 ? "PM" : "AM";
+  const displayHour = h % 12 === 0 ? 12 : h % 12;
+  const displayMin = m.toString().padStart(2, "0");
+  return `${displayHour}:${displayMin} ${period}`;
+}
+
+/** Format "HH:MM" for display (defaults to 24h format, supports 12h) */
+export function formatTime(time: string, format: "12h" | "24h" = "24h"): string {
+  if (format === "12h") {
+    return formatTime12Hour(time);
+  }
   return time;
 }
+
+/** Format a time interval range (e.g. "09:00 - 10:30" or "9:00 AM - 10:30 AM") */
+export function formatTimeRange(start: string, end: string, format: "12h" | "24h" = "24h"): string {
+  return `${formatTime(start, format)} - ${formatTime(end, format)}`;
+}
+
 
 // ── Conflict Detection ─────────────────────────────────────────────────────
 
