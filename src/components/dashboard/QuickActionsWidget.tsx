@@ -22,7 +22,7 @@ export function QuickActionsWidget({ onAddSession }: QuickActionsWidgetProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        {onAddSession && (
+        {onAddSession ? (
           <button
             type="button"
             onClick={onAddSession}
@@ -32,6 +32,15 @@ export function QuickActionsWidget({ onAddSession }: QuickActionsWidgetProps) {
             <Plus size={13} className="shrink-0" />
             <span className="truncate">Add Session</span>
           </button>
+        ) : (
+          <Link
+            href="/planner"
+            className="flex cursor-pointer items-center gap-2 rounded-[8px] border border-cyan-500/25 bg-cyan-500/10 px-3 py-2.5 text-xs font-semibold text-[#22d3ee] hover:bg-cyan-500/20 transition active:scale-95 text-left"
+            aria-label="Launch study planner"
+          >
+            <Plus size={13} className="shrink-0" />
+            <span className="truncate">Plan Session</span>
+          </Link>
         )}
 
         <Link

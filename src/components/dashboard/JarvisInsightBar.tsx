@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles, AlertCircle, CheckCircle2, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 interface JarvisInsightBarProps {
   message?: string;
@@ -7,6 +7,20 @@ interface JarvisInsightBarProps {
   actionHref?: string;
   onAction?: () => void;
   type?: "info" | "warning" | "success" | "action";
+}
+
+function getTimeOfDayInsight(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) {
+    return "Peak morning cognitive readiness. Focus on high-friction problem sets and core conceptual theory.";
+  }
+  if (hour >= 12 && hour < 17) {
+    return "Afternoon energy window. Maintain momentum with structured 45-minute focus intervals and short recovery pauses.";
+  }
+  if (hour >= 17 && hour < 22) {
+    return "Optimal evening review window. Ideal for spaced repetition practice and consolidating today's notes.";
+  }
+  return "Late evening study session. Prioritize synthesis or wrap up your scheduled target to allow memory consolidation.";
 }
 
 export function JarvisInsightBar({
@@ -18,6 +32,7 @@ export function JarvisInsightBar({
 }: JarvisInsightBarProps) {
   const isWarning = type === "warning";
   const isSuccess = type === "success";
+  const displayMessage = message || getTimeOfDayInsight();
 
   return (
     <div
@@ -63,8 +78,7 @@ export function JarvisInsightBar({
         <div className="h-3 w-px shrink-0 bg-white/10" />
 
         <p className="m-0 text-xs text-[#d4d4d8] leading-relaxed line-clamp-1">
-          {message ||
-            "All systems normal. You are on track with your study plan today. Ready to begin your next focus session."}
+          {displayMessage}
         </p>
       </div>
 
