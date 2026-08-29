@@ -14,6 +14,7 @@ import { useSessionTimer } from "@/context/TimerContext";
 import { getTodayDateString } from "@/lib/data-access/planner";
 import { fetchCalendarMonthData, CalendarMonthResult } from "@/lib/data-access/calendar";
 import { fetchSubjectsForUser } from "@/lib/data-access/subjects";
+import { exportCalendarToICS } from "@/lib/ical-export";
 import {
   movePlannedSessionToTomorrow,
   reschedulePlannedSessionCustom,
@@ -250,6 +251,11 @@ export default function CalendarPage() {
 
   const days = monthData?.days || [];
 
+  const handleExportICS = useCallback(() => {
+    if (!days.length) return;
+    exportCalendarToICS(days, currentYear, currentMonth);
+  }, [days, currentYear, currentMonth]);
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background font-sans text-foreground">
       {/* ── Sidebar ────────────────────────────────────────────────── */}
@@ -277,6 +283,7 @@ export default function CalendarPage() {
                 onPrevMonth={handlePrevMonth}
                 onNextMonth={handleNextMonth}
                 onGoToday={handleGoToday}
+                onExportICS={handleExportICS}
               />
 
               {/* Main Calendar View: Left Sidebar + 7-Column Grid */}

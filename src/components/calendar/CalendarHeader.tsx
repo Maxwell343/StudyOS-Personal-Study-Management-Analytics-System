@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle2, AlertTriangle, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, CheckCircle2, AlertTriangle, Zap, Download } from "lucide-react";
 import { formatMinutes } from "@/lib/planner-utils";
 import type { MonthSummaryStats } from "@/types/calendar";
 
@@ -11,6 +11,7 @@ interface CalendarHeaderProps {
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onGoToday: () => void;
+  onExportICS?: () => void;
 }
 
 const MONTH_NAMES = [
@@ -35,6 +36,7 @@ export function CalendarHeader({
   onPrevMonth,
   onNextMonth,
   onGoToday,
+  onExportICS,
 }: CalendarHeaderProps) {
   const monthName = MONTH_NAMES[currentMonth - 1] || "";
   const formattedStudyTime = formatMinutes(stats.totalActualMinutes);
@@ -53,7 +55,7 @@ export function CalendarHeader({
           </p>
         </div>
 
-        {/* Month Navigator & Today Action */}
+        {/* Month Navigator & Actions */}
         <div className="flex items-center gap-3">
           <div
             className="flex items-center gap-1 rounded-lg p-1"
@@ -91,6 +93,18 @@ export function CalendarHeader({
             <CalendarIcon size={13} />
             Today
           </button>
+
+          {onExportICS && (
+            <button
+              type="button"
+              onClick={onExportICS}
+              className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-[#d4d4d8] transition hover:border-white/[0.18] hover:text-white"
+              title="Export Month Schedule to iCal (.ics)"
+            >
+              <Download size={13} className="text-[#38bdf8]" />
+              Export (.ics)
+            </button>
+          )}
         </div>
       </div>
 
