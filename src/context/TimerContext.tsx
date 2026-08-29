@@ -21,6 +21,7 @@ import {
   calculateElapsedSeconds,
   formatTimerSeconds,
 } from "@/lib/data-access/timer";
+import { soundEffects } from "@/lib/audio";
 
 interface TimerContextValue {
   activeSession: ActiveSessionDetails | null;
@@ -128,6 +129,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
       ) {
         notifiedFinishedRef.current = true;
         setShowTargetReachedToast(true);
+        soundEffects.playTargetReached();
         
         if (
           typeof window !== "undefined" &&
@@ -189,6 +191,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
   const pauseSession = useCallback(async () => {
     if (!activeSession) return;
+    soundEffects.playActionClick();
     const pausedAt = await pauseStudySession(activeSession.id);
     setActiveSession((prev) =>
       prev ? { ...prev, status: "PAUSED", pausedAt } : null
@@ -197,6 +200,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
   const resumeSession = useCallback(async () => {
     if (!activeSession || !activeSession.pausedAt) return;
+    soundEffects.playActionClick();
     const newTotalPaused = await resumeStudySession(
       activeSession.id,
       activeSession.pausedAt,
@@ -218,6 +222,7 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
     async (markItemCompleted = true): Promise<number> => {
       if (!activeSession || !user) return 0;
 
+      soundEffects.playSessionComplete();
       const actualMinutes = await completeStudySession(activeSession.id, {
         userId: user.id,
         startedAt: activeSession.startedAt,
@@ -237,9 +242,45 @@ export function TimerProvider({ children }: { children: React.ReactNode }) {
 
   const abandonSession = useCallback(async () => {
     if (!activeSession) return;
+    soundEffects.playActionClick();
     await abandonStudySession(activeSession.id);
     setActiveSession(null);
   }, [activeSession]);
+
+  // ── Keyboard Shortcuts (Space for Pause/Resume, Esc to dismiss alert) ───────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (showTargetReachedToast && e.key === "Escape") {
+        setShowTargetReachedToast(false);
+        return;
+      }
+
+      if (!activeSession) return;
+
+      const target = e.target as HTMLElement | null;
+      const isInput =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable ||
+          target.tagName === "SELECT");
+
+      if (isInput) return;
+
+      // Space key toggles pause / resume when study session is running
+      if (e.code === "Space" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        if (activeSession.status === "ACTIVE") {
+          pauseSession();
+        } else if (activeSession.status === "PAUSED") {
+          resumeSession();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeSession, pauseSession, resumeSession, showTargetReachedToast]);
 
   // ── Formatted Computations (purely derived from timestamps) ─────────────────
   const elapsedSeconds = !activeSession
