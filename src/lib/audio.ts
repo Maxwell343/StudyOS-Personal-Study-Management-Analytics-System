@@ -2,10 +2,47 @@
  * Web Audio API helper for zero-dependency synthesized audio feedback
  */
 
+const MUTE_STORAGE_KEY = "studyos_sound_muted";
+
 class SoundSynthesizer {
   private ctx: AudioContext | null = null;
+  private muted: boolean = false;
+
+  constructor() {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(MUTE_STORAGE_KEY);
+        if (stored !== null) {
+          this.muted = stored === "true";
+        }
+      } catch {
+        // Ignore localStorage access restrictions
+      }
+    }
+  }
+
+  public isMuted(): boolean {
+    return this.muted;
+  }
+
+  public setMuted(muted: boolean): boolean {
+    this.muted = muted;
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(MUTE_STORAGE_KEY, String(muted));
+      } catch {
+        // Ignore localStorage access restrictions
+      }
+    }
+    return this.muted;
+  }
+
+  public toggleMute(): boolean {
+    return this.setMuted(!this.muted);
+  }
 
   private getContext(): AudioContext | null {
+    if (this.muted) return null;
     if (typeof window === "undefined") return null;
     if (!this.ctx) {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -98,6 +135,35 @@ class SoundSynthesizer {
 
       osc.start(now);
       osc.stop(now + 0.85);
+    });
+  }
+
+  /**
+   * Celebratory ascending arpeggio for leveling up or completing daily streaks
+   */
+  playLevelUp() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const notes = [329.63, 440, 554.37, 659.25, 880, 1108.73, 1318.51]; // E4 -> E6 arpeggio
+    const now = ctx.currentTime;
+
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+
+      gain.gain.setValueAtTime(0, now + idx * 0.07);
+      gain.gain.linearRampToValueAtTime(0.15, now + idx * 0.07 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.35);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now + idx * 0.07);
+      osc.stop(now + idx * 0.07 + 0.4);
     });
   }
 }
