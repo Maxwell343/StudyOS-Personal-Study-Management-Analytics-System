@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { getTodayDateString, getLocalYYYYMMDD } from "@/lib/data-access/planner";
 
 interface MiniCalendarProps {
@@ -60,6 +60,16 @@ export function MiniCalendar({
     onMonthChange(y, m);
   };
 
+  const handleJumpToday = () => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = today.getMonth() + 1;
+    setNavYear(y);
+    setNavMonth(m);
+    onMonthChange(y, m);
+    onSelectDate(todayStr);
+  };
+
   // Generate 35 or 42 grid cells
   const firstOfMonth = new Date(navYear, navMonth - 1, 1);
   const dayOfWeek = firstOfMonth.getDay();
@@ -96,15 +106,27 @@ export function MiniCalendar({
         <div className="flex items-center gap-1">
           <button
             type="button"
+            onClick={handleJumpToday}
+            title="Jump to Today"
+            aria-label="Jump to Today"
+            className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-[#8a8a9e] transition hover:bg-white/10 hover:text-[#22d3ee]"
+          >
+            <CalendarIcon size={11} />
+            <span>Today</span>
+          </button>
+          <button
+            type="button"
             onClick={handlePrev}
-            className="flex h-5 w-5 items-center justify-center rounded text-[#8a8a9e] hover:bg-white/10 hover:text-white"
+            aria-label="Previous month"
+            className="flex h-5 w-5 items-center justify-center rounded text-[#8a8a9e] hover:bg-white/10 hover:text-white transition"
           >
             <ChevronLeft size={13} />
           </button>
           <button
             type="button"
             onClick={handleNext}
-            className="flex h-5 w-5 items-center justify-center rounded text-[#8a8a9e] hover:bg-white/10 hover:text-white"
+            aria-label="Next month"
+            className="flex h-5 w-5 items-center justify-center rounded text-[#8a8a9e] hover:bg-white/10 hover:text-white transition"
           >
             <ChevronRight size={13} />
           </button>
