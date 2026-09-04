@@ -38,22 +38,17 @@ export function Sidebar() {
 
   return (
     <aside
-      className="sticky top-0 flex h-screen w-[216px] shrink-0 flex-col border-r max-md:hidden z-30"
-      style={{
-        background: "var(--sidebar)",
-        borderColor: "var(--sidebar-border)",
-      }}
+      className="sticky top-0 flex h-screen w-[216px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground max-md:hidden z-30 transition-colors"
     >
       {/* ── Logo ───────────────────────────────────────────────────────── */}
       <div
-        className="shrink-0 px-[18px] pt-[22px] pb-[18px]"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}
+        className="shrink-0 px-[18px] pt-[22px] pb-[18px] border-b border-sidebar-border"
       >
         <div className="flex items-center gap-2.5">
           <div
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px]"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] shadow-xs"
             style={{
-              background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
+              background: "linear-gradient(135deg, #0891b2 0%, #0284c7 100%)",
             }}
           >
             <svg
@@ -61,7 +56,7 @@ export function Sidebar() {
               height="14"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#000"
+              stroke="#ffffff"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -70,12 +65,11 @@ export function Sidebar() {
             </svg>
           </div>
           <div>
-            <div className="text-sm font-bold tracking-tight text-[#f0f0f4]">
+            <div className="text-sm font-bold tracking-tight text-sidebar-foreground">
               StudyOS
             </div>
             <div
-              className="mt-px text-[9.5px] uppercase tracking-[0.8px]"
-              style={{ color: "#4a4a5a" }}
+              className="mt-px text-[9.5px] uppercase tracking-[0.8px] text-muted-foreground"
             >
               Command Center
             </div>
@@ -86,8 +80,7 @@ export function Sidebar() {
       {/* ── Navigation ─────────────────────────────────────────────────── */}
       <nav className="flex-1 overflow-y-auto px-2 py-2.5">
         <div
-          className="px-2.5 pt-1.5 pb-1.5 text-[9.5px] font-medium uppercase tracking-[0.8px]"
-          style={{ color: "#3a3a4a" }}
+          className="px-2.5 pt-1.5 pb-1.5 text-[9.5px] font-medium uppercase tracking-[0.8px] text-muted-foreground/70"
         >
           Workspace
         </div>
@@ -101,15 +94,13 @@ export function Sidebar() {
           const hasRoute = !!item.href;
 
           const itemClasses = cn(
-            "nav-item flex w-full items-center gap-2.5 rounded-md border-none px-2.5 py-[7.5px] text-left text-[12.5px] mb-px",
-            active ? "active font-medium" : "font-normal",
-            hasRoute ? "cursor-pointer" : "cursor-default"
+            "nav-item flex w-full items-center gap-2.5 rounded-md border-none px-2.5 py-[7.5px] text-left text-[12.5px] mb-px transition-colors",
+            active
+              ? "active font-medium bg-sidebar-accent text-sidebar-primary"
+              : hasRoute
+                ? "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted/50 cursor-pointer"
+                : "text-muted-foreground/40 cursor-default"
           );
-
-          const itemStyle = {
-            background: active ? "rgba(34,211,238,0.08)" : "transparent",
-            color: active ? "#22d3ee" : hasRoute ? "#6a6a7e" : "#3a3a4a",
-          };
 
           if (hasRoute) {
             return (
@@ -117,16 +108,14 @@ export function Sidebar() {
                 key={item.id}
                 href={item.href!}
                 className={cn(itemClasses, "no-underline")}
-                style={itemStyle}
               >
-                <span style={{ opacity: active ? 1 : 0.65 }}>
+                <span className={active ? "opacity-100" : "opacity-70"}>
                   {Icon && <Icon size={14} />}
                 </span>
-                {item.label}
+                <span>{item.label}</span>
                 {active && (
                   <span
-                    className="ml-auto h-1 w-1 rounded-full"
-                    style={{ background: "#22d3ee" }}
+                    className="ml-auto h-1.5 w-1.5 rounded-full bg-sidebar-primary"
                   />
                 )}
               </Link>
@@ -137,12 +126,11 @@ export function Sidebar() {
             <div
               key={item.id}
               className={itemClasses}
-              style={itemStyle}
             >
-              <span style={{ opacity: 0.4 }}>
+              <span className="opacity-40">
                 {Icon && <Icon size={14} />}
               </span>
-              {item.label}
+              <span>{item.label}</span>
             </div>
           );
         })}
@@ -150,29 +138,25 @@ export function Sidebar() {
 
       {/* ── Bottom: Personal User Profile ──────────────────────────────── */}
       <div
-        className="mt-auto shrink-0 p-2"
-        style={{
-          borderTop: "1px solid rgba(255,255,255,0.05)",
-          background: "var(--sidebar)",
-        }}
+        className="mt-auto shrink-0 p-2 border-t border-sidebar-border bg-sidebar"
       >
         <Link
           href="/settings"
-          className="flex items-center gap-2 rounded-md px-2 pt-2 pb-1 no-underline cursor-pointer hover:bg-white/[0.04] transition-colors"
+          className="flex items-center gap-2 rounded-md px-2 pt-2 pb-1 no-underline cursor-pointer hover:bg-muted/50 transition-colors"
         >
           <div
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-black"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white shadow-xs"
             style={{
-              background: "linear-gradient(135deg, #22d3ee, #a78bfa)",
+              background: "linear-gradient(135deg, #0891b2, #7c3aed)",
             }}
           >
             {displayName.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-xs font-medium" style={{ color: "#d0d0e0" }}>
+            <div className="truncate text-xs font-medium text-sidebar-foreground">
               {displayName}
             </div>
-            <div className="truncate text-[10px]" style={{ color: "#5a5a6a" }}>
+            <div className="truncate text-[10px] text-muted-foreground">
               Personal Workspace
             </div>
           </div>
@@ -181,3 +165,4 @@ export function Sidebar() {
     </aside>
   );
 }
+
