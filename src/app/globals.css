@@ -51,9 +51,11 @@
   --radius-xl: calc(var(--radius) + 8px);
 }
 
-/* ── StudyOS Dark-Only Theme ────────────────────────────────────────────────── */
+/* ── StudyOS Theme Tokens ─────────────────────────────────────────────────── */
 
-:root {
+:root,
+.dark,
+[data-theme="dark"] {
   /* Canvas & surfaces */
   --background: #0c0c0f;
   --foreground: #f0f0f4;
@@ -106,7 +108,7 @@
   --chart-4: #34d399;
   --chart-5: #f59e0b;
 
-  /* ── StudyOS Custom Tokens ──────────────────────────────────────────────── */
+  /* ── StudyOS Custom Tokens (Dark) ────────────────────────────────────────── */
   --sos-surface-elevated: #1a1a24;
   --sos-text-dim: #6b6b80;
   --sos-text-subtle: #4a4a5a;
@@ -114,7 +116,7 @@
   --sos-text-bright: #c0c0d0;
   --sos-text-label: #d0d0e0;
   --sos-border-subtle: rgba(255, 255, 255, 0.04);
-  --sos-border-card: rgba(255, 255, 255, 0.06);
+  --sos-border-card: rgba(255, 255, 255, 0.07);
 
   /* Subject colors */
   --sos-dsa: #22d3ee;
@@ -127,6 +129,83 @@
   --sos-warning: #f59e0b;
   --sos-danger: #ef4444;
   --sos-info: #22d3ee;
+}
+
+.light,
+[data-theme="light"] {
+  /* Canvas & surfaces */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  /* Primary: Vibrant cyan-teal */
+  --primary: #0891b2;
+  --primary-foreground: #ffffff;
+
+  /* Secondary: Light slate surface */
+  --secondary: #f1f5f9;
+  --secondary-foreground: #334155;
+
+  /* Muted */
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  /* Accent */
+  --accent: #0891b2;
+  --accent-foreground: #ffffff;
+
+  /* Destructive */
+  --destructive: #dc2626;
+
+  /* Borders & inputs */
+  --border: rgba(0, 0, 0, 0.09);
+  --input: rgba(0, 0, 0, 0.09);
+  --ring: #0891b2;
+
+  /* Radius */
+  --radius: 8px;
+
+  /* Sidebar */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #0891b2;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(8, 145, 178, 0.08);
+  --sidebar-accent-foreground: #0891b2;
+  --sidebar-border: rgba(0, 0, 0, 0.07);
+  --sidebar-ring: #0891b2;
+
+  /* Charts */
+  --chart-1: #0891b2;
+  --chart-2: #ea580c;
+  --chart-3: #8b5cf6;
+  --chart-4: #059669;
+  --chart-5: #d97706;
+
+  /* ── StudyOS Custom Tokens (Light) ────────────────────────────────────────── */
+  --sos-surface-elevated: #f8fafc;
+  --sos-text-dim: #64748b;
+  --sos-text-subtle: #94a3b8;
+  --sos-text-ghost: #cbd5e1;
+  --sos-text-bright: #1e293b;
+  --sos-text-label: #334155;
+  --sos-border-subtle: rgba(0, 0, 0, 0.05);
+  --sos-border-card: rgba(0, 0, 0, 0.08);
+
+  /* Subject colors */
+  --sos-dsa: #0891b2;
+  --sos-java: #ea580c;
+  --sos-ml: #7c3aed;
+  --sos-sql: #059669;
+
+  /* Status colors */
+  --sos-success: #16a34a;
+  --sos-warning: #d97706;
+  --sos-danger: #dc2626;
+  --sos-info: #0891b2;
 }
 
 /* ── Base Layer ──────────────────────────────────────────────────────────────── */
@@ -176,6 +255,16 @@
   background: rgba(255, 255, 255, 0.18);
 }
 
+.light ::-webkit-scrollbar-thumb,
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.light ::-webkit-scrollbar-thumb:hover,
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
 /* ── Progress Bar ────────────────────────────────────────────────────────────── */
 
 .progress-bar {
@@ -183,6 +272,11 @@
   overflow: hidden;
   background: rgba(255, 255, 255, 0.06);
   border-radius: 999px;
+}
+
+.light .progress-bar,
+[data-theme="light"] .progress-bar {
+  background: rgba(0, 0, 0, 0.06);
 }
 
 .progress-fill {
@@ -201,9 +295,20 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
+.light .nav-item:hover,
+[data-theme="light"] .nav-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
 .nav-item.active {
   background: rgba(34, 211, 238, 0.08);
   color: #22d3ee;
+}
+
+.light .nav-item.active,
+[data-theme="light"] .nav-item.active {
+  background: rgba(8, 145, 178, 0.1);
+  color: #0891b2;
 }
 
 /* ── Session Card Hover ──────────────────────────────────────────────────────── */
@@ -215,6 +320,12 @@
 .session-card:hover {
   border-color: rgba(34, 211, 238, 0.2);
   background: rgba(34, 211, 238, 0.03);
+}
+
+.light .session-card:hover,
+[data-theme="light"] .session-card:hover {
+  border-color: rgba(8, 145, 178, 0.25);
+  background: rgba(8, 145, 178, 0.04);
 }
 
 /* ── Pulse Dot Animation ─────────────────────────────────────────────────────── */

@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { TimerProvider } from "@/context/TimerContext";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -63,11 +64,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable} dark`}
+      suppressHydrationWarning
     >
-      <body className="h-full antialiased bg-slate-950 text-slate-100 selection:bg-indigo-500/30">
-        <AuthProvider>
-          <TimerProvider>{children}</TimerProvider>
-        </AuthProvider>
+      <body className="h-full antialiased bg-background text-foreground selection:bg-cyan-500/30">
+        <ThemeProvider>
+          <AuthProvider>
+            <TimerProvider>{children}</TimerProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
