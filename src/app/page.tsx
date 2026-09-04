@@ -264,8 +264,8 @@ export default function DashboardPage() {
         <div className="flex-1 px-4 sm:px-6 lg:px-9 pt-4 pb-12 max-w-7xl w-full mx-auto">
           {loading && !data ? (
             <div className="mt-20 flex flex-col items-center justify-center gap-3">
-              <Loader2 size={28} className="animate-spin text-[#22d3ee]" />
-              <span className="text-xs text-[#6b6b80]">Loading live dashboard data...</span>
+              <Loader2 size={28} className="animate-spin text-cyan-600 dark:text-cyan-400" />
+              <span className="text-xs text-muted-foreground">Loading live dashboard data...</span>
             </div>
           ) : (
             <>

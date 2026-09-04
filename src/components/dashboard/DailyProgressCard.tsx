@@ -56,20 +56,16 @@ export function DailyProgressCard({
 
   return (
     <div
-      className="mb-5 rounded-[12px] p-5 transition-all duration-200"
-      style={{
-        background: "#13131a",
-        border: "1px solid rgba(255,255,255,0.07)",
-      }}
+      className="mb-5 rounded-[12px] p-5 transition-all duration-200 bg-card border border-border shadow-xs"
     >
       {/* Header row */}
       <div className="mb-3.5 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[1px] text-[#22d3ee]">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-[1px] text-cyan-600 dark:text-cyan-400">
             Today&apos;s Execution
           </span>
-          <span className="text-xs text-[#52525b]">·</span>
-          <span className="text-xs text-[#a1a1aa]">
+          <span className="text-xs text-muted-foreground/50">·</span>
+          <span className="text-xs text-muted-foreground">
             {formatMinutes(actualMinutes)} studied of {formatMinutes(targetMinutes)} planned
           </span>
         </div>
@@ -93,17 +89,16 @@ export function DailyProgressCard({
       {/* Progress bar */}
       <div className="mb-3.5">
         <div
-          className="relative h-2 w-full overflow-hidden rounded-full"
-          style={{ background: "rgba(255,255,255,0.06)" }}
+          className="relative h-2 w-full overflow-hidden rounded-full bg-muted"
         >
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{
               width: `${percent}%`,
               background: isTargetMet
-                ? "linear-gradient(90deg, #22c55e, #10b981)"
-                : "linear-gradient(90deg, #22d3ee, #0ea5e9)",
-              boxShadow: percent > 0 ? "0 0 10px rgba(34,211,238,0.3)" : "none",
+                ? "linear-gradient(90deg, #16a34a, #10b981)"
+                : "linear-gradient(90deg, #0891b2, #0ea5e9)",
+              boxShadow: percent > 0 ? "0 0 10px rgba(8,145,178,0.25)" : "none",
             }}
           />
         </div>
@@ -111,40 +106,40 @@ export function DailyProgressCard({
 
       {/* Micro-metrics 4-column summary */}
       <div className="grid grid-cols-4 gap-3 max-sm:grid-cols-2">
-        <div className="rounded-[8px] border border-white/[0.04] bg-white/[0.015] px-3 py-2">
-          <div className="flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-wider text-[#71717a]">
-            <Clock size={11} className="text-[#22d3ee]" /> Actual Time
+        <div className="rounded-[8px] border border-border bg-secondary/40 px-3 py-2">
+          <div className="flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground">
+            <Clock size={11} className="text-cyan-600 dark:text-cyan-400" /> Actual Time
           </div>
-          <div className="mt-1 font-mono text-sm font-bold text-[#f4f4f5]">
+          <div className="mt-1 font-mono text-sm font-bold text-foreground">
             {formatMinutes(actualMinutes)}
           </div>
         </div>
 
-        <div className="rounded-[8px] border border-white/[0.04] bg-white/[0.015] px-3 py-2">
-          <div className="flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-wider text-[#71717a]">
-            <Target size={11} className="text-[#38bdf8]" /> Planned Target
+        <div className="rounded-[8px] border border-border bg-secondary/40 px-3 py-2">
+          <div className="flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground">
+            <Target size={11} className="text-sky-600 dark:text-sky-400" /> Planned Target
           </div>
-          <div className="mt-1 font-mono text-sm font-bold text-[#c0c0d8]">
+          <div className="mt-1 font-mono text-sm font-bold text-foreground/80">
             {formatMinutes(targetMinutes)}
           </div>
         </div>
 
-        <div className="rounded-[8px] border border-white/[0.04] bg-white/[0.015] px-3 py-2">
-          <div className="flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-wider text-[#71717a]">
-            <CheckCircle2 size={11} className="text-[#22c55e]" /> Sessions
+        <div className="rounded-[8px] border border-border bg-secondary/40 px-3 py-2">
+          <div className="flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground">
+            <CheckCircle2 size={11} className="text-emerald-600 dark:text-emerald-400" /> Sessions
           </div>
-          <div className="mt-1 font-mono text-sm font-bold text-[#f4f4f5]">
+          <div className="mt-1 font-mono text-sm font-bold text-foreground">
             {completedSessions} / {totalSessions} completed
           </div>
         </div>
 
-        <div className="rounded-[8px] border border-white/[0.04] bg-white/[0.015] px-3 py-2">
-          <div className="flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-wider text-[#71717a]">
-            <Flame size={11} className="text-[#f59e0b]" /> Remaining
+        <div className="rounded-[8px] border border-border bg-secondary/40 px-3 py-2">
+          <div className="flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-wider text-muted-foreground">
+            <Flame size={11} className="text-amber-600 dark:text-amber-400" /> Remaining
           </div>
           <div
             className="mt-1 font-mono text-sm font-bold"
-            style={{ color: isTargetMet ? "#22c55e" : "#f59e0b" }}
+            style={{ color: isTargetMet ? "#16a34a" : "#d97706" }}
           >
             {isTargetMet ? "0m (Goal Met)" : `${formatMinutes(remainingMinutes)} left`}
           </div>

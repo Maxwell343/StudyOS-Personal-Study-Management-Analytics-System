@@ -344,11 +344,11 @@ export function SessionTopicModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
       <div
-        className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-white/10 bg-[#12121a] shadow-2xl transition-all"
+        className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-card text-foreground shadow-2xl transition-all"
         style={{
-          boxShadow: `0 20px 50px rgba(0,0,0,0.8), 0 0 35px ${session.color}15`,
+          boxShadow: `0 20px 50px rgba(0,0,0,0.5), 0 0 35px ${session.color}15`,
         }}
       >
         {/* Top Accent Line */}
@@ -358,11 +358,11 @@ export function SessionTopicModal({
         />
 
         {/* Modal Header */}
-        <div className="p-6 pb-4 border-b border-white/[0.07]">
+        <div className="p-6 pb-4 border-b border-border">
           <div className="flex items-start justify-between gap-4">
             <div>
               {/* Subject Tag */}
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-white/90">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-3 py-1 text-xs font-semibold text-foreground/90">
                 <span
                   className="h-2 w-2 rounded-full"
                   style={{ background: session.color }}
@@ -371,13 +371,13 @@ export function SessionTopicModal({
               </div>
 
               {/* Topic Title */}
-              <h2 className="text-xl font-bold tracking-tight text-white">
+              <h2 className="text-xl font-bold tracking-tight text-foreground">
                 {session.topic}
               </h2>
 
               {/* Time & Duration Info */}
-              <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs font-medium text-white/60">
-                <span className="flex items-center gap-1.5 font-mono text-cyan-400">
+              <div className="mt-2.5 flex flex-wrap items-center gap-3 text-xs font-medium text-muted-foreground">
+                <span className="flex items-center gap-1.5 font-mono text-cyan-600 dark:text-cyan-400 font-semibold">
                   <Clock size={13} />
                   {session.startTime} — {session.endTime}
                 </span>
@@ -386,7 +386,7 @@ export function SessionTopicModal({
                 {session.status && (
                   <>
                     <span>•</span>
-                    <span className="capitalize text-white/80">
+                    <span className="capitalize text-foreground/80">
                       Status: {session.status}
                     </span>
                   </>
@@ -398,7 +398,7 @@ export function SessionTopicModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] text-white/70 hover:bg-white/10 hover:text-white transition"
+              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-border bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition"
             >
               <X size={16} />
             </button>
@@ -406,21 +406,21 @@ export function SessionTopicModal({
 
           {/* Progress Bar for Today's Planned Session */}
           {todayTotalCount > 0 && (
-            <div className="mt-5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5">
+            <div className="mt-5 rounded-xl border border-border bg-secondary/30 p-3.5">
               <div className="mb-2 flex items-center justify-between text-xs">
-                <span className="font-semibold text-white/80">
+                <span className="font-semibold text-foreground/85">
                   Today&apos;s Planned Progress
                 </span>
-                <span className="font-mono text-cyan-400 font-bold">
+                <span className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">
                   {todayCompletedCount} / {todayTotalCount} completed ({todayProgressPercent}%)
                 </span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${todayProgressPercent}%`,
-                    background: session.color || "#22d3ee",
+                    background: session.color || "#0891b2",
                   }}
                 />
               </div>
@@ -431,25 +431,25 @@ export function SessionTopicModal({
         {/* Modal Body - Items List */}
         <div className="max-h-[360px] overflow-y-auto p-6 space-y-3">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-10 text-white/50">
-              <Loader2 className="h-7 w-7 animate-spin text-cyan-400 mb-2" />
+            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+              <Loader2 className="h-7 w-7 animate-spin text-cyan-600 dark:text-cyan-400 mb-2" />
               <span className="text-xs">Loading planned topics & items...</span>
             </div>
           ) : displayedItems.length > 0 ? (
             <div className="space-y-2">
-              <div className="mb-2.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-white/40">
+              <div className="mb-2.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 <span>Today&apos;s Planned Sub-topics ({displayedItems.length})</span>
                 <div className="flex items-center gap-2">
                   {pastCompletedItems.length > 0 && (
                     <button
                       type="button"
                       onClick={() => setShowCompleted(!showCompleted)}
-                      className="font-mono text-[10px] text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 px-2 py-0.5 rounded border border-cyan-500/20 transition cursor-pointer"
+                      className="font-mono text-[10px] text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 bg-cyan-500/10 hover:bg-cyan-500/20 px-2 py-0.5 rounded border border-cyan-500/20 transition cursor-pointer"
                     >
                       {showCompleted ? "Hide Completed" : `Show Completed (${pastCompletedItems.length})`}
                     </button>
                   )}
-                  <span className="font-mono text-[10px] text-cyan-400/80 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                  <span className="font-mono text-[10px] text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
                     Ascending Order (1 &rarr; N)
                   </span>
                 </div>
@@ -464,10 +464,10 @@ export function SessionTopicModal({
                   <div
                     key={item.id}
                     onClick={() => handleToggleItem(item)}
-                    className="group flex cursor-pointer items-start gap-3.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3.5 transition hover:border-white/20 hover:bg-white/[0.05]"
+                    className="group flex cursor-pointer items-start gap-3.5 rounded-xl border border-border bg-secondary/30 p-3.5 transition hover:border-cyan-500/30 hover:bg-secondary/60 shadow-2xs"
                   >
                     {/* Ascending Index Badge */}
-                    <span className="font-mono text-xs font-bold text-cyan-400/60 shrink-0 mt-0.5 min-w-[20px]">
+                    <span className="font-mono text-xs font-bold text-cyan-600/70 dark:text-cyan-400/60 shrink-0 mt-0.5 min-w-[20px]">
                       #{idx + 1}
                     </span>
                     {/* Checkbox */}
@@ -477,16 +477,16 @@ export function SessionTopicModal({
                         e.stopPropagation();
                         handleToggleItem(item);
                       }}
-                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md transition"
+                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md transition cursor-pointer"
                       style={{
                         border: isCompleted
                           ? "none"
-                          : "1.5px solid rgba(255,255,255,0.3)",
-                        background: isCompleted ? "#22c55e" : "transparent",
+                          : "1.5px solid var(--border)",
+                        background: isCompleted ? "#16a34a" : "transparent",
                       }}
                     >
                       {isCompleted && (
-                        <CheckCircle2 className="h-4 w-4 text-black font-bold" />
+                        <CheckCircle2 className="h-4 w-4 text-white font-bold" />
                       )}
                     </button>
 
@@ -496,21 +496,21 @@ export function SessionTopicModal({
                         <h4
                           className={`text-sm font-semibold tracking-tight transition ${
                             isCompleted
-                              ? "text-white/40 line-through"
-                              : "text-white/90 group-hover:text-white"
+                              ? "text-muted-foreground line-through"
+                              : "text-foreground group-hover:text-cyan-700 dark:group-hover:text-cyan-300"
                           }`}
                         >
                           {item.title}
                         </h4>
                         {item.estimated_minutes > 0 && (
-                          <span className="shrink-0 font-mono text-[11px] text-white/50 bg-white/[0.04] px-2 py-0.5 rounded">
+                          <span className="shrink-0 font-mono text-[11px] text-muted-foreground bg-secondary px-2 py-0.5 rounded border border-border">
                             {item.estimated_minutes}m
                           </span>
                         )}
                       </div>
 
                       {item.description && (
-                        <p className="mt-1 text-xs text-white/50 line-clamp-2">
+                        <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
                           {item.description}
                         </p>
                       )}
@@ -520,27 +520,27 @@ export function SessionTopicModal({
                         <span
                           className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
                             item.priority === "HIGH"
-                              ? "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+                              ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30"
                               : item.priority === "MEDIUM"
-                              ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                              : "bg-white/5 text-white/50 border border-white/10"
+                              ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                              : "bg-secondary text-muted-foreground border border-border"
                           }`}
                         >
                           {item.priority} Priority
                         </span>
 
                         {isCompleted ? (
-                          <span className="text-[10px] font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                          <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                             Completed
                           </span>
                         ) : (
-                          <span className="text-[10px] font-medium text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                          <span className="text-[10px] font-medium text-cyan-700 dark:text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
                             Planned for Today
                           </span>
                         )}
 
                         {item.resources && item.resources.length > 0 && (
-                          <span className="text-[10px] font-medium text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 flex items-center gap-1">
+                          <span className="text-[10px] font-medium text-purple-700 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20 flex items-center gap-1">
                             <FileText size={10} />
                             {item.resources.length} Resource(s)
                           </span>
@@ -553,37 +553,37 @@ export function SessionTopicModal({
             </div>
           ) : pastCompletedItems.length > 0 ? (
             /* All items completed empty state */
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-6 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400">
+            <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-6 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 size={24} />
               </div>
-              <h4 className="text-base font-bold text-white mb-1">
+              <h4 className="text-base font-bold text-foreground mb-1">
                 All Topics Completed!
               </h4>
-              <p className="text-xs text-white/60 max-w-md mx-auto mb-4">
-                All sub-topics under <strong className="text-emerald-400">{session.topic}</strong> have been completed.
+              <p className="text-xs text-muted-foreground max-w-md mx-auto mb-4">
+                All sub-topics under <strong className="text-emerald-600 dark:text-emerald-400">{session.topic}</strong> have been completed.
               </p>
               <button
                 type="button"
                 onClick={() => setShowCompleted(true)}
-                className="inline-flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3.5 py-1.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20 transition cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3.5 py-1.5 text-xs font-semibold text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/20 transition cursor-pointer"
               >
                 Show Completed Topics ({pastCompletedItems.length})
               </button>
             </div>
           ) : (
             /* Single Topic Adhoc Card */
-            <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5 text-center">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-400">
+            <div className="rounded-xl border border-border bg-secondary/30 p-5 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
                 <BookOpen size={22} />
               </div>
-              <h4 className="text-base font-bold text-white mb-1">
+              <h4 className="text-base font-bold text-foreground mb-1">
                 {session.topic}
               </h4>
-              <p className="text-xs text-white/60 max-w-md mx-auto mb-4">
-                You have allocated <strong className="text-cyan-400">{session.duration}</strong> to study this module today.
+              <p className="text-xs text-muted-foreground max-w-md mx-auto mb-4">
+                You have allocated <strong className="text-cyan-600 dark:text-cyan-400">{session.duration}</strong> to study this module today.
               </p>
-              <div className="inline-flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-semibold text-cyan-300">
+              <div className="inline-flex items-center gap-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-xs font-semibold text-cyan-700 dark:text-cyan-300">
                 <Sparkles size={14} />
                 Ready for Focus Session
               </div>
@@ -592,18 +592,18 @@ export function SessionTopicModal({
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="flex items-center justify-between gap-3 p-6 pt-4 border-t border-white/[0.07] bg-white/[0.01]">
+        <div className="flex items-center justify-between gap-3 p-6 pt-4 border-t border-border bg-secondary/20">
           {topicDetails?.subject_id ? (
             <Link
               href={`/subjects/${topicDetails.subject_id}`}
-              className="flex items-center gap-1.5 text-xs font-semibold text-white/70 hover:text-cyan-400 transition"
+              className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-cyan-600 dark:hover:text-cyan-400 transition"
             >
               <BookOpen size={14} />
               <span>Full Subject Page</span>
               <ChevronRight size={14} />
             </Link>
           ) : (
-            <span className="text-xs text-white/40">
+            <span className="text-xs text-muted-foreground/60">
               StudyOS Personal Track
             </span>
           )}
@@ -612,7 +612,7 @@ export function SessionTopicModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white transition cursor-pointer"
+              className="rounded-xl border border-border bg-secondary px-4 py-2 text-xs font-semibold text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition cursor-pointer"
             >
               Close
             </button>
@@ -624,7 +624,7 @@ export function SessionTopicModal({
                   onStartSession(session);
                   onClose();
                 }}
-                className="flex items-center gap-2 rounded-xl border border-cyan-400/40 bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-xs font-bold text-black shadow-lg shadow-cyan-500/20 hover:brightness-110 transition cursor-pointer"
+                className="flex items-center gap-2 rounded-xl border border-cyan-500/40 bg-gradient-to-r from-cyan-600 to-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md hover:brightness-110 transition cursor-pointer"
               >
                 <Play size={14} fill="currentColor" />
                 Start Session Now

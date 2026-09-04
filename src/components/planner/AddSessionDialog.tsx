@@ -168,32 +168,21 @@ function AddSessionDialogInner({
   return (
     <dialog
       ref={dialogRef}
-      className="m-auto max-h-[90vh] w-full max-w-[480px] overflow-y-auto rounded-[10px] p-0 backdrop:bg-black/60"
-      style={{
-        background: "#13131a",
-        border: "1px solid rgba(255,255,255,0.08)",
-        color: "#f0f0f4",
-      }}
+      className="m-auto max-h-[90vh] w-full max-w-[480px] overflow-y-auto rounded-[12px] p-0 backdrop:bg-black/60 dark:backdrop:bg-black/80 bg-card border border-border text-foreground shadow-2xl"
       aria-label={editingSession ? "Edit study session" : "Add study session"}
     >
       <form onSubmit={handleSubmit}>
         {/* Dialog header */}
         <div
-          className="flex items-center justify-between px-5 py-4"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+          className="flex items-center justify-between px-5 py-4 border-b border-border"
         >
-          <h3 className="m-0 text-[14px] font-semibold text-[#f0f0f4]">
+          <h3 className="m-0 text-[14px] font-semibold text-foreground">
             {editingSession ? "Edit Study Session" : "Add Study Session"}
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-[28px] w-[28px] cursor-pointer items-center justify-center rounded-md"
-            style={{
-              border: "1px solid rgba(255,255,255,0.06)",
-              background: "transparent",
-              color: "#6b6b80",
-            }}
+            className="flex h-[28px] w-[28px] cursor-pointer items-center justify-center rounded-md border border-border bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition"
             aria-label="Close dialog"
           >
             <X size={14} />
@@ -206,8 +195,7 @@ function AddSessionDialogInner({
           <div>
             <label
               htmlFor={`${formId}-subject`}
-              className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px]"
-              style={{ color: "#6b6b80" }}
+              className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px] text-muted-foreground"
             >
               Subject
             </label>
@@ -218,17 +206,11 @@ function AddSessionDialogInner({
                 setSubject(e.target.value);
                 setSelectedTaskIds([]);
               }}
-              className="w-full rounded-md px-3 py-2 text-[13px]"
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                color: "#f0f0f4",
-                outline: "none",
-              }}
+              className="w-full rounded-md px-3 py-2 text-[13px] border border-border bg-secondary/50 text-foreground outline-none focus:border-cyan-500 transition"
               required
             >
               {subjectsList.map((s) => (
-                <option key={s} value={s} style={{ background: "#1a1a24" }}>
+                <option key={s} value={s} className="bg-card text-foreground">
                   {s}
                 </option>
               ))}
@@ -239,8 +221,7 @@ function AddSessionDialogInner({
           <div>
             <label
               htmlFor={`${formId}-topic`}
-              className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px]"
-              style={{ color: "#6b6b80" }}
+              className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px] text-muted-foreground"
             >
               Topic
             </label>
@@ -250,13 +231,7 @@ function AddSessionDialogInner({
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="e.g. Binary Trees, Spring Boot..."
-              className="w-full rounded-md px-3 py-2 text-[13px]"
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                color: "#f0f0f4",
-                outline: "none",
-              }}
+              className="w-full rounded-md px-3 py-2 text-[13px] border border-border bg-secondary/50 text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-cyan-500 transition"
               required
             />
           </div>
@@ -266,8 +241,7 @@ function AddSessionDialogInner({
             <div>
               <label
                 htmlFor={`${formId}-start`}
-                className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px]"
-                style={{ color: "#6b6b80" }}
+                className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px] text-muted-foreground"
               >
                 Start Time
               </label>
@@ -276,22 +250,14 @@ function AddSessionDialogInner({
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full rounded-md px-3 py-2 text-[13px]"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "#f0f0f4",
-                  outline: "none",
-                  colorScheme: "dark",
-                }}
+                className="w-full rounded-md px-3 py-2 text-[13px] border border-border bg-secondary/50 text-foreground outline-none focus:border-cyan-500 transition"
                 required
               />
             </div>
             <div>
               <label
                 htmlFor={`${formId}-end`}
-                className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px]"
-                style={{ color: "#6b6b80" }}
+                className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px] text-muted-foreground"
               >
                 End Time
               </label>
@@ -300,31 +266,20 @@ function AddSessionDialogInner({
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
-                className="w-full rounded-md px-3 py-2 text-[13px]"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "#f0f0f4",
-                  outline: "none",
-                  colorScheme: "dark",
-                }}
+                className="w-full rounded-md px-3 py-2 text-[13px] border border-border bg-secondary/50 text-foreground outline-none focus:border-cyan-500 transition"
                 required
               />
             </div>
             <div>
               <div
-                className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px]"
-                style={{ color: "#6b6b80" }}
+                className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px] text-muted-foreground"
               >
                 Duration
               </div>
               <div
-                className="flex items-center rounded-md px-3 py-2 font-mono text-[13px] font-semibold"
+                className="flex items-center rounded-md px-3 py-2 font-mono text-[13px] font-semibold border border-border bg-secondary/30 h-[38px]"
                 style={{
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  color: isValidDuration ? "#22d3ee" : "#ef4444",
-                  height: "38px",
+                  color: isValidDuration ? "var(--primary)" : "#ef4444",
                 }}
               >
                 {isValidDuration ? formatMinutes(duration) : "Invalid"}
@@ -337,13 +292,12 @@ function AddSessionDialogInner({
             <div>
               <div className="mb-1.5 flex items-center justify-between">
                 <div
-                  className="text-[11px] font-medium uppercase tracking-[0.5px]"
-                  style={{ color: "#6b6b80" }}
+                  className="text-[11px] font-medium uppercase tracking-[0.5px] text-muted-foreground"
                 >
                   Add from existing tasks
                 </div>
                 {selectedTaskIds.length > 0 && (
-                  <span className="font-mono text-[10px] font-bold text-[#22d3ee]">
+                  <span className="font-mono text-[10px] font-bold text-cyan-600 dark:text-cyan-400">
                     {selectedTaskIds.length} task{selectedTaskIds.length > 1 ? "s" : ""} selected
                   </span>
                 )}
@@ -356,27 +310,19 @@ function AddSessionDialogInner({
                       key={task.id}
                       type="button"
                       onClick={() => handleToggleTask(task)}
-                      className="flex w-full cursor-pointer items-center gap-2.5 rounded-md border border-transparent px-2.5 py-2 text-left transition-all"
-                      style={{
-                        background: isSelected
-                          ? "rgba(34,211,238,0.06)"
-                          : "transparent",
-                      }}
+                      className={`flex w-full cursor-pointer items-center gap-2.5 rounded-md border px-2.5 py-2 text-left transition-all ${
+                        isSelected
+                          ? "border-cyan-500/40 bg-cyan-500/10 text-foreground"
+                          : "border-border/60 bg-secondary/30 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      }`}
                     >
                       {/* Checkbox */}
                       <div
-                        className="flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded"
-                        style={{
-                          border: `1.5px solid ${
-                            isSelected
-                              ? "#22d3ee"
-                              : "rgba(255,255,255,0.12)"
-                          }`,
-                          background: isSelected
-                            ? "#22d3ee"
-                            : "transparent",
-                          transition: "all 0.12s",
-                        }}
+                        className={`flex h-[15px] w-[15px] shrink-0 items-center justify-center rounded border transition-all ${
+                          isSelected
+                            ? "bg-cyan-500 border-cyan-500 text-white"
+                            : "border-border bg-secondary/50"
+                        }`}
                       >
                         {isSelected && (
                           <svg
@@ -384,7 +330,7 @@ function AddSessionDialogInner({
                             height="8"
                             viewBox="0 0 24 24"
                             fill="none"
-                            stroke="#000"
+                            stroke="#ffffff"
                             strokeWidth="3"
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -393,10 +339,7 @@ function AddSessionDialogInner({
                           </svg>
                         )}
                       </div>
-                      <span
-                        className="text-[12.5px]"
-                        style={{ color: isSelected ? "#f0f0f4" : "#c0c0d0" }}
-                      >
+                      <span className="text-[12.5px] font-medium">
                         {task.label}
                       </span>
                     </button>
@@ -410,11 +353,10 @@ function AddSessionDialogInner({
           <div>
             <label
               htmlFor={`${formId}-priority`}
-              className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px]"
-              style={{ color: "#6b6b80" }}
+              className="mb-1.5 block text-[11px] font-medium uppercase tracking-[0.5px] text-muted-foreground"
             >
               Priority{" "}
-              <span style={{ color: "#3a3a4a" }}>(optional)</span>
+              <span className="text-muted-foreground/60">(optional)</span>
             </label>
             <select
               id={`${formId}-priority`}
@@ -424,24 +366,18 @@ function AddSessionDialogInner({
                   e.target.value as "high" | "medium" | "low" | ""
                 )
               }
-              className="w-full rounded-md px-3 py-2 text-[13px]"
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                color: "#f0f0f4",
-                outline: "none",
-              }}
+              className="w-full rounded-md px-3 py-2 text-[13px] border border-border bg-secondary/50 text-foreground outline-none focus:border-cyan-500 transition"
             >
-              <option value="" style={{ background: "#1a1a24" }}>
+              <option value="" className="bg-card text-foreground">
                 No priority
               </option>
-              <option value="high" style={{ background: "#1a1a24" }}>
+              <option value="high" className="bg-card text-foreground">
                 High
               </option>
-              <option value="medium" style={{ background: "#1a1a24" }}>
+              <option value="medium" className="bg-card text-foreground">
                 Medium
               </option>
-              <option value="low" style={{ background: "#1a1a24" }}>
+              <option value="low" className="bg-card text-foreground">
                 Low
               </option>
             </select>
@@ -450,32 +386,19 @@ function AddSessionDialogInner({
 
         {/* Dialog footer */}
         <div
-          className="flex items-center justify-end gap-2 px-5 py-4"
-          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+          className="flex items-center justify-end gap-2 px-5 py-4 border-t border-border"
         >
           <button
             type="button"
             onClick={onClose}
-            className="cursor-pointer rounded-[7px] px-4 py-2 text-[12px] font-medium"
-            style={{
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "transparent",
-              color: "#a0a0b8",
-              transition: "all 0.15s ease",
-            }}
+            className="cursor-pointer rounded-[7px] border border-border bg-secondary/50 px-4 py-2 text-[12px] font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={!subject || !topic || !isValidDuration}
-            className="cursor-pointer rounded-[7px] px-4 py-2 text-[12px] font-semibold disabled:cursor-not-allowed disabled:opacity-40"
-            style={{
-              border: "1px solid rgba(34,211,238,0.35)",
-              background: "rgba(34,211,238,0.1)",
-              color: "#22d3ee",
-              transition: "all 0.15s ease",
-            }}
+            className="cursor-pointer rounded-[7px] border border-cyan-500/40 bg-cyan-500/15 px-4 py-2 text-[12px] font-semibold text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/25 transition disabled:cursor-not-allowed disabled:opacity-40 shadow-xs"
           >
             {editingSession ? "Update Session" : "Add Session"}
           </button>

@@ -136,28 +136,15 @@ export function HeroNextSession({
 
   return (
     <div
-      className="relative mb-5 overflow-hidden rounded-[12px] p-6 transition-all duration-200"
-      style={{
-        background: isRunning
-          ? "linear-gradient(135deg, #13131c 0%, #171824 100%)"
-          : isDayComplete
-            ? "linear-gradient(135deg, #101918 0%, #131d1a 100%)"
-            : "#13131a",
-        border: `1px solid ${
-          isRunning
-            ? isPaused
-              ? "rgba(249,115,22,0.35)"
-              : "rgba(34,197,94,0.35)"
-            : isDayComplete
-              ? "rgba(34,197,94,0.25)"
-              : "rgba(34,211,238,0.2)"
-        }`,
-        boxShadow: isRunning
+      className={`relative mb-5 overflow-hidden rounded-[12px] p-6 transition-all duration-200 border ${
+        isRunning
           ? isPaused
-            ? "0 4px 20px -2px rgba(249,115,22,0.12)"
-            : "0 4px 20px -2px rgba(34,197,94,0.12)"
-          : "none",
-      }}
+            ? "bg-gradient-to-br from-amber-500/[0.05] to-orange-500/[0.08] dark:from-[#13131c] dark:to-[#1a1714] border-amber-500/35 shadow-sm"
+            : "bg-gradient-to-br from-emerald-500/[0.05] to-teal-500/[0.08] dark:from-[#13131c] dark:to-[#171824] border-emerald-500/35 shadow-sm"
+          : isDayComplete
+            ? "bg-gradient-to-br from-emerald-500/[0.04] to-teal-500/[0.06] dark:from-[#101918] dark:to-[#131d1a] border-emerald-500/25 shadow-xs"
+            : "bg-card border-border shadow-xs"
+      }`}
     >
       {/* Top ambient glow line */}
       <div
@@ -169,7 +156,7 @@ export function HeroNextSession({
               : "linear-gradient(90deg, transparent, rgba(34,197,94,0.8), transparent)"
             : isDayComplete
               ? "linear-gradient(90deg, transparent, rgba(34,197,94,0.6), transparent)"
-              : "linear-gradient(90deg, transparent, rgba(34,211,238,0.5), transparent)",
+              : "linear-gradient(90deg, transparent, rgba(8,145,178,0.6), transparent)",
         }}
       />
 
@@ -179,68 +166,36 @@ export function HeroNextSession({
           {/* Status Badge */}
           <div className="mb-2.5 flex items-center gap-2">
             <div
-              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-[3px]"
-              style={{
-                background: isRunning
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-[3px] border ${
+                isRunning
                   ? isPaused
-                    ? "rgba(249,115,22,0.12)"
-                    : "rgba(34,197,94,0.12)"
+                    ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400"
+                    : "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
                   : isDayComplete
-                    ? "rgba(34,197,94,0.12)"
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
                     : hasNoPlan
-                      ? "rgba(107,114,128,0.12)"
+                      ? "bg-muted border-border text-muted-foreground"
                       : session?.status === "missed"
-                        ? "rgba(239,68,68,0.12)"
-                        : "rgba(34,211,238,0.12)",
-                border: `1px solid ${
-                  isRunning
-                    ? isPaused
-                      ? "rgba(249,115,22,0.3)"
-                      : "rgba(34,197,94,0.3)"
-                    : isDayComplete
-                      ? "rgba(34,197,94,0.3)"
-                      : hasNoPlan
-                        ? "rgba(107,114,128,0.2)"
-                        : session?.status === "missed"
-                          ? "rgba(239,68,68,0.3)"
-                          : "rgba(34,211,238,0.25)"
-                }`,
-              }}
+                        ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400"
+                        : "bg-cyan-500/10 border-cyan-500/30 text-cyan-700 dark:text-cyan-300"
+              }`}
             >
               <div
-                className="h-1.5 w-1.5 rounded-full animate-pulse"
-                style={{
-                  background: isRunning
+                className={`h-1.5 w-1.5 rounded-full animate-pulse ${
+                  isRunning
                     ? isPaused
-                      ? "#f97316"
-                      : "#22c55e"
+                      ? "bg-amber-500"
+                      : "bg-emerald-500"
                     : isDayComplete
-                      ? "#22c55e"
+                      ? "bg-emerald-500"
                       : hasNoPlan
-                        ? "#6b7280"
+                        ? "bg-slate-400"
                         : session?.status === "missed"
-                          ? "#ef4444"
-                          : "#22d3ee",
-                }}
+                          ? "bg-red-500"
+                          : "bg-cyan-500"
+                }`}
               />
-              <span
-                className="font-mono text-[10px] font-bold uppercase tracking-[1px]"
-                style={{
-                  color: isRunning
-                    ? isPaused
-                      ? "#f97316"
-                      : isOvertime
-                        ? "#f87171"
-                        : "#22c55e"
-                    : isDayComplete
-                      ? "#22c55e"
-                      : hasNoPlan
-                        ? "#9ca3af"
-                        : session?.status === "missed"
-                          ? "#ef4444"
-                          : "#22d3ee",
-                }}
-              >
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[1px]">
                 {isRunning
                   ? isPaused
                     ? "PAUSED"
@@ -264,10 +219,7 @@ export function HeroNextSession({
             </div>
 
             {totalSessions > 0 && (
-              <span
-                className="font-mono text-[11px]"
-                style={{ color: "#6b6b80" }}
-              >
+              <span className="font-mono text-[11px] text-muted-foreground">
                 {isDayComplete
                   ? `· ${totalSessions} / ${totalSessions} sessions finished`
                   : `· Session ${sessionIndex + 1} of ${totalSessions}`}
@@ -283,21 +235,21 @@ export function HeroNextSession({
               session ? "cursor-pointer group" : ""
             }`}
           >
-            <h2 className="m-0 text-xl font-bold tracking-tight text-[#f0f0f4] group-hover:text-cyan-300 transition">
+            <h2 className="m-0 text-xl font-bold tracking-tight text-foreground group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition">
               {currentSubject}
             </h2>
             {currentTopic && (
               <>
-                <span className="text-sm text-[#4a4a5a] font-normal">/</span>
+                <span className="text-sm text-muted-foreground/60 font-normal">/</span>
                 <span
-                  className="text-[15px] font-medium text-[#c0c0d8] group-hover:text-white transition line-clamp-1"
+                  className="text-[15px] font-medium text-foreground/80 group-hover:text-foreground transition line-clamp-1"
                 >
                   {currentTopic}
                 </span>
               </>
             )}
             {session && (
-              <span className="text-xs text-cyan-400 opacity-0 group-hover:opacity-100 transition inline-flex items-center gap-0.5">
+              <span className="text-xs text-cyan-600 dark:text-cyan-400 opacity-0 group-hover:opacity-100 transition inline-flex items-center gap-0.5">
                 View curriculum <ArrowRight size={11} />
               </span>
             )}
@@ -305,17 +257,16 @@ export function HeroNextSession({
 
           {/* Time & Duration Micro-metrics */}
           <div className="flex flex-wrap items-center gap-3 text-xs">
-            <div className="flex items-center gap-1.5 text-[#8a8a9e]">
-              <Clock size={13} className="text-[#6b6b80]" />
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <Clock size={13} className="text-muted-foreground/80" />
               <span
-                className="font-mono font-semibold"
-                style={{
-                  color: isRunning || isDayComplete
-                    ? "#22c55e"
+                className={`font-mono font-semibold ${
+                  isRunning || isDayComplete
+                    ? "text-emerald-600 dark:text-emerald-400"
                     : session?.status === "missed"
-                      ? "#ef4444"
-                      : "#a0a0b8",
-                }}
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-foreground/80"
+                }`}
               >
                 {isRunning
                   ? formattedElapsed
@@ -327,9 +278,9 @@ export function HeroNextSession({
               </span>
             </div>
 
-            <span className="text-[#3a3a4a]">·</span>
+            <span className="text-muted-foreground/40">·</span>
 
-            <span className="font-mono text-[#8a8a9e]">
+            <span className="font-mono text-muted-foreground">
               {isRunning
                 ? `${activeSession?.plannedMinutes || 60}m target`
                 : isDayComplete
@@ -339,13 +290,14 @@ export function HeroNextSession({
                     : "0m planned"}
             </span>
 
-            <span className="text-[#3a3a4a]">·</span>
+            <span className="text-muted-foreground/40">·</span>
 
             <span
-              className="text-[11.5px]"
-              style={{
-                color: session?.status === "missed" ? "#f87171" : "#71717a",
-              }}
+              className={`text-[11.5px] ${
+                session?.status === "missed"
+                  ? "text-red-600 dark:text-red-400 font-medium"
+                  : "text-muted-foreground"
+              }`}
             >
               {isRunning
                 ? isOvertime
@@ -363,7 +315,7 @@ export function HeroNextSession({
 
           {/* Running Progress Bar */}
           {isRunning && (
-            <div className="mt-3.5 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-white/5">
+            <div className="mt-3.5 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-muted/70">
               <div
                 className="h-full rounded-full transition-all duration-300"
                 style={{
@@ -372,7 +324,7 @@ export function HeroNextSession({
                     ? "#f97316"
                     : isOvertime
                       ? "linear-gradient(90deg, #f87171, #ef4444)"
-                      : "linear-gradient(90deg, #22d3ee, #22c55e)",
+                      : "linear-gradient(90deg, #0891b2, #10b981)",
                 }}
               />
             </div>
@@ -386,15 +338,11 @@ export function HeroNextSession({
               <button
                 type="button"
                 onClick={handleTogglePause}
-                className="flex cursor-pointer items-center gap-1.5 rounded-[8px] px-4 py-2.5 text-xs font-semibold tracking-wide transition active:scale-95"
+                className="flex cursor-pointer items-center gap-1.5 rounded-[8px] px-4 py-2.5 text-xs font-semibold tracking-wide transition active:scale-95 border"
                 style={{
-                  border: `1px solid ${
-                    isPaused ? "rgba(34,197,94,0.35)" : "rgba(249,115,22,0.35)"
-                  }`,
-                  background: isPaused
-                    ? "rgba(34,197,94,0.12)"
-                    : "rgba(249,115,22,0.12)",
-                  color: isPaused ? "#22c55e" : "#f97316",
+                  borderColor: isPaused ? "rgba(34,197,94,0.35)" : "rgba(249,115,22,0.35)",
+                  background: isPaused ? "rgba(34,197,94,0.12)" : "rgba(249,115,22,0.12)",
+                  color: isPaused ? "#16a34a" : "#ea580c",
                 }}
               >
                 {isPaused ? <Play size={13} /> : <Pause size={13} />}
@@ -404,12 +352,7 @@ export function HeroNextSession({
               <button
                 type="button"
                 onClick={handleComplete}
-                className="flex cursor-pointer items-center gap-1.5 rounded-[8px] px-5 py-2.5 text-xs font-semibold tracking-wide transition active:scale-95"
-                style={{
-                  border: "1px solid rgba(34,197,94,0.45)",
-                  background: "rgba(34,197,94,0.18)",
-                  color: "#22c55e",
-                }}
+                className="flex cursor-pointer items-center gap-1.5 rounded-[8px] px-5 py-2.5 text-xs font-semibold tracking-wide transition active:scale-95 border border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/25"
               >
                 <CheckCircle2 size={14} />
                 <span>Finish</span>
@@ -419,11 +362,7 @@ export function HeroNextSession({
                 type="button"
                 onClick={handleAbandon}
                 title="Abandon session"
-                className="flex cursor-pointer items-center justify-center rounded-[8px] p-2.5 text-xs text-[#71717a] hover:text-red-400 transition"
-                style={{
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  background: "rgba(255,255,255,0.02)",
-                }}
+                className="flex cursor-pointer items-center justify-center rounded-[8px] p-2.5 text-xs text-muted-foreground hover:text-red-500 transition border border-border bg-card hover:bg-red-500/10"
               >
                 <RotateCcw size={13} />
               </button>
@@ -432,21 +371,13 @@ export function HeroNextSession({
             <div className="flex items-center gap-2">
               <Link
                 href="/analytics"
-                className="flex items-center gap-1.5 rounded-[8px] px-4 py-2.5 text-xs font-medium text-[#c0c0d8] hover:text-white transition"
-                style={{
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  background: "rgba(255,255,255,0.03)",
-                }}
+                className="flex items-center gap-1.5 rounded-[8px] px-4 py-2.5 text-xs font-medium text-foreground/80 hover:text-foreground border border-border bg-card hover:bg-secondary transition"
               >
                 <TrendingUp size={13} /> View Analytics
               </Link>
               <Link
                 href="/plan-tomorrow"
-                className="flex items-center gap-1.5 rounded-[8px] px-5 py-2.5 text-xs font-semibold text-[#22c55e] transition"
-                style={{
-                  border: "1px solid rgba(34,197,94,0.35)",
-                  background: "rgba(34,197,94,0.12)",
-                }}
+                className="flex items-center gap-1.5 rounded-[8px] px-5 py-2.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 border border-emerald-500/35 bg-emerald-500/10 hover:bg-emerald-500/20 transition"
               >
                 <Calendar size={13} /> Plan Tomorrow
               </Link>
@@ -459,12 +390,7 @@ export function HeroNextSession({
                   onClick={() => onOpenRescheduleModal(session)}
                   title="Reschedule session"
                   aria-label="Reschedule session"
-                  className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[8px] transition active:scale-95"
-                  style={{
-                    background: "rgba(245,158,11,0.08)",
-                    border: "1px solid rgba(245,158,11,0.25)",
-                    color: "#f59e0b",
-                  }}
+                  className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[8px] transition active:scale-95 bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
                 >
                   <Pencil size={13} />
                 </button>
@@ -474,7 +400,7 @@ export function HeroNextSession({
                 <button
                   type="button"
                   onClick={() => onMoveToTomorrow(session.id)}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-[8px] border border-[#22d3ee]/35 bg-[#22d3ee]/10 px-4 py-2.5 text-xs font-semibold text-[#22d3ee] hover:bg-[#22d3ee]/20 transition"
+                  className="flex cursor-pointer items-center gap-1.5 rounded-[8px] border border-cyan-500/35 bg-cyan-500/10 px-4 py-2.5 text-xs font-semibold text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/20 transition"
                 >
                   <Calendar size={13} /> Move Tomorrow
                 </button>
@@ -483,14 +409,9 @@ export function HeroNextSession({
               <button
                 type="button"
                 onClick={handleStart}
-                className="flex cursor-pointer items-center gap-2 rounded-[8px] px-5 py-2.5 text-xs font-bold tracking-wide transition active:scale-95"
-                style={{
-                  border: "1px solid rgba(34,211,238,0.45)",
-                  background: "rgba(34,211,238,0.15)",
-                  color: "#22d3ee",
-                }}
+                className="flex cursor-pointer items-center gap-2 rounded-[8px] px-5 py-2.5 text-xs font-bold tracking-wide transition active:scale-95 border border-cyan-500/40 bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/25 shadow-xs"
               >
-                <Play size={13} className="fill-[#22d3ee]" /> Start Session
+                <Play size={13} className="fill-cyan-600 dark:fill-cyan-400" /> Start Session
               </button>
 
               {onDeleteSession && (
@@ -499,11 +420,7 @@ export function HeroNextSession({
                   onClick={() => onDeleteSession(session.id)}
                   title="Delete session"
                   aria-label="Delete session"
-                  className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[8px] text-[#71717a] hover:text-red-400 transition"
-                  style={{
-                    background: "rgba(239,68,68,0.04)",
-                    border: "1px solid rgba(239,68,68,0.15)",
-                  }}
+                  className="flex h-[38px] w-[38px] cursor-pointer items-center justify-center rounded-[8px] text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition border border-border"
                 >
                   <Trash2 size={13} />
                 </button>
@@ -512,11 +429,7 @@ export function HeroNextSession({
           ) : (
             <Link
               href="/plan-tomorrow"
-              className="flex items-center gap-2 rounded-[8px] px-5 py-2.5 text-xs font-bold text-[#22d3ee] transition active:scale-95"
-              style={{
-                border: "1px solid rgba(34,211,238,0.4)",
-                background: "rgba(34,211,238,0.12)",
-              }}
+              className="flex items-center gap-2 rounded-[8px] px-5 py-2.5 text-xs font-bold text-cyan-700 dark:text-cyan-300 border border-cyan-500/35 bg-cyan-500/10 hover:bg-cyan-500/20 transition active:scale-95 shadow-xs"
             >
               <Sparkles size={13} /> Plan Today&apos;s Schedule
             </Link>

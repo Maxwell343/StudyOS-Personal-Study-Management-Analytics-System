@@ -72,20 +72,16 @@ export function MissionList({
 
   return (
     <div
-      className="flex flex-col h-full rounded-[12px] p-5 transition-all duration-200"
-      style={{
-        background: "#13131a",
-        border: "1px solid rgba(255,255,255,0.07)",
-      }}
+      className="flex flex-col h-full rounded-[12px] p-5 transition-all duration-200 bg-card border border-border shadow-xs"
     >
       {/* Timeline Header */}
       <div className="mb-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <h2 className="m-0 text-sm font-bold tracking-tight text-[#f0f0f4]">
+          <h2 className="m-0 text-sm font-bold tracking-tight text-foreground">
             Today&apos;s Mission Schedule
           </h2>
-          <span className="text-xs text-[#52525b]">·</span>
-          <span className="text-xs font-mono text-[#a1a1aa]">
+          <span className="text-xs text-muted-foreground/50">·</span>
+          <span className="text-xs font-mono text-muted-foreground">
             {sessions.length} session{sessions.length !== 1 ? "s" : ""} ({formattedDuration})
           </span>
         </div>
@@ -95,14 +91,14 @@ export function MissionList({
             <button
               type="button"
               onClick={onAddSession}
-              className="flex cursor-pointer items-center gap-1 rounded-[7px] border border-[#22d3ee]/35 bg-[#22d3ee]/10 px-2.5 py-1 text-xs font-semibold text-[#22d3ee] hover:bg-[#22d3ee]/20 transition active:scale-95"
+              className="flex cursor-pointer items-center gap-1 rounded-[7px] border border-cyan-500/35 bg-cyan-500/10 px-2.5 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/20 transition active:scale-95 shadow-xs"
             >
               <Plus size={12} /> Add Session
             </button>
           )}
 
-          <div className="rounded-full bg-white/[0.03] border border-white/[0.06] px-2.5 py-1">
-            <span className="font-mono text-[10.5px] font-semibold text-[#71717a]">
+          <div className="rounded-full bg-secondary border border-border px-2.5 py-1">
+            <span className="font-mono text-[10.5px] font-semibold text-muted-foreground">
               {completedCount}/{sessions.length} done
             </span>
           </div>
@@ -111,11 +107,11 @@ export function MissionList({
 
       {/* Missed Sessions Recovery Alert Banner */}
       {missedSessions.length > 0 && (
-        <div className="mb-4 shrink-0 flex flex-wrap items-center justify-between gap-2.5 rounded-[9px] border border-red-500/25 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-200">
+        <div className="mb-4 shrink-0 flex flex-wrap items-center justify-between gap-2.5 rounded-[9px] border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-700 dark:text-red-200">
           <div className="flex items-center gap-2">
-            <AlertCircle size={14} className="shrink-0 text-red-400" />
+            <AlertCircle size={14} className="shrink-0 text-red-500" />
             <span>
-              <strong className="text-red-300">
+              <strong className="text-red-800 dark:text-red-300">
                 {missedSessions.length} session{missedSessions.length !== 1 ? "s" : ""} missed:
               </strong>{" "}
               {missedSessions.map((s) => s.subject).join(", ")} slot elapsed.
@@ -126,7 +122,7 @@ export function MissionList({
               <button
                 type="button"
                 onClick={onMoveAllMissedToTomorrow}
-                className="flex cursor-pointer items-center gap-1 rounded-[6px] bg-red-500/20 px-2.5 py-1 text-[11px] font-semibold text-red-200 hover:bg-red-500/30 transition border border-red-500/30 active:scale-95"
+                className="flex cursor-pointer items-center gap-1 rounded-[6px] bg-red-500/20 px-2.5 py-1 text-[11px] font-semibold text-red-800 dark:text-red-200 hover:bg-red-500/30 transition border border-red-500/30 active:scale-95"
               >
                 <Calendar size={11} /> Move All Tomorrow
               </button>
@@ -135,7 +131,7 @@ export function MissionList({
               <button
                 type="button"
                 onClick={() => onOpenRescheduleModal(missedSessions[0])}
-                className="flex cursor-pointer items-center gap-1 rounded-[6px] bg-amber-500/20 px-2.5 py-1 text-[11px] font-semibold text-amber-300 hover:bg-amber-500/30 transition border border-amber-500/30 active:scale-95"
+                className="flex cursor-pointer items-center gap-1 rounded-[6px] bg-amber-500/20 px-2.5 py-1 text-[11px] font-semibold text-amber-800 dark:text-amber-300 hover:bg-amber-500/30 transition border border-amber-500/30 active:scale-95"
               >
                 <Clock size={11} /> Reschedule
               </button>
@@ -146,21 +142,21 @@ export function MissionList({
 
       {/* Timeline Body */}
       {sessions.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-[9px] border border-white/[0.04] bg-white/[0.01] px-4 py-8 text-center text-xs text-[#71717a]">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-[9px] border border-border bg-secondary/30 px-4 py-8 text-center text-xs text-muted-foreground">
           <p className="m-0">No study sessions planned for today yet.</p>
           <div className="flex items-center gap-3">
             {onAddSession && (
               <button
                 type="button"
                 onClick={onAddSession}
-                className="flex cursor-pointer items-center gap-1.5 rounded-[7px] border border-[#22d3ee]/35 bg-[#22d3ee]/10 px-3.5 py-1.5 text-xs font-semibold text-[#22d3ee] hover:bg-[#22d3ee]/20 transition"
+                className="flex cursor-pointer items-center gap-1.5 rounded-[7px] border border-cyan-500/35 bg-cyan-500/10 px-3.5 py-1.5 text-xs font-semibold text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/20 transition"
               >
                 <Plus size={13} /> Add Quick Session
               </button>
             )}
             <Link
               href="/plan-tomorrow"
-              className="text-[#22d3ee] font-semibold underline underline-offset-2 hover:text-[#38bdf8]"
+              className="text-cyan-700 dark:text-cyan-400 font-semibold underline underline-offset-2 hover:text-cyan-600"
             >
               Plan in Advance &rarr;
             </Link>

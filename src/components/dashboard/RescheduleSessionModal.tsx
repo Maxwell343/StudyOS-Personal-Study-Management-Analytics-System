@@ -105,40 +105,35 @@ export function RescheduleSessionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/80 p-4 backdrop-blur-sm">
       <div
-        className="relative w-full max-w-md overflow-hidden rounded-xl border border-white/10 p-6 shadow-2xl"
-        style={{ background: "#13131a" }}
+        className="relative w-full max-w-md overflow-hidden rounded-xl border border-border bg-card p-6 shadow-2xl text-foreground"
       >
         {/* Top Glow Accent */}
         <div
-          className="absolute top-0 right-0 left-0 h-1"
-          style={{
-            background: "linear-gradient(90deg, #ef4444, #f59e0b, #22d3ee)",
-          }}
+          className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-red-500 via-amber-500 to-cyan-500"
         />
 
         {/* Header */}
         <div className="mb-5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <div
-              className="flex h-8 w-8 items-center justify-center rounded-lg"
-              style={{ background: "rgba(245,158,11,0.15)", color: "#f59e0b" }}
+              className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400"
             >
               <Calendar size={16} />
             </div>
             <div>
-              <h3 className="m-0 text-base font-bold text-[#f0f0f4]">
+              <h3 className="m-0 text-base font-bold text-foreground">
                 Edit / Reschedule Session
               </h3>
-              <p className="m-0 text-xs text-[#8a8a9e]">
+              <p className="m-0 text-xs text-muted-foreground">
                 {session.subject} — {session.topic}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-[#6b6b80] hover:bg-white/5 hover:text-[#f0f0f4]"
+            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground transition cursor-pointer"
           >
             <X size={16} />
           </button>
@@ -146,38 +141,38 @@ export function RescheduleSessionModal({
 
         {/* Presets */}
         <div className="mb-5 flex flex-col gap-2">
-          <span className="text-[11px] font-semibold text-[#6b6b80] uppercase tracking-wider">
+          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
             Quick Actions
           </span>
           <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => handleApplyPreset("tomorrow-same")}
-              className="flex flex-col items-center justify-center rounded-lg border border-white/5 bg-white/[0.02] p-2.5 text-center text-xs font-medium transition hover:border-[#22d3ee]/40 hover:bg-[#22d3ee]/5"
+              className="flex flex-col items-center justify-center rounded-lg border border-border bg-secondary/40 p-2.5 text-center text-xs font-medium transition hover:border-cyan-500/40 hover:bg-cyan-500/10 cursor-pointer shadow-2xs"
             >
-              <Sparkles size={14} className="mb-1 text-[#22d3ee]" />
-              <span className="text-[#f0f0f4]">Tomorrow</span>
-              <span className="text-[10px] text-[#6b6b80]">Same Time</span>
+              <Sparkles size={14} className="mb-1 text-cyan-600 dark:text-cyan-400" />
+              <span className="text-foreground">Tomorrow</span>
+              <span className="text-[10px] text-muted-foreground">Same Time</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleApplyPreset("today-now")}
-              className="flex flex-col items-center justify-center rounded-lg border border-white/5 bg-white/[0.02] p-2.5 text-center text-xs font-medium transition hover:border-[#34d399]/40 hover:bg-[#34d399]/5"
+              className="flex flex-col items-center justify-center rounded-lg border border-border bg-secondary/40 p-2.5 text-center text-xs font-medium transition hover:border-emerald-500/40 hover:bg-emerald-500/10 cursor-pointer shadow-2xs"
             >
-              <Clock size={14} className="mb-1 text-[#34d399]" />
-              <span className="text-[#f0f0f4]">Today</span>
-              <span className="text-[10px] text-[#6b6b80]">Start Now</span>
+              <Clock size={14} className="mb-1 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-foreground">Today</span>
+              <span className="text-[10px] text-muted-foreground">Start Now</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleApplyPreset("today-tonight")}
-              className="flex flex-col items-center justify-center rounded-lg border border-white/5 bg-white/[0.02] p-2.5 text-center text-xs font-medium transition hover:border-[#a78bfa]/40 hover:bg-[#a78bfa]/5"
+              className="flex flex-col items-center justify-center rounded-lg border border-border bg-secondary/40 p-2.5 text-center text-xs font-medium transition hover:border-purple-500/40 hover:bg-purple-500/10 cursor-pointer shadow-2xs"
             >
-              <ArrowRight size={14} className="mb-1 text-[#a78bfa]" />
-              <span className="text-[#f0f0f4]">Tonight</span>
-              <span className="text-[10px] text-[#6b6b80]">22:00 - 23:00</span>
+              <ArrowRight size={14} className="mb-1 text-purple-600 dark:text-purple-400" />
+              <span className="text-foreground">Tonight</span>
+              <span className="text-[10px] text-muted-foreground">22:00 - 23:00</span>
             </button>
           </div>
         </div>
@@ -186,17 +181,17 @@ export function RescheduleSessionModal({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Target Date */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[#b0b0c8]">
+            <label className="mb-1.5 block text-xs font-medium text-foreground/80">
               Target Schedule Date
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setTargetDate(today)}
-                className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                className={`rounded-lg border px-3 py-2 text-xs font-semibold transition cursor-pointer ${
                   targetDate === today
-                    ? "border-[#22d3ee] bg-[#22d3ee]/10 text-[#22d3ee]"
-                    : "border-white/10 bg-white/5 text-[#8a8a9e] hover:bg-white/10"
+                    ? "border-cyan-500 bg-cyan-500/15 text-cyan-700 dark:text-cyan-300"
+                    : "border-border bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
               >
                 Today ({today})
@@ -205,10 +200,10 @@ export function RescheduleSessionModal({
               <button
                 type="button"
                 onClick={() => setTargetDate(tomorrow)}
-                className={`rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                className={`rounded-lg border px-3 py-2 text-xs font-semibold transition cursor-pointer ${
                   targetDate === tomorrow
-                    ? "border-[#22d3ee] bg-[#22d3ee]/10 text-[#22d3ee]"
-                    : "border-white/10 bg-white/5 text-[#8a8a9e] hover:bg-white/10"
+                    ? "border-cyan-500 bg-cyan-500/15 text-cyan-700 dark:text-cyan-300"
+                    : "border-border bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
               >
                 Tomorrow ({tomorrow})
@@ -219,7 +214,7 @@ export function RescheduleSessionModal({
           {/* Time Slot */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-[#b0b0c8]">
+              <label className="mb-1.5 block text-xs font-medium text-foreground/80">
                 Start Time
               </label>
               <input
@@ -227,12 +222,12 @@ export function RescheduleSessionModal({
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 required
-                className="w-full rounded-lg border border-white/10 bg-[#0d0d12] px-3 py-2 text-xs text-[#f0f0f4] outline-none focus:border-[#22d3ee]"
+                className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-xs text-foreground outline-none focus:border-cyan-500 transition"
               />
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-[#b0b0c8]">
+              <label className="mb-1.5 block text-xs font-medium text-foreground/80">
                 End Time
               </label>
               <input
@@ -240,14 +235,14 @@ export function RescheduleSessionModal({
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 required
-                className="w-full rounded-lg border border-white/10 bg-[#0d0d12] px-3 py-2 text-xs text-[#f0f0f4] outline-none focus:border-[#22d3ee]"
+                className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-xs text-foreground outline-none focus:border-cyan-500 transition"
               />
             </div>
           </div>
 
           {/* Topic Title */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-[#b0b0c8]">
+            <label className="mb-1.5 block text-xs font-medium text-foreground/80">
               Topic / Note
             </label>
             <input
@@ -255,7 +250,7 @@ export function RescheduleSessionModal({
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               placeholder="e.g. DBMS Foundations"
-              className="w-full rounded-lg border border-white/10 bg-[#0d0d12] px-3 py-2 text-xs text-[#f0f0f4] outline-none focus:border-[#22d3ee]"
+              className="w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-xs text-foreground outline-none focus:border-cyan-500 placeholder:text-muted-foreground/50 transition"
             />
           </div>
 
@@ -264,14 +259,14 @@ export function RescheduleSessionModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-white/10 px-4 py-2 text-xs font-medium text-[#8a8a9e] transition hover:bg-white/5"
+              className="rounded-lg border border-border px-4 py-2 text-xs font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-lg border border-[#22d3ee]/40 bg-[#22d3ee]/15 px-5 py-2 text-xs font-bold text-[#22d3ee] transition hover:bg-[#22d3ee]/25 disabled:opacity-50"
+              className="rounded-lg border border-cyan-500/40 bg-cyan-500/20 px-5 py-2 text-xs font-bold text-cyan-700 dark:text-cyan-300 transition hover:bg-cyan-500/30 disabled:opacity-50 cursor-pointer shadow-xs"
             >
               {submitting ? "Rescheduling..." : "Save Schedule"}
             </button>
