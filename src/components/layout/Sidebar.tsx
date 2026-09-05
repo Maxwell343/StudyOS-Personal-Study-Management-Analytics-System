@@ -32,9 +32,10 @@ const ICON_MAP: Record<string, React.ComponentType<{ size?: number }>> = {
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
 
-  const displayName = profile?.name || "Maxwell";
+  const displayName = profile?.name || user?.user_metadata?.full_name || (user?.email?.split("@")[0] ? user.email.split("@")[0].charAt(0).toUpperCase() + user.email.split("@")[0].slice(1) : "Student");
+  const isDemo = user?.email === "demo@studyos.local" || displayName.toLowerCase().includes("demo");
 
   return (
     <aside
@@ -149,15 +150,16 @@ export function Sidebar() {
             style={{
               background: "linear-gradient(135deg, #0891b2, #7c3aed)",
             }}
+            suppressHydrationWarning
           >
             {displayName.charAt(0).toUpperCase()}
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-xs font-medium text-sidebar-foreground">
+          <div className="min-w-0 flex-1" suppressHydrationWarning>
+            <div className="truncate text-xs font-medium text-sidebar-foreground" suppressHydrationWarning>
               {displayName}
             </div>
-            <div className="truncate text-[10px] text-muted-foreground">
-              Personal Workspace
+            <div className="truncate text-[10px] text-muted-foreground" suppressHydrationWarning>
+              {isDemo ? "Demo Workspace" : "Personal Workspace"}
             </div>
           </div>
         </Link>

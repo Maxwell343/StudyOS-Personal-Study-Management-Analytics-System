@@ -8,24 +8,28 @@ import { useTheme } from "@/context/ThemeContext";
 import { useState, useEffect } from "react";
 
 export function Header() {
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
-  const displayName = profile?.name || "Maxwell";
-  const [currentTime, setCurrentTime] = useState<Date | null>(() => new Date());
+  const displayName = profile?.name || user?.user_metadata?.full_name || (user?.email?.split("@")[0] ? user.email.split("@")[0].charAt(0).toUpperCase() + user.email.split("@")[0].slice(1) : "Student");
+  const isDemo = user?.email === "demo@studyos.local" || displayName.toLowerCase().includes("demo");
+  const [mounted, setMounted] = useState(false);
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
+    setMounted(true);
+    setCurrentTime(new Date());
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const today = currentTime ? currentTime.toLocaleDateString("en-US", {
+  const today = mounted && currentTime ? currentTime.toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
   }) : "";
 
-  const timeString = currentTime ? currentTime.toLocaleTimeString("en-US", {
+  const timeString = mounted && currentTime ? currentTime.toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -37,8 +41,8 @@ export function Header() {
     formattedElapsed,
   } = useSessionTimer();
 
-  const currentHour = currentTime ? currentTime.getHours() : null;
-  let greeting = "Good day";
+  const currentHour = mounted && currentTime ? currentTime.getHours() : null;
+  let greeting = "Welcome";
   let emoji = "✨";
 
   if (currentHour !== null) {
@@ -58,13 +62,18 @@ export function Header() {
     <header className="flex shrink-0 items-start justify-between px-9 pt-[26px]">
       <div>
         <div className="mb-[3px] flex items-center gap-2">
-          <h1 className="m-0 text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="m-0 text-2xl font-bold tracking-tight text-foreground" suppressHydrationWarning>
             {greeting}, {displayName}.
           </h1>
-          <span className="text-xl">{emoji}</span>
+          <span className="text-xl" suppressHydrationWarning>{emoji}</span>
+          {isDemo && (
+            <span className="ml-2 inline-flex items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-cyan-400">
+              Demo Mode
+            </span>
+          )}
         </div>
         <p className="m-0 text-[13px] text-muted-foreground">
-          Here&apos;s your focus for today.
+          {isDemo ? "Sample curriculum & demo workspace" : "Here's your focus for today."}
         </p>
       </div>
       <div className="mt-0.5 flex items-center gap-3.5">
@@ -129,11 +138,11 @@ export function Header() {
         <div className="h-6 w-px bg-border" />
 
         {/* Date and Time */}
-        <div className="flex flex-col items-end">
-          <div className="font-mono text-[11.5px] text-muted-foreground">
+        <div className="flex flex-col items-end" suppressHydrationWarning>
+          <div className="font-mono text-[11.5px] text-muted-foreground" suppressHydrationWarning>
             {today || "Loading..."}
           </div>
-          <div className="font-mono text-[10.5px] tracking-wide text-foreground/75 mt-0.5">
+          <div className="font-mono text-[10.5px] tracking-wide text-foreground/75 mt-0.5" suppressHydrationWarning>
             {timeString}
           </div>
         </div>
