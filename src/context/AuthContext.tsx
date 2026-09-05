@@ -17,6 +17,7 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
   signIn: (email: string, pass: string) => Promise<{ error?: string }>;
   signUp: (email: string, pass: string, name: string) => Promise<{ error?: string }>;
+  signInDemo: () => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -147,6 +148,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchProfile]);
 
+  const DEMO_EMAIL = "demo@studyos.local";
+  const DEMO_PASSWORD = "demoPassword#2026";
+  const DEMO_NAME = "Demo Explorer";
+
+  const signInDemo = useCallback(async (): Promise<{ error?: string }> => {
+    try {
+      // 1. Try signing in directly first
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: DEMO_EMAIL,
+        password: DEMO_PASSWORD,
+      });
+
+      if (signInData?.session && signInData?.user) {
+        setSession(signInData.session);
+        setUser(signInData.user);
+        await fetchProfile(signInData.user);
+        if (typeof window !== "undefined") {
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+          window.location.href = "/";
+        }
+        return {};
+      }
+
+      // 2. If account does not exist yet, provision the demo user
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: DEMO_EMAIL,
+        password: DEMO_PASSWORD,
+        options: {
+          data: {
+            full_name: DEMO_NAME,
+          },
+        },
+      });
+
+      let activeSession = signUpData?.session ?? null;
+      let activeUser = signUpData?.user ?? null;
+
+      if (!activeSession && activeUser) {
+        const retryRes = await supabase.auth.signInWithPassword({
+          email: DEMO_EMAIL,
+          password: DEMO_PASSWORD,
+        });
+        activeSession = retryRes.data?.session ?? null;
+        activeUser = retryRes.data?.user ?? activeUser;
+      }
+
+      if (activeSession && activeUser) {
+        setSession(activeSession);
+        setUser(activeUser);
+        await fetchProfile(activeUser);
+
+        try {
+          await seedCurriculumForUser(activeUser.id);
+        } catch (seedErr) {
+          console.warn("Curriculum auto-seed for demo account:", seedErr);
+        }
+
+        if (typeof window !== "undefined") {
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+          window.location.href = "/";
+        }
+        return {};
+      }
+
+      return { error: signUpError?.message || signInError?.message || "Could not initialize demo account" };
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : "Demo sign in failed" };
+    }
+  }, [fetchProfile]);
+
   const signOut = useCallback(async () => {
     try {
       await supabase.auth.signOut();
@@ -238,11 +309,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         refreshProfile,
         signIn,
         signUp,
+        signInDemo,
         signOut,
       }}
     >
       {!session && !loading ? (
-        <LoginForm onSignIn={signIn} onSignUp={signUp} />
+        <LoginForm onSignIn={signIn} onSignUp={signUp} onSignInDemo={signInDemo} />
       ) : (
         children
       )}
