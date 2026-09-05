@@ -70,7 +70,10 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} dark`}
       suppressHydrationWarning
     >
-      <body className="h-full antialiased bg-background text-foreground selection:bg-cyan-500/30">
+      <body
+        className="h-full antialiased bg-background text-foreground selection:bg-cyan-500/30"
+        suppressHydrationWarning
+      >
         <ThemeProvider>
           <AuthProvider>
             <TimerProvider>{children}</TimerProvider>
