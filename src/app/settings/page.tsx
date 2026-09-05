@@ -20,7 +20,8 @@ import {
 
 export default function SettingsPage() {
   const { user, profile, refreshProfile, signOut, loading: authLoading } = useAuth();
-  const [name, setName] = useState(() => profile?.name || "Maxwell");
+  const defaultDisplayName = profile?.name || user?.user_metadata?.full_name || (user?.email?.split("@")[0] ? user.email.split("@")[0].charAt(0).toUpperCase() + user.email.split("@")[0].slice(1) : "Student");
+  const [name, setName] = useState(() => defaultDisplayName);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
 
@@ -141,7 +142,7 @@ export default function SettingsPage() {
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Maxwell"
+                      placeholder="Your name"
                       required
                       className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3.5 py-2 text-sm text-white placeholder-[#4a4a5a] outline-none transition focus:border-cyan-500/50 focus:bg-white/[0.05]"
                     />
@@ -153,7 +154,7 @@ export default function SettingsPage() {
                     </label>
                     <input
                       type="email"
-                      value={user?.email || "maxwell.mathew@studyos.local"}
+                      value={user?.email || "student@studyos.local"}
                       disabled
                       className="w-full rounded-lg border border-white/5 bg-white/[0.01] px-3.5 py-2 text-sm text-[#7a7a8e] cursor-not-allowed"
                     />
@@ -204,7 +205,7 @@ export default function SettingsPage() {
                   <div className="space-y-0.5">
                     <div className="text-xs font-medium text-white">Signed in as</div>
                     <div className="font-mono text-xs text-[#a0a0b8]">
-                      {user?.email || "maxwell.mathew@studyos.local"}
+                      {user?.email || "student@studyos.local"}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
